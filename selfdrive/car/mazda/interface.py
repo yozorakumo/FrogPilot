@@ -31,6 +31,12 @@ class CarInterface(CarInterfaceBase):
 
     ret.enableBsm = True
 
+    if candidate == CAR.MAZDA_2_MT:
+      ret.mass = 1030.
+      ret.wheelbase = 2.57
+      ret.steerRatio = 14.8
+      ret.transmissionType = car.CarParams.TransmissionType.manual
+
     return ret
 
   # returns a car.CarState
@@ -50,6 +56,9 @@ class CarInterface(CarInterfaceBase):
       events.add(EventName.lkasDisabled)
     elif self.CS.low_speed_alert:
       events.add(EventName.belowSteerSpeed)
+
+    if ret.clutchPressed:
+      events.add(EventName.clutchPressed)
 
     ret.events = events.to_msg()
 

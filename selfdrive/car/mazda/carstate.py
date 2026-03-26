@@ -10,7 +10,8 @@ class CarState(CarStateBase):
     super().__init__(CP, FPCP)
 
     can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
-    self.shifter_values = can_define.dv["GEAR"]["GEAR"]
+    if not (CP.flags & MazdaFlags.MT):
+      self.shifter_values = can_define.dv["GEAR"]["GEAR"]
 
     self.crz_btns_counter = 0
     self.acc_active_last = False
@@ -42,8 +43,14 @@ class CarState(CarStateBase):
     speed_kph = cp.vl["ENGINE_DATA"]["SPEED"]
     ret.standstill = speed_kph <= .1
 
-    can_gear = int(cp.vl["GEAR"]["GEAR"])
-    ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
+    if self.CP.flags & MazdaFlags.MT:
+      ret.clutchPressed = cp.vl["MT_CLUTCH"]["CLUTCH_PRESSED"] == 1
+      # Use custom field for gear display
+      fp_ret.gearStep = int(cp.vl["MT_CLUTCH"]["GEAR_RAW"])
+      ret.gearShifter = car.CarState.GearShifter.drive # Always in drive for openpilot logic
+    else:
+      can_gear = int(cp.vl["GEAR"]["GEAR"])
+      ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
 
     ret.genericToggle = bool(cp.vl["BLINK_INFO"]["HIGH_BEAMS"])
     ret.leftBlindspot = cp.vl["BSM"]["LEFT_BS_STATUS"] != 0
@@ -131,6 +138,15 @@ class CarState(CarStateBase):
     if CP.flags & MazdaFlags.GEN1:
       messages += [
         ("ENGINE_DATA", 100),
+      ]
+
+    if CP.flags & MazdaFlags.MT:
+      messages += [
+        ("MT_CLUTCH", 50),
+      ]
+
+    if CP.flags & MazdaFlags.GEN1:
+      messages += [
         ("CRZ_CTRL", 50),
         ("CRZ_EVENTS", 50),
         ("CRZ_BTNS", 10),
@@ -138,8 +154,12 @@ class CarState(CarStateBase):
         ("BRAKE", 50),
         ("SEATBELT", 10),
         ("DOORS", 10),
-        ("GEAR", 20),
         ("BSM", 10),
+      ]
+
+    if CP.flags & MazdaFlags.GEN1 and not (CP.flags & MazdaFlags.MT):
+      messages += [
+        ("GEAR", 20),
       ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)

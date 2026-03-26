@@ -4,6 +4,20 @@ from openpilot.selfdrive.car.mazda.values import CAR
 Ecu = car.CarParams.Ecu
 
 FW_VERSIONS = {
+  CAR.MAZDA_2_MT: {
+    (Ecu.engine, 0x7e0, None): [
+      b'DJ1L-188K2-K\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.eps, 0x730, None): [
+      b'D09V-3210X-C-00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.abs, 0x760, None): [
+      b'D10E-437K2-B\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.fwdCamera, 0x706, None): [
+      b'GSH7-67XK2-U\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+  },
   CAR.MAZDA_CX5_2022: {
     (Ecu.eps, 0x730, None): [
       b'KSD5-3210X-C-00\x00\x00\x00\x00\x00\x00\x00\x00\x00',

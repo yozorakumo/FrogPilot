@@ -129,6 +129,8 @@ struct FrogPilotCarState @0xda96579883444c35 {
   sportGear @14 :Bool;
   trafficModeEnabled @15 :Bool;
 
+  gearStep @16 :Int8;
+
   struct ButtonEvent {
     enum Type {
       lkas @0;

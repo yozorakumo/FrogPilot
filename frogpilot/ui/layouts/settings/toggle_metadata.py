@@ -2256,6 +2256,13 @@ VEHICLE_SETTINGS_TOGGLES = (
     value_map={0: "Never"},
   ),
   ToggleDefinition(
+    title=("Mazda2 MT Support"),
+    param="Mazda2MT",
+    car_params=["mazda_brand"],
+    description=("<b>Enable support for Mazda2 DJ Manual Transmission.</b><br><br>Adds gear and clutch display on the UI and limits acceleration when the clutch is pressed."),
+    tuning_level=0,
+  ),
+  ToggleDefinition(
     title=("Stop-and-Go Hack"),
     param="SNGHack",
     car_params=["toyota_brand", "openpilot_longitudinal", "!gas_interceptor", "!stock_sng"],

@@ -257,6 +257,10 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
   if (!frogpilot_scene.map_open && !hideBottomIcons) {
     paintWeather(p, frogpilotPlan, frogpilot_scene);
   }
+
+  if (carState.getTransmissionType() == cereal::CarParams::TransmissionType::MANUAL) {
+    paintMTGear(p, carState, frogpilotCarState);
+  }
 }
 
 void FrogPilotAnnotatedCameraWidget::paintAdjacentPaths(QPainter &p, const cereal::CarState::Reader &carState, const FrogPilotUIScene &frogpilot_scene, const QJsonObject &frogpilot_toggles) {
@@ -974,6 +978,26 @@ void FrogPilotAnnotatedCameraWidget::paintTurnSignals(QPainter &p, const cereal:
       p.drawPixmap(signalXPosition, signalYPosition, signalWidth, signalHeight, signalImages[animationFrameIndex].transformed(QTransform().scale(leftBlinker ? 1 : -1, 1)));
     }
   }
+
+  p.restore();
+}
+
+void FrogPilotAnnotatedCameraWidget::paintMTGear(QPainter &p, const cereal::CarState::Reader &carState, const cereal::FrogPilotCarState::Reader &frogpilotCarState) {
+  p.save();
+
+  int gear = frogpilotCarState.getGearStep();
+  bool clutch = carState.getClutchPressed();
+
+  QString gearStr;
+  if (gear == 0) gearStr = "N";
+  else if (gear == 15) gearStr = "R";
+  else gearStr = QString::number(gear);
+
+  QRect gearRect(width() / 2 - 100, 350, 200, 200);
+
+  p.setFont(InterFont(150, QFont::Bold));
+  p.setPen(clutch ? QColor(255, 165, 0) : whiteColor()); // Orange if clutch pressed
+  p.drawText(gearRect, Qt::AlignCenter, gearStr);
 
   p.restore();
 }

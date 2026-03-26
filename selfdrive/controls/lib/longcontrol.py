@@ -128,6 +128,11 @@ class LongControl:
                                      feedforward=a_target)
 
     self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
+
+    # Limit acceleration when clutch is pressed on manual cars
+    if self.CP.transmissionType == car.CarParams.TransmissionType.manual and CS.clutchPressed:
+      self.last_output_accel = min(self.last_output_accel, 0.0)
+
     return self.last_output_accel
 
   def reset_old_long(self, v_pid):
@@ -192,5 +197,9 @@ class LongControl:
                                      freeze_integrator=freeze_integrator)
 
     self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
+
+    # Limit acceleration when clutch is pressed on manual cars
+    if self.CP.transmissionType == car.CarParams.TransmissionType.manual and CS.clutchPressed:
+      self.last_output_accel = min(self.last_output_accel, 0.0)
 
     return self.last_output_accel
