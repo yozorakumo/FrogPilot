@@ -221,7 +221,7 @@ jobs:
       - name: Commit and Push Build
         run: |
           git add -f .
-          git commit -m "Compile FrogPilot"
+          git diff-index --quiet HEAD || git commit -m "Compile FrogPilot"
           git push --force origin HEAD
 
           if [ "${{ inputs.publish_frogpilot }}" = "true" ]; then
