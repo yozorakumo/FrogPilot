@@ -2256,6 +2256,13 @@ VEHICLE_SETTINGS_TOGGLES = (
     value_map={0: "Never"},
   ),
   ToggleDefinition(
+    title=("Automatic Door Lock"),
+    param="MazdaAutoDoorLock",
+    car_params=["mazda_brand"],
+    description=("<b>Automatically lock the doors.</b>"),
+    tuning_level=0,
+  ),
+  ToggleDefinition(
     title=("Mazda2 MT Support"),
     param="Mazda2MT",
     car_params=["mazda_brand"],

@@ -324,6 +324,7 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("MapGears", "0", 2, "0"),
   ("MapsSelected", "", 0, ""),
   ("MapStyle", "1", 2, "0"),
+  ("Mazda2MT", "0", 0, "0"),
   ("MazdaAutoDoorLock", "0", 0, "0"),
   ("MazdaMTMode", "0", 0, "0"),
   ("MazdaMTUI", "0", 0, "0"),
