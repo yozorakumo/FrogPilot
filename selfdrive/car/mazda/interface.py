@@ -31,7 +31,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.enableBsm = True
 
-    if candidate == CAR.MAZDA_2_MT:
+    if candidate == CAR.MAZDA_2_DJ_MT:
       ret.mass = 1030.
       ret.wheelbase = 2.57
       ret.steerRatio = 14.8

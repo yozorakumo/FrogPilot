@@ -151,6 +151,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
   FrogPilotListWidget *gmList = new FrogPilotListWidget(this);
   FrogPilotListWidget *hkgList = new FrogPilotListWidget(this);
   FrogPilotListWidget *hondaList = new FrogPilotListWidget(this);
+  FrogPilotListWidget *mazdaList = new FrogPilotListWidget(this);
   FrogPilotListWidget *subaruList = new FrogPilotListWidget(this);
   FrogPilotListWidget *toyotaList = new FrogPilotListWidget(this);
   FrogPilotListWidget *vehicleInfoList = new FrogPilotListWidget(this);
@@ -158,6 +159,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
   ScrollView *gmPanel = new ScrollView(gmList, this);
   ScrollView *hkgPanel = new ScrollView(hkgList, this);
   ScrollView *hondaPanel = new ScrollView(hondaList, this);
+  ScrollView *mazdaPanel = new ScrollView(mazdaList, this);
   ScrollView *subaruPanel = new ScrollView(subaruList, this);
   ScrollView *toyotaPanel = new ScrollView(toyotaList, this);
   ScrollView *vehicleInfoPanel = new ScrollView(vehicleInfoList, this);
@@ -165,6 +167,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
   vehiclesLayout->addWidget(gmPanel);
   vehiclesLayout->addWidget(hkgPanel);
   vehiclesLayout->addWidget(hondaPanel);
+  vehiclesLayout->addWidget(mazdaPanel);
   vehiclesLayout->addWidget(subaruPanel);
   vehiclesLayout->addWidget(toyotaPanel);
   vehiclesLayout->addWidget(vehicleInfoPanel);
@@ -186,6 +189,11 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
 
     {"SubaruToggles", tr("Subaru Settings"), tr("<b>FrogPilot features for Subaru vehicles.</b>"), ""},
     {"SubaruSNG", tr("Stop and Go"), tr("Stop and go for supported Subaru vehicles."), ""},
+
+    {"MazdaToggles", tr("Mazda Settings"), tr("<b>FrogPilot features for Mazda vehicles.</b>"), ""},
+    {"MazdaMTUI", tr("MT UI Display"), tr("<b>Enable the MT UI display for Mazda vehicles.</b>"), ""},
+    {"MazdaMTMode", tr("MT Mode"), tr("<b>Enable MT mode for Mazda vehicles.</b>"), ""},
+    {"MazdaAutoDoorLock", tr("Automatic Door Lock"), tr("<b>Automatically lock the doors.</b>"), ""},
 
     {"ToyotaToggles", tr("Toyota/Lexus Settings"), tr("<b>FrogPilot features for Lexus and Toyota vehicles.</b>"), ""},
     {"ToyotaDoors", tr("Automatically Lock/Unlock Doors"), tr("<b>Automatically lock/unlock doors</b> when shifting in and out of drive."), ""},
@@ -239,6 +247,14 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
       });
       vehicleToggle = subaruButton;
 
+    } else if (param == "MazdaToggles") {
+      ButtonControl *mazdaButton = new ButtonControl(title, tr("MANAGE"), desc);
+      QObject::connect(mazdaButton, &ButtonControl::clicked, [vehiclesLayout, mazdaPanel, this]() {
+        openDescriptions(forceOpenDescriptions, toggles);
+        vehiclesLayout->setCurrentWidget(mazdaPanel);
+      });
+      vehicleToggle = mazdaButton;
+
     } else if (param == "ToyotaToggles") {
       ButtonControl *toyotaButton = new ButtonControl(title, tr("MANAGE"), desc);
       QObject::connect(toyotaButton, &ButtonControl::clicked, [vehiclesLayout, toyotaPanel, this]() {
@@ -289,6 +305,8 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
       hondaList->addItem(vehicleToggle);
     } else if (subaruKeys.contains(param)) {
       subaruList->addItem(vehicleToggle);
+    } else if (mazdaKeys.contains(param)) {
+      mazdaList->addItem(vehicleToggle);
     } else if (toyotaKeys.contains(param)) {
       toyotaList->addItem(vehicleToggle);
     } else if (vehicleInfoKeys.contains(param)) {
@@ -403,6 +421,8 @@ void FrogPilotVehiclesPanel::updateToggles() {
       setVisible &= parent->isHKG;
     } else if (hondaKeys.contains(key)) {
       setVisible &= parent->isHonda;
+    } else if (mazdaKeys.contains(key)) {
+      setVisible &= parent->isMazda;
     } else if (subaruKeys.contains(key)) {
       setVisible &= parent->isSubaru;
     } else if (toyotaKeys.contains(key)) {
@@ -454,6 +474,8 @@ void FrogPilotVehiclesPanel::updateToggles() {
         toggles["HondaToggles"]->setVisible(true);
       } else if (subaruKeys.contains(key)) {
         toggles["SubaruToggles"]->setVisible(true);
+      } else if (mazdaKeys.contains(key)) {
+        toggles["MazdaToggles"]->setVisible(true);
       } else if (toyotaKeys.contains(key)) {
         toggles["ToyotaToggles"]->setVisible(true);
       } else if (vehicleInfoKeys.contains(key)) {

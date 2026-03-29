@@ -75,7 +75,7 @@ class CAR(Platforms):
     [MazdaCarDocs("Mazda CX-5 2022-24")],
     MAZDA_CX5.specs,
   )
-  MAZDA_2_MT = MazdaPlatformConfig(
+  MAZDA_2_DJ_MT = MazdaPlatformConfig(
     [MazdaCarDocs("Mazda 2 DJ MT")],
     MazdaCarSpecs(mass=1030, wheelbase=2.57, steerRatio=14.8),
     dbc_dict=dbc_dict('mazda_2_dj_mt', None),

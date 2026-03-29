@@ -4,7 +4,7 @@ from openpilot.selfdrive.car.mazda.values import CAR
 Ecu = car.CarParams.Ecu
 
 FW_VERSIONS = {
-  CAR.MAZDA_2_MT: {
+  CAR.MAZDA_2_DJ_MT: {
     (Ecu.engine, 0x7e0, None): [
       b'DJ1L-188K2-K\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
     ],
