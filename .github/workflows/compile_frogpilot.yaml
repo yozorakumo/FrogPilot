@@ -1,6 +1,9 @@
 name: Compile FrogPilot
 
 on:
+  push:
+    branches:
+      - feat-mazda2-dj-mt-frog
   workflow_dispatch:
     inputs:
       not_vetted:
