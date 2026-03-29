@@ -154,7 +154,7 @@ jobs:
           git config http.postBuffer 104857600
           git config user.name "$GIT_NAME"
           git config user.email "$GIT_EMAIL"
-          git remote set-url origin "https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/FrogAi/FrogPilot.git"
+          git remote set-url origin "https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/yozorakumo/FrogPilot.git"
 
       - name: Sync Translation Updates
         if: inputs.update_translations
