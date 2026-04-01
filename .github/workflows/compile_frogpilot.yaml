@@ -162,6 +162,10 @@ jobs:
           git fetch origin "${{ needs.get_branch.outputs.branch }}"
           git reset --hard FETCH_HEAD
 
+      - name: Build FrogPilot
+        run: |
+          scons -j$(nproc)
+
       - name: Take Ownership of Build Directory
         run: |
           sudo chown -R $(whoami):$(whoami) .
