@@ -292,10 +292,12 @@ jobs:
             ! -name '*.h' \
             ! -name '*.s' \
             ! -name '*.ld' \
+            ! -name 'README.md' \
+            ! -name '__init__.py' \
             -delete
 
           # 実行に不要なディレクトリやファイルを削除
-          rm -rf .vscode/ Jenkinsfile release/ scripts/ teleoprtc_repo/ .gitattributes .lfsconfig .overlay_init
+          rm -rf .vscode/ release/ scripts/ teleoprtc_repo/ .gitattributes .lfsconfig .overlay_init
 
           find . -type d -empty ! -path "./.git*" -delete
 
@@ -311,7 +313,7 @@ jobs:
       - name: Commit and Push Build
         run: |
           git add -f .
-          git diff-index --quiet HEAD || git commit -m "Compile FrogPilot"
+          git diff-index --quiet HEAD || git commit -m "Compile FrogPilot [skip ci]"
           git push --force origin HEAD
 
           if [ "${{ inputs.publish_frogpilot }}" = "true" ]; then
