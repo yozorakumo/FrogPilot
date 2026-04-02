@@ -166,31 +166,34 @@ jobs:
         run: |
           echo "Current PATH: $PATH"
           echo "User: $(whoami)"
-          # Try to find poetry
           find /home/comma -name poetry -type f -executable 2>/dev/null | xargs ls -la || echo "No executable poetry found"
 
       - name: Build FrogPilot
         run: |
-          # Robust poetry path discovery
-          # First, try common installation paths
-          if [ -x "/home/comma/.local/bin/poetry" ]; then
-            POETRY_EXEC="/home/comma/.local/bin/poetry"
-          elif [ -x "/usr/local/bin/poetry" ]; then
-            POETRY_EXEC="/usr/local/bin/poetry"
-          elif which poetry > /dev/null 2>&1; then
-            POETRY_EXEC=$(which poetry)
-          else
-            echo "Poetry not found in standard paths. Searching..."
+          # Exhaustive poetry path discovery
+          POETRY_EXEC=""
+          for path in "/home/comma/.local/bin/poetry" "/usr/local/bin/poetry" "/usr/bin/poetry"; do
+            if [ -x "$path" ]; then
+              POETRY_EXEC="$path"
+              break
+            fi
+          done
+
+          if [ -z "$POETRY_EXEC" ]; then
+            POETRY_EXEC=$(which poetry 2>/dev/null)
+          fi
+
+          if [ -z "$POETRY_EXEC" ]; then
+            echo "Searching for poetry..."
             POETRY_EXEC=$(find /home/comma -name poetry -type f -executable 2>/dev/null | head -n 1)
           fi
 
           if [ -z "$POETRY_EXEC" ]; then
-            echo "Poetry not found. Attempting to use python3 -m poetry"
+            echo "Poetry not found. Fallback to python3 -m poetry"
             POETRY_EXEC="python3 -m poetry"
           fi
 
           echo "Using poetry: $POETRY_EXEC"
-          $POETRY_EXEC --version || { echo "Poetry execution failed"; exit 1; }
           $POETRY_EXEC install --no-root
           $POETRY_EXEC run scons --random -j$(nproc)
 
