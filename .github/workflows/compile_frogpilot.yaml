@@ -163,11 +163,12 @@ jobs:
           git config user.email "$GIT_EMAIL"
           git remote set-url origin "https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/yozorakumo/FrogPilot.git"
 
-      - name: Sync Translation Updates
-        if: inputs.update_translations
+      - name: Sync Updates
         run: |
           git fetch origin "${{ needs.get_branch.outputs.branch }}"
           git reset --hard FETCH_HEAD
+          git submodule foreach --recursive git reset --hard
+          git submodule update --init --recursive
 
       - name: Cleanup Disk Space
         run: |
