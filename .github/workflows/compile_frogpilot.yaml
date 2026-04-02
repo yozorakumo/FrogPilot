@@ -237,6 +237,15 @@ jobs:
           
           echo "Using poetry: $POETRY_BIN"
           "$POETRY_BIN" install --no-root
+
+          # Ensure submodules are initialized
+          if [ ! -f "panda/board/SConscript" ]; then
+            echo "Submodules not found, initializing..."
+            git submodule update --init --recursive
+          fi
+
+          # Ensure we are in the correct directory for scons
+          cd "$BUILD_DIR"
           "$POETRY_BIN" run scons --random -j$(nproc)
 
       - name: Take Ownership of Build Directory
