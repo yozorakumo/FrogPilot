@@ -166,13 +166,16 @@ jobs:
         run: |
           echo "Current PATH: $PATH"
           echo "User: $(whoami)"
-          ls -la /home/comma/.local/bin/poetry || echo "Poetry not found in absolute path"
-          /home/comma/.local/bin/poetry --version || echo "Poetry direct execution failed"
+          ls -la /usr/local/bin/poetry || ls -la /home/comma/.local/bin/poetry || echo "Poetry not found"
+          command -v poetry || echo "poetry command not found"
 
       - name: Build FrogPilot
         run: |
-          /home/comma/.local/bin/poetry install --no-root
-          /home/comma/.local/bin/poetry run scons --random -j$(nproc)
+          # Try to find poetry path
+          POETRY_PATH=$(which poetry || find /home/comma/.local/bin /usr/local/bin -name poetry | head -n 1)
+          echo "Using poetry at: $POETRY_PATH"
+          $POETRY_PATH install --no-root
+          $POETRY_PATH run scons --random -j$(nproc)
 
       - name: Take Ownership of Build Directory
         run: |
