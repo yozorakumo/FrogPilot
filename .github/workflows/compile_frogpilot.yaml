@@ -164,14 +164,19 @@ jobs:
 
       - name: Build FrogPilot
         run: |
-          # pyenv経由でインストールされたpoetryを使用
-          export PYENV_ROOT="/usr/local/pyenv"
-          export PATH="$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH"
-          eval "$(pyenv init -)"
+          # pyenv経由でインストールされたpoetryを絶対パスで実行
+          PYENV_ROOT="/usr/local/pyenv"
           
-          echo "Using poetry: $(which poetry)"
-          poetry install --no-root
-          poetry run scons --random -j$(nproc)
+          # poetryの絶対パスを検索
+          POETRY_BIN=$(find "$PYENV_ROOT/versions" -name "poetry" -type f 2>/dev/null | head -1)
+          if [ -z "$POETRY_BIN" ]; then
+            echo "ERROR: poetry not found in $PYENV_ROOT/versions"
+            exit 1
+          fi
+          
+          echo "Using poetry: $POETRY_BIN"
+          "$POETRY_BIN" install --no-root
+          "$POETRY_BIN" run scons --random -j$(nproc)
 
       - name: Take Ownership of Build Directory
         run: |
