@@ -162,8 +162,16 @@ jobs:
           git fetch origin "${{ needs.get_branch.outputs.branch }}"
           git reset --hard FETCH_HEAD
 
+      - name: Debug PATH
+        run: |
+          echo "Current PATH: $PATH"
+          export PATH="$PATH:$HOME/.local/bin"
+          echo "Updated PATH: $PATH"
+          which poetry || echo "poetry not found"
+
       - name: Build FrogPilot
         run: |
+          export PATH="$PATH:$HOME/.local/bin"
           poetry install --no-root
           poetry run scons --random -j$(nproc)
 
