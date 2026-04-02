@@ -165,7 +165,7 @@ jobs:
       - name: Build FrogPilot
         run: |
           poetry install --no-root
-          poetry run scons -j$(nproc)
+          poetry run scons --random -j$(nproc)
 
       - name: Take Ownership of Build Directory
         run: |
