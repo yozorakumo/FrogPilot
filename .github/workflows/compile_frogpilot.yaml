@@ -60,7 +60,7 @@ env:
 
 jobs:
   get_branch:
-    runs-on: [self-hosted, "${{ inputs.runner }}"]
+    runs-on: [self-hosted, "${{ inputs.runner || 'c3' }}"]
     outputs:
       branch: ${{ steps.get_branch.outputs.branch }}
       python_version: ${{ steps.get_python_version.outputs.python_version }}
@@ -142,7 +142,7 @@ jobs:
   build_and_push:
     needs: [get_branch, translate]
     if: ${{ !failure() && !cancelled() && needs.get_branch.result == 'success' }}
-    runs-on: [self-hosted, "${{ inputs.runner }}"]
+    runs-on: [self-hosted, "${{ inputs.runner || 'c3' }}"]
     permissions:
       contents: write
     defaults:
@@ -164,7 +164,8 @@ jobs:
 
       - name: Build FrogPilot
         run: |
-          scons -j$(nproc)
+          poetry install --no-root
+          poetry run scons -j$(nproc)
 
       - name: Take Ownership of Build Directory
         run: |
