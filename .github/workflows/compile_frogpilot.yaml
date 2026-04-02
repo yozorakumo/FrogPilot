@@ -263,7 +263,6 @@ jobs:
           find . -type f \( \
             -name '*.a' -o \
             -name '*.o' -o \
-            -name '*.onnx' -o \
             -name '*.os' -o \
             -name '*.pyc' -o \
             -name 'moc_*' \
