@@ -162,6 +162,31 @@ jobs:
           git fetch origin "${{ needs.get_branch.outputs.branch }}"
           git reset --hard FETCH_HEAD
 
+      - name: Debug Environment
+        run: |
+          echo "=== Whoami ==="
+          whoami
+          echo "=== PATH ==="
+          echo "$PATH"
+          echo "=== Find poetry binary ==="
+          find /usr /home /opt /root /data -name "poetry" -type f 2>/dev/null || echo "Not found in common paths"
+          echo "=== which python3 ==="
+          which python3 || echo "python3 not in PATH"
+          echo "=== python3 versions ==="
+          ls /usr/bin/python* 2>/dev/null || echo "None"
+          ls /usr/local/bin/python* 2>/dev/null || echo "None"
+          echo "=== pyenv ==="
+          ls ~/.pyenv/bin/ 2>/dev/null || echo "No pyenv"
+          echo "=== pip3 show poetry ==="
+          pip3 show poetry 2>/dev/null || echo "Not installed via pip3"
+          echo "=== /data/openpilot/.python-version ==="
+          cat /data/openpilot/.python-version 2>/dev/null || echo "No .python-version"
+          echo "=== env vars ==="
+          env | grep -i python || echo "No python env vars"
+          echo "=== PATH in profile ==="
+          cat /home/comma/.bashrc 2>/dev/null | grep -i poetry || echo "No poetry in .bashrc"
+          cat /home/comma/.profile 2>/dev/null | grep -i poetry || echo "No poetry in .profile"
+
       - name: Build FrogPilot
         run: |
           # Setup path and execute poetry
