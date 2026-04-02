@@ -280,17 +280,23 @@ jobs:
             \) \
           \) -exec rm -rf {} +
 
+          # 削除対象をバイナリや不要な一時ファイルに限定し、ソースコードや設定ファイルを保護
           find panda/board -type f ! -path 'panda/board/jungle/*' \
             ! -name 'bootstub.panda.bin' \
             ! -name 'bootstub.panda_h7.bin' \
             ! -name 'panda.bin.signed' \
             ! -name 'panda_h7.bin.signed' \
+            ! -name 'SConscript' \
+            ! -name '*.c' \
+            ! -name '*.h' \
+            ! -name '*.s' \
+            ! -name '*.ld' \
             -delete
 
           find third_party/ -name '*Darwin*' -exec rm -rf {} +
           find third_party/ -name '*x86*' -exec rm -rf {} +
 
-          rm -f .gitignore .gitmodules .gitattributes .lfsconfig .overlay_init
+          rm -f .gitattributes .lfsconfig .overlay_init
 
           rm -rf .sconsign.dblite .vscode/ Jenkinsfile release/ scripts/ site_scons/ teleoprtc_repo/
 
