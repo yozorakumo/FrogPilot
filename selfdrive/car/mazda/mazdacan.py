@@ -126,3 +126,10 @@ def create_button_cmd(packer, CP, counter, button):
     }
 
     return packer.make_can_msg("CRZ_BTNS", 0, values)
+
+def create_door_lock_command(packer, lock):
+  values = {
+    "DOOR_LOCK_STATUS": 2 if lock else 1,
+    "DOOR_LOCK_ALL": 1 if lock else 0
+  }
+  return packer.make_can_msg("BCM", 0, values)

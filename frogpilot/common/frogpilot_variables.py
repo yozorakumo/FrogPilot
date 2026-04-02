@@ -325,8 +325,12 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("MapsSelected", "", 0, ""),
   ("MapStyle", "1", 2, "0"),
   ("Mazda2MT", "0", 0, "0"),
-  ("MazdaAutoDoorLock", "0", 0, "0"),
+  ("MazdaAutoLock", "0", 0, "0"),
+  ("MazdaAutoUnlock", "0", 0, "0"),
+  ("MazdaLockSpeed", "15", 0, "15"),
+  ("MazdaUnlockSpeed", "5", 0, "5"),
   ("MazdaMTMode", "0", 0, "0"),
+  ("MazdaToggles", "1", 0, "0"),
   ("MazdaMTUI", "0", 0, "0"),
   ("MaxDesiredAcceleration", "4.0", 2, "2.0"),
   ("MinimumLaneChangeSpeed", str(LANE_CHANGE_SPEED_MIN / CV.MPH_TO_MS), 2, str(LANE_CHANGE_SPEED_MIN / CV.MPH_TO_MS)),
@@ -1045,6 +1049,17 @@ class FrogPilotVariables:
     toggle.taco_tune_hacks = taco_hacks_allowed and (params.get_bool("TacoTuneHacks") if toggle.tuning_level >= level["TacoTuneHacks"] else default.get_bool("TacoTuneHacks"))
 
     toggle.tethering_config = params.get_int("TetheringEnabled")
+
+    mazda_toggles = toggle.car_make == "mazda" and (params.get_bool("MazdaToggles") if toggle.tuning_level >= level["MazdaToggles"] else default.get_bool("MazdaToggles"))
+    mazda_auto_lock = params.get_int("MazdaAutoLock") if mazda_toggles and toggle.tuning_level >= level["MazdaAutoLock"] else default.get_int("MazdaAutoLock")
+    toggle.mazda_auto_lock_speed = mazda_auto_lock == 1
+    toggle.mazda_lock_speed = params.get_int("MazdaLockSpeed") if toggle.mazda_auto_lock_speed and toggle.tuning_level >= level["MazdaLockSpeed"] else default.get_int("MazdaLockSpeed")
+    
+    mazda_auto_unlock = params.get_int("MazdaAutoUnlock") if mazda_toggles and toggle.tuning_level >= level["MazdaAutoUnlock"] else default.get_int("MazdaAutoUnlock")
+    toggle.mazda_auto_unlock_speed = mazda_auto_unlock == 1
+    toggle.mazda_auto_unlock_ignition = mazda_auto_unlock == 2
+    toggle.mazda_auto_unlock_park_brake = mazda_auto_unlock == 3
+    toggle.mazda_unlock_speed = params.get_int("MazdaUnlockSpeed") if toggle.mazda_auto_unlock_speed and toggle.tuning_level >= level["MazdaUnlockSpeed"] else default.get_int("MazdaUnlockSpeed")
 
     toyota_doors = toggle.car_make == "toyota" and (params.get_bool("ToyotaDoors") if toggle.tuning_level >= level["ToyotaDoors"] else default.get_bool("ToyotaDoors"))
     toggle.lock_doors = toyota_doors and (params.get_bool("LockDoors") if toggle.tuning_level >= level["LockDoors"] else default.get_bool("LockDoors"))

@@ -1,9 +1,10 @@
 from cereal import car
 from opendbc.can.packer import CANPacker
+from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car import apply_driver_steer_torque_limits
 from openpilot.selfdrive.car.interfaces import CarControllerBase
 from openpilot.selfdrive.car.mazda import mazdacan
-from openpilot.selfdrive.car.mazda.values import CarControllerParams, Buttons
+from openpilot.selfdrive.car.mazda.values import CarControllerParams, Buttons, CAR
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
@@ -15,6 +16,9 @@ class CarController(CarControllerBase):
     self.packer = CANPacker(dbc_name)
     self.brake_counter = 0
     self.frame = 0
+    
+    # FrogPilot variables
+    self.doors_locked = False
 
   def update(self, CC, CS, now_nanos, frogpilot_toggles):
     can_sends = []
@@ -61,6 +65,23 @@ class CarController(CarControllerBase):
     new_actuators = CC.actuators.as_builder()
     new_actuators.steer = apply_steer / CarControllerParams.STEER_MAX
     new_actuators.steerOutputCan = apply_steer
+
+    # FrogPilot Mazda carcontroller functions
+    if self.CP.carFingerprint == CAR.MAZDA_2_DJ_MT:
+      if not self.doors_locked:
+        if frogpilot_toggles.mazda_auto_lock_speed and CS.out.vEgo >= frogpilot_toggles.mazda_lock_speed * CV.KPH_TO_MS:
+          can_sends.append(mazdacan.create_door_lock_command(self.packer, True))
+          self.doors_locked = True
+      elif self.doors_locked:
+        if frogpilot_toggles.mazda_auto_unlock_speed and CS.out.vEgo <= frogpilot_toggles.mazda_unlock_speed * CV.KPH_TO_MS:
+          can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
+          self.doors_locked = False
+        elif frogpilot_toggles.mazda_auto_unlock_ignition and not CS.out.engineRunning:
+          can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
+          self.doors_locked = False
+        elif frogpilot_toggles.mazda_auto_unlock_park_brake and CS.out.parkingBrake:
+          can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
+          self.doors_locked = False
 
     self.frame += 1
     return new_actuators, can_sends

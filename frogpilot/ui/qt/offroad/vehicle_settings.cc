@@ -193,7 +193,10 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
     {"MazdaToggles", tr("Mazda Settings"), tr("<b>FrogPilot features for Mazda vehicles.</b>"), ""},
     {"MazdaMTUI", tr("MT UI Display"), tr("<b>Enable the MT UI display for Mazda vehicles.</b>"), ""},
     {"MazdaMTMode", tr("MT Mode"), tr("<b>Enable MT mode for Mazda vehicles.</b>"), ""},
-    {"MazdaAutoDoorLock", tr("Automatic Door Lock"), tr("<b>Automatically lock the doors.</b>"), ""},
+    {"MazdaAutoLock", tr("Automatic Door Lock"), tr("<b>Automatically lock doors.</b>"), ""},
+    {"MazdaLockSpeed", tr("Lock Speed"), tr("<b>The speed at which the doors will automatically lock.</b>"), ""},
+    {"MazdaAutoUnlock", tr("Automatic Door Unlock"), tr("<b>Automatically unlock doors.</b>"), ""},
+    {"MazdaUnlockSpeed", tr("Unlock Speed"), tr("<b>The speed at which the doors will automatically unlock.</b>"), ""},
 
     {"ToyotaToggles", tr("Toyota/Lexus Settings"), tr("<b>FrogPilot features for Lexus and Toyota vehicles.</b>"), ""},
     {"ToyotaDoors", tr("Automatically Lock/Unlock Doors"), tr("<b>Automatically lock/unlock doors</b> when shifting in and out of drive."), ""},
@@ -254,6 +257,20 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
         vehiclesLayout->setCurrentWidget(mazdaPanel);
       });
       vehicleToggle = mazdaButton;
+    } else if (param == "MazdaAutoLock") {
+      std::vector<QString> lockOptions{tr("Off"), tr("Speed")};
+      ButtonParamControl *lockToggle = new ButtonParamControl(param, title, desc, icon, lockOptions);
+      QObject::connect(lockToggle, &ButtonParamControl::buttonClicked, this, &FrogPilotVehiclesPanel::updateToggles);
+      vehicleToggle = lockToggle;
+    } else if (param == "MazdaLockSpeed") {
+      vehicleToggle = new FrogPilotParamValueControl(param, title, desc, icon, 1, 50, tr(" kph"));
+    } else if (param == "MazdaAutoUnlock") {
+      std::vector<QString> unlockOptions{tr("Off"), tr("Speed"), tr("Ignition"), tr("Parking Brake")};
+      ButtonParamControl *unlockToggle = new ButtonParamControl(param, title, desc, icon, unlockOptions);
+      QObject::connect(unlockToggle, &ButtonParamControl::buttonClicked, this, &FrogPilotVehiclesPanel::updateToggles);
+      vehicleToggle = unlockToggle;
+    } else if (param == "MazdaUnlockSpeed") {
+      vehicleToggle = new FrogPilotParamValueControl(param, title, desc, icon, 1, 50, tr(" kph"));
 
     } else if (param == "ToyotaToggles") {
       ButtonControl *toyotaButton = new ButtonControl(title, tr("MANAGE"), desc);
@@ -445,6 +462,14 @@ void FrogPilotVehiclesPanel::updateToggles() {
 
     else if (key == "HondaMaxBrake") {
       setVisible &= parent->isHondaNidec;
+    }
+
+    else if (key == "MazdaLockSpeed") {
+      setVisible &= std::atoi(params.get("MazdaAutoLock").c_str()) == 1;
+    }
+
+    else if (key == "MazdaUnlockSpeed") {
+      setVisible &= std::atoi(params.get("MazdaAutoUnlock").c_str()) == 1;
     }
 
     else if (key == "SNGHack") {
