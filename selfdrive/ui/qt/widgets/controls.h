@@ -234,9 +234,14 @@ public:
 
     QObject::connect(button_group, QOverload<int>::of(&QButtonGroup::buttonClicked), [=](int id) {
       params.put(key, std::to_string(id));
+      emit buttonClicked(id);
     });
   }
 
+signals:
+  void buttonClicked(int id);
+
+public:
   void setEnabled(bool enable) {
     for (auto btn : button_group->buttons()) {
       btn->setEnabled(enable);
