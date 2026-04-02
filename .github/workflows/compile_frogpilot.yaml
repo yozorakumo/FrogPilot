@@ -167,18 +167,27 @@ jobs:
           echo "=== Disk space before cleanup ==="
           df -h
           
+          echo "=== Top 10 largest directories in /data ==="
+          sudo du -sh /data/* 2>/dev/null | sort -hr | head -n 10 || true
+
           # pyenv経由でインストールされたpoetryを絶対パスで実行
           PYENV_ROOT="/usr/local/pyenv"
           POETRY_BIN=$(find "$PYENV_ROOT/versions" -name "poetry" -type f 2>/dev/null | head -1)
           
           if [ -n "$POETRY_BIN" ]; then
-            echo "Clearing Poetry cache..."
+            echo "Clearing Poetry cache and virtualenvs..."
             "$POETRY_BIN" cache clear pypi --all || true
             "$POETRY_BIN" cache clear _default_cache --all || true
+            # 既存の仮想環境も削除してクリーンな状態にする
+            rm -rf /home/comma/.cache/pypoetry/virtualenvs/* || true
           fi
 
           echo "Deleting old build artifacts and temporary files..."
           sudo rm -rf /tmp/* || true
+          sudo apt-get clean || true
+          
+          # /data/openpilot 内の不要なファイルを削除（ビルド成果物など）
+          cd /data/openpilot && git clean -fdx || true
           
           echo "=== Disk space after cleanup ==="
           df -h
