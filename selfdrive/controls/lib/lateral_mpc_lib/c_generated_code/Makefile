@@ -150,7 +150,7 @@ ocp_cython_o: ocp_cython_c
 	-I $(INCLUDE_PATH)/blasfeo/include/ \
 	-I $(INCLUDE_PATH)/hpipm/include/ \
 	-I $(INCLUDE_PATH) \
-	-I /usr/local/pyenv/versions/3.11.4/lib/python3.11/site-packages/numpy/core/include \
+	-I /data/poetry_virtualenvs/openpilot-QsbrVQxi-py3.11/lib/python3.11/site-packages/numpy/core/include \
 	-I /usr/local/pyenv/versions/3.11.4/include/python3.11 \
 	acados_ocp_solver_pyx.c \
 
@@ -177,7 +177,7 @@ sim_cython_o: sim_cython_c
 	-I $(INCLUDE_PATH)/blasfeo/include/ \
 	-I $(INCLUDE_PATH)/hpipm/include/ \
 	-I $(INCLUDE_PATH) \
-	-I /usr/local/pyenv/versions/3.11.4/lib/python3.11/site-packages/numpy/core/include \
+	-I /data/poetry_virtualenvs/openpilot-QsbrVQxi-py3.11/lib/python3.11/site-packages/numpy/core/include \
 	-I /usr/local/pyenv/versions/3.11.4/include/python3.11 \
 	acados_sim_solver_pyx.c \
 

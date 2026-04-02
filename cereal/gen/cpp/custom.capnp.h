@@ -870,6 +870,8 @@ public:
 
   inline bool getTrafficModeEnabled() const;
 
+  inline  ::int8_t getGearStep() const;
+
 private:
   ::capnp::_::StructReader _reader;
   template <typename, ::capnp::Kind>
@@ -945,6 +947,9 @@ public:
 
   inline bool getTrafficModeEnabled();
   inline void setTrafficModeEnabled(bool value);
+
+  inline  ::int8_t getGearStep();
+  inline void setGearStep( ::int8_t value);
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -2471,6 +2476,20 @@ inline bool FrogPilotCarState::Builder::getTrafficModeEnabled() {
 inline void FrogPilotCarState::Builder::setTrafficModeEnabled(bool value) {
   _builder.setDataField<bool>(
       ::capnp::bounded<14>() * ::capnp::ELEMENTS, value);
+}
+
+inline  ::int8_t FrogPilotCarState::Reader::getGearStep() const {
+  return _reader.getDataField< ::int8_t>(
+      ::capnp::bounded<2>() * ::capnp::ELEMENTS);
+}
+
+inline  ::int8_t FrogPilotCarState::Builder::getGearStep() {
+  return _builder.getDataField< ::int8_t>(
+      ::capnp::bounded<2>() * ::capnp::ELEMENTS);
+}
+inline void FrogPilotCarState::Builder::setGearStep( ::int8_t value) {
+  _builder.setDataField< ::int8_t>(
+      ::capnp::bounded<2>() * ::capnp::ELEMENTS, value);
 }
 
 inline  ::cereal::FrogPilotControlsState::AlertStatus FrogPilotControlsState::Reader::getAlertStatus() const {

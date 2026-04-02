@@ -4475,6 +4475,38 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <source>Stop and go for supported Subaru vehicles.</source>
         <translation type="gpt-5-generated">Функція «старт-стоп» для підтримуваних автомобілів Subaru.</translation>
     </message>
+    <message>
+        <source>Mazda Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;FrogPilot features for Mazda vehicles.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MT UI Display</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Enable the MT UI display for Mazda vehicles.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MT Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Enable MT mode for Mazda vehicles.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Automatic Door Lock</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Automatically lock the doors.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>FrogPilotVisualsPanel</name>
