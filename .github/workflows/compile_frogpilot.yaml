@@ -145,6 +145,7 @@ jobs:
     runs-on: [self-hosted, "${{ inputs.runner || 'c3' }}"]
     env:
       POETRY_CACHE_DIR: /data/poetry_cache
+      POETRY_CONFIG_DIR: /data/poetry_config
       POETRY_VIRTUALENVS_PATH: /data/poetry_virtualenvs
     permissions:
       contents: write
@@ -190,8 +191,9 @@ jobs:
           POETRY_BIN=$(find "$PYENV_ROOT/versions" -name "poetry" -type f 2>/dev/null | head -1)
           
           if [ -n "$POETRY_BIN" ]; then
-            # poetry のキャッシュディレクトリを /data に変更して /home の圧迫を避ける
+            # poetry のディレクトリを /data に変更して /home の圧迫を避ける
             mkdir -p /data/poetry_cache
+            mkdir -p /data/poetry_config
             mkdir -p /data/poetry_virtualenvs
             "$POETRY_BIN" config cache-dir /data/poetry_cache
             "$POETRY_BIN" config virtualenvs.path /data/poetry_virtualenvs
@@ -201,6 +203,7 @@ jobs:
             "$POETRY_BIN" cache clear _default_cache --all || true
             # 既存の仮想環境も削除してクリーンな状態にする
             rm -rf /home/comma/.cache/pypoetry/virtualenvs/* || true
+            rm -rf /home/comma/.config/pypoetry || true
           fi
 
           echo "Deleting old build artifacts and temporary files..."
