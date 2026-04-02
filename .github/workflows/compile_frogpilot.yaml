@@ -166,16 +166,20 @@ jobs:
         run: |
           echo "Current PATH: $PATH"
           echo "User: $(whoami)"
-          ls -la /usr/local/bin/poetry || ls -la /home/comma/.local/bin/poetry || echo "Poetry not found"
-          command -v poetry || echo "poetry command not found"
+          ls -la /usr/local/bin/poetry || ls -la ~/.local/bin/poetry || ls -la /home/comma/.local/bin/poetry || echo "Poetry not found"
+          find /home/comma -name poetry -type f 2>/dev/null | xargs ls -la || echo "No poetry found via find"
 
       - name: Build FrogPilot
         run: |
-          # Try to find poetry path
-          POETRY_PATH=$(which poetry || find /home/comma/.local/bin /usr/local/bin -name poetry | head -n 1)
-          echo "Using poetry at: $POETRY_PATH"
-          $POETRY_PATH install --no-root
-          $POETRY_PATH run scons --random -j$(nproc)
+          # Robust poetry path discovery
+          POETRY_EXEC=$(which poetry || find /home/comma/.local/bin /usr/local/bin /usr/bin -name poetry -type f 2>/dev/null | head -n 1)
+          if [ -z "$POETRY_EXEC" ]; then
+            echo "Poetry not found. Attempting to use python -m poetry"
+            POETRY_EXEC="python3 -m poetry"
+          fi
+          echo "Using poetry: $POETRY_EXEC"
+          $POETRY_EXEC install --no-root
+          $POETRY_EXEC run scons --random -j$(nproc)
 
       - name: Take Ownership of Build Directory
         run: |
