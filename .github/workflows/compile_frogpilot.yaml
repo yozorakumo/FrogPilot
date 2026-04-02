@@ -162,18 +162,17 @@ jobs:
           git fetch origin "${{ needs.get_branch.outputs.branch }}"
           git reset --hard FETCH_HEAD
 
-      - name: Debug PATH
+      - name: Debug Environment
         run: |
           echo "Current PATH: $PATH"
-          export PATH="$PATH:/home/comma/.local/bin"
-          echo "Updated PATH: $PATH"
-          which poetry || echo "poetry not found"
+          echo "User: $(whoami)"
+          ls -la /home/comma/.local/bin/poetry || echo "Poetry not found in absolute path"
+          /home/comma/.local/bin/poetry --version || echo "Poetry direct execution failed"
 
       - name: Build FrogPilot
         run: |
-          export PATH="$PATH:/home/comma/.local/bin"
-          poetry install --no-root
-          poetry run scons --random -j$(nproc)
+          /home/comma/.local/bin/poetry install --no-root
+          /home/comma/.local/bin/poetry run scons --random -j$(nproc)
 
       - name: Take Ownership of Build Directory
         run: |
