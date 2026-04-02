@@ -262,10 +262,9 @@ jobs:
 
           find . -type d \( -iname "debug" -o -iname "test" -o -iname "tests" -o -name '__pycache__' \) -exec rm -rf {} +
 
+          # 不要なビルド成果物を削除。ただし、実行時に必要な .so や .a、および libyuv などを保持するため慎重に指定
           find . -type f \( \
-            -name '*.a' -o \
             -name '*.o' -o \
-            -name '*.os' -o \
             -name '*.pyc' -o \
             -name 'moc_*' \
           \) -delete
@@ -295,11 +294,8 @@ jobs:
             ! -name '*.ld' \
             -delete
 
-          find third_party/ -name '*Darwin*' -exec rm -rf {} +
-
-          rm -f .gitattributes .lfsconfig .overlay_init
-
-          rm -rf .sconsign.dblite .vscode/ Jenkinsfile release/ scripts/ site_scons/ teleoprtc_repo/
+          # 実行に不要なディレクトリやファイルを削除
+          rm -rf .vscode/ Jenkinsfile release/ scripts/ teleoprtc_repo/ .gitattributes .lfsconfig .overlay_init
 
           find . -type d -empty ! -path "./.git*" -delete
 
