@@ -4504,7 +4504,51 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>&lt;b&gt;Automatically lock the doors.&lt;/b&gt;</source>
+        <source>&lt;b&gt;Automatically lock doors.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lock Speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;The speed at which the doors will automatically lock.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Automatic Door Unlock</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Automatically unlock doors.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unlock Speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;The speed at which the doors will automatically unlock.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished">Вимк.</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> kph</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Ignition</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Parking Brake</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
