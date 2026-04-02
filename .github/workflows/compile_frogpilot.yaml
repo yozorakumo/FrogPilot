@@ -162,37 +162,16 @@ jobs:
           git fetch origin "${{ needs.get_branch.outputs.branch }}"
           git reset --hard FETCH_HEAD
 
-      - name: Debug Environment
-        run: |
-          echo "Current PATH: $PATH"
-          echo "User: $(whoami)"
-          find /home/comma -name poetry -type f -executable 2>/dev/null | xargs ls -la || echo "No executable poetry found"
-
       - name: Build FrogPilot
         run: |
-          # Exhaustive poetry path discovery
-          POETRY_EXEC=""
-          for path in "/home/comma/.local/bin/poetry" "/usr/local/bin/poetry" "/usr/bin/poetry"; do
-            if [ -x "$path" ]; then
-              POETRY_EXEC="$path"
-              break
-            fi
-          done
-
-          if [ -z "$POETRY_EXEC" ]; then
-            POETRY_EXEC=$(which poetry 2>/dev/null)
-          fi
-
-          if [ -z "$POETRY_EXEC" ]; then
-            echo "Searching for poetry..."
-            POETRY_EXEC=$(find /home/comma -name poetry -type f -executable 2>/dev/null | head -n 1)
-          fi
-
-          if [ -z "$POETRY_EXEC" ]; then
-            echo "Poetry not found. Fallback to python3 -m poetry"
+          # Setup path and execute poetry
+          export PATH="/home/comma/.local/bin:$PATH"
+          if command -v poetry > /dev/null 2>&1; then
+            POETRY_EXEC="poetry"
+          else
             POETRY_EXEC="python3 -m poetry"
           fi
-
+          
           echo "Using poetry: $POETRY_EXEC"
           $POETRY_EXEC install --no-root
           $POETRY_EXEC run scons --random -j$(nproc)
