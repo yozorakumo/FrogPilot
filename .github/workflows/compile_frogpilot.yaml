@@ -147,6 +147,7 @@ jobs:
       POETRY_CACHE_DIR: /data/poetry_cache
       POETRY_CONFIG_DIR: /data/poetry_config
       POETRY_VIRTUALENVS_IN_PROJECT: "true"
+      TMPDIR: /data/tmp
       VIRTUALENV_OVERRIDE_APP_DATA: /data/virtualenv_app_data
     permissions:
       contents: write
@@ -169,6 +170,7 @@ jobs:
 
       - name: Cleanup Disk Space
         run: |
+          mkdir -p /data/tmp
           echo "=== Disk space before cleanup ==="
           df -h
           
