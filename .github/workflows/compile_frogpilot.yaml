@@ -150,6 +150,7 @@ jobs:
       PIP_CACHE_DIR: /data/pip_cache
       TMPDIR: /data/tmp
       VIRTUALENV_OVERRIDE_APP_DATA: /data/virtualenv_app_data
+      XDG_CACHE_HOME: /data/xdg_cache
     permissions:
       contents: write
     defaults:
@@ -174,6 +175,7 @@ jobs:
         run: |
           mkdir -p /data/pip_cache
           mkdir -p /data/tmp
+          mkdir -p /data/xdg_cache
           rm -rf /home/comma/.cache/pip || true
           echo "=== Disk space before cleanup ==="
           df -h
