@@ -170,6 +170,18 @@ jobs:
           echo "=== Top 10 largest directories in /data ==="
           sudo du -sh /data/* 2>/dev/null | sort -hr | head -n 10 || true
 
+          # GitHub Actions 共通の不要なツールとパッケージを削除して容量を確保
+          echo "Removing unnecessary tools and packages..."
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY" || true
+
+          # Dockerイメージとキャッシュの削除
+          echo "Cleaning up Docker..."
+          docker system prune -af || true
+
           # pyenv経由でインストールされたpoetryを絶対パスで実行
           PYENV_ROOT="/usr/local/pyenv"
           POETRY_BIN=$(find "$PYENV_ROOT/versions" -name "poetry" -type f 2>/dev/null | head -1)
@@ -180,11 +192,15 @@ jobs:
             "$POETRY_BIN" cache clear _default_cache --all || true
             # 既存の仮想環境も削除してクリーンな状態にする
             rm -rf /home/comma/.cache/pypoetry/virtualenvs/* || true
+            # poetry のキャッシュディレクトリを /data に変更して /home の圧迫を避ける
+            "$POETRY_BIN" config cache-dir /data/poetry_cache || true
+            "$POETRY_BIN" config virtualenvs.path /data/poetry_cache/virtualenvs || true
           fi
 
           echo "Deleting old build artifacts and temporary files..."
           sudo rm -rf /tmp/* || true
           sudo apt-get clean || true
+          sudo apt-get autoremove -y || true
           
           # /data/openpilot 内の不要なファイルを削除（ビルド成果物など）
           cd /data/openpilot && git clean -fdx || true
