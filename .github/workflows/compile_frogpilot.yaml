@@ -146,7 +146,8 @@ jobs:
     env:
       POETRY_CACHE_DIR: /data/poetry_cache
       POETRY_CONFIG_DIR: /data/poetry_config
-      POETRY_VIRTUALENVS_PATH: /data/poetry_virtualenvs
+      POETRY_VIRTUALENVS_IN_PROJECT: "true"
+      VIRTUALENV_OVERRIDE_APP_DATA: /data/virtualenv_app_data
     permissions:
       contents: write
     defaults:
@@ -194,9 +195,9 @@ jobs:
             # poetry のディレクトリを /data に変更して /home の圧迫を避ける
             mkdir -p /data/poetry_cache
             mkdir -p /data/poetry_config
-            mkdir -p /data/poetry_virtualenvs
+            mkdir -p /data/virtualenv_app_data
             "$POETRY_BIN" config cache-dir /data/poetry_cache
-            "$POETRY_BIN" config virtualenvs.path /data/poetry_virtualenvs
+            "$POETRY_BIN" config virtualenvs.in-project true
 
             echo "Clearing Poetry cache and virtualenvs..."
             "$POETRY_BIN" cache clear pypi --all || true
