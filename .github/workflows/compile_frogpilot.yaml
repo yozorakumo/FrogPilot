@@ -162,6 +162,27 @@ jobs:
           git fetch origin "${{ needs.get_branch.outputs.branch }}"
           git reset --hard FETCH_HEAD
 
+      - name: Cleanup Disk Space
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+          
+          # pyenv経由でインストールされたpoetryを絶対パスで実行
+          PYENV_ROOT="/usr/local/pyenv"
+          POETRY_BIN=$(find "$PYENV_ROOT/versions" -name "poetry" -type f 2>/dev/null | head -1)
+          
+          if [ -n "$POETRY_BIN" ]; then
+            echo "Clearing Poetry cache..."
+            "$POETRY_BIN" cache clear pypi --all || true
+            "$POETRY_BIN" cache clear _default_cache --all || true
+          fi
+
+          echo "Deleting old build artifacts and temporary files..."
+          sudo rm -rf /tmp/* || true
+          
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Build FrogPilot
         run: |
           # pyenv経由でインストールされたpoetryを絶対パスで実行
