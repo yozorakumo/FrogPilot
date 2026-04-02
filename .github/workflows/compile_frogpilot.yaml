@@ -239,10 +239,11 @@ jobs:
           "$POETRY_BIN" install --no-root
 
           # Ensure submodules are initialized
-          if [ ! -f "panda/board/SConscript" ]; then
-            echo "Submodules not found, initializing..."
-            git submodule update --init --recursive
-          fi
+          echo "Checking for panda/board/SConscript..."
+          ls panda/board/ 2>/dev/null || echo "panda/board not found"
+          
+          echo "Initializing submodules in $BUILD_DIR..."
+          git submodule update --init --recursive
 
           # Ensure we are in the correct directory for scons
           cd "$BUILD_DIR"
