@@ -162,44 +162,16 @@ jobs:
           git fetch origin "${{ needs.get_branch.outputs.branch }}"
           git reset --hard FETCH_HEAD
 
-      - name: Debug Environment
-        run: |
-          echo "=== Whoami ==="
-          whoami
-          echo "=== PATH ==="
-          echo "$PATH"
-          echo "=== Find poetry binary ==="
-          find /usr /home /opt /root /data -name "poetry" -type f 2>/dev/null || echo "Not found in common paths"
-          echo "=== which python3 ==="
-          which python3 || echo "python3 not in PATH"
-          echo "=== python3 versions ==="
-          ls /usr/bin/python* 2>/dev/null || echo "None"
-          ls /usr/local/bin/python* 2>/dev/null || echo "None"
-          echo "=== pyenv ==="
-          ls ~/.pyenv/bin/ 2>/dev/null || echo "No pyenv"
-          echo "=== pip3 show poetry ==="
-          pip3 show poetry 2>/dev/null || echo "Not installed via pip3"
-          echo "=== /data/openpilot/.python-version ==="
-          cat /data/openpilot/.python-version 2>/dev/null || echo "No .python-version"
-          echo "=== env vars ==="
-          env | grep -i python || echo "No python env vars"
-          echo "=== PATH in profile ==="
-          cat /home/comma/.bashrc 2>/dev/null | grep -i poetry || echo "No poetry in .bashrc"
-          cat /home/comma/.profile 2>/dev/null | grep -i poetry || echo "No poetry in .profile"
-
       - name: Build FrogPilot
         run: |
-          # Setup path and execute poetry
-          export PATH="/home/comma/.local/bin:$PATH"
-          if command -v poetry > /dev/null 2>&1; then
-            POETRY_EXEC="poetry"
-          else
-            POETRY_EXEC="python3 -m poetry"
-          fi
+          # pyenv経由でインストールされたpoetryを使用
+          export PYENV_ROOT="/usr/local/pyenv"
+          export PATH="$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH"
+          eval "$(pyenv init -)"
           
-          echo "Using poetry: $POETRY_EXEC"
-          $POETRY_EXEC install --no-root
-          $POETRY_EXEC run scons --random -j$(nproc)
+          echo "Using poetry: $(which poetry)"
+          poetry install --no-root
+          poetry run scons --random -j$(nproc)
 
       - name: Take Ownership of Build Directory
         run: |
