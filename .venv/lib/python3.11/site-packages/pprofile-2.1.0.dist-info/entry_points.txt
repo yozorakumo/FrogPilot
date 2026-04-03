@@ -1,0 +1,2 @@
+[console_scripts]
+pprofile = pprofile:main

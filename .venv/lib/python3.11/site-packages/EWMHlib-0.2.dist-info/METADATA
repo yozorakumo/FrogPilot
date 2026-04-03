@@ -1,0 +1,289 @@
+Metadata-Version: 2.1
+Name: EWMHlib
+Version: 0.2
+Summary: Extended Window Manager Hints implementation in Python 3
+Home-page: https://github.com/Kalmat/EWMHlib
+Author: Kalmat
+Author-email: palookjones@gmail.com
+License: BSD 3
+Keywords: ewmh Extended-Window-manager-hints window-manager window manager hints
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: X11 Applications
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+License-File: AUTHORS.txt
+Requires-Dist: typing-extensions >=4.4.0
+Requires-Dist: python-xlib >=0.21 ; sys_platform == "linux"
+Provides-Extra: dev
+Requires-Dist: types-setuptools >=65.5 ; extra == 'dev'
+Requires-Dist: mypy >=0.990 ; extra == 'dev'
+Requires-Dist: types-python-xlib >=0.32 ; extra == 'dev'
+
+# EWMH-lib
+[![Type Checking](https://github.com/Kalmat/EWMHlib/actions/workflows/type-checking.yml/badge.svg)](https://github.com/Kalmat/EWMHlib/actions/workflows/type-checking.yml)
+[![PyPI version](https://badge.fury.io/py/ewmhlib.svg)](https://badge.fury.io/py/ewmhlib)
+
+Extended Window Manager Hints implementation in Python 3 and python-xlib, which allows to easily query and control 
+Window Managers following these standards.
+
+It also adds some additional, useful features like managing hints and handling events.
+
+For more information, refer to official documentation at: https://specifications.freedesktop.org/wm-spec/latest/
+
+This module has been tested OK in Ubuntu/GNOME, Mint/Cinnamon and Manjaro/KDE. If you have issues in other EWMH-compliant environments, do not hesitate to [open an issue](https://github.com/Kalmat/EWMHlib/issues) in the [project homepage](https://github.com/Kalmat/EWMHlib)
+
+**Warning: new Display Server used by GNOME in Ubuntu, Wayland, is not EWMH-compliant, so many features will not work**
+
+
+### EwmhRoot: Root queries, changes and messages
+
+Class to access root features.
+
+If you need to address default root window, you can simply use `defaultRootWindow` object, which will give you
+instant access to all root-related features (it is equivalent to: `myRoot = EwmhRoot()`)
+
+To get a EwmhRoot object it is necessary to pass the target root id. This can be achieved in several ways:
+
+- You already have a root, so pass root.id param
+- You have some criteria to select a root, so use the convenience function `getAllDisplaysInfo()`, to look for all roots and select the desired one
+- You have a target window, so use the convenience function getDisplayFromWindow(window.id), so you will retrieve the associated display connection and root window
+- Instantiate this class with no param (None), so it will retrieve the default display and root
+
+Note that, even though a regular (application) window has the same type than a root window, 
+these methods will not work with it, so avoid passing it to instantiate this class.
+
+Apart from given methods, you can access these other values to be used with python-xlib:
+
+- display: XDisplay connection
+- screen: screen Struct
+- root: root X Window object
+- id: root window id
+
+
+#### WM Protocols
+
+WM_PROTOCOLS messages (PING/SYNC) are accessible using wmProtocols subclass (EwmhRoot.wmProtocols.Ping/Sync)
+
+
+### EwmhWindow: Window queries, changes and messages
+
+Class to access application window features.
+
+To instantiate this class only a window id is required. It is possible to retrieve this value in several ways:
+
+- Target a specific window using an external module (e.g. `pywinctl.getAllWindowsWithTitle(title)` or `pywinctl.getActiveWindow()`)
+- Retrieve it from your own application (e.g. PyQt's `winId()` or TKinter's `frame()`)
+
+Note that, although a root is also a window, most of these methods will not likely work with it.
+
+Apart from given methods, there are some values you can use with python-xlib:
+
+- display: XDisplay connection
+- screen: screen Struct
+- root: root X Window object
+- rootWindow: object to access EwmhRoot methods
+- xWindow: X Window object associated to current window
+- id: current window id
+
+Additional, non-EWMH features, related to low-level window properties like hints, protocols and events are
+available using extensions subclass (EwmhWindow.extensions.*), see below.
+
+
+#### Extensions: Geometry, Hints, Protocols and Events
+
+Additional, non-EWMH features, related to low-level window properties like geometry, hints, protocols and events.
+
+Events loop example:
+
+    import time
+    
+    import Xlib.protocol
+    import Xlib.X
+    
+    from ewmhlib import EwmhRoot, EwmhWindow
+    
+    root = EwmhRoot()
+    w = root.getActiveWindow()
+    if w:
+        win = EwmhWindow(w)
+
+    def callback(event: Xlib.protocol.rq.Event):
+        print("EVENT RECEIVED", event)
+
+    win.extensions.checkEvents.start([Xlib.X.ConfigureNotify, Xlib.X.ConfigureRequest, Xlib.X.ClientMessage],
+                                     Xlib.X.StructureNotifyMask | Xlib.X.SubstructureNotifyMask,
+                                     callback)
+
+    print("MOVE AND RESIZE ACTIVE WINDOW")
+    print("Press Ctl-C to exit")
+    while True:
+        try:
+            time.sleep(0.1)
+        except KeyboardInterrupt:
+            break
+    win.extensions.checkEvents.stop()
+
+
+### General variables
+
+As their names suggest, these general variables will give access to the default display, screen
+and root objects, allowing to perform all Xlib-related functions.
+
+|    Objects     |
+|:--------------:|
+| defaultDisplay |
+| defaultScreen  |
+|  defaultRoot   |
+
+
+### Display functions
+
+These functions will allow to manage/find proper display and screen, in a multi-display or multi-screen environment
+(not the usual scenario, so the default objects above will be enough in most cases).
+ 
+|  Display functions   |
+|:--------------------:|
+|    getAllDisplays    |
+|  getDisplayFromRoot  |
+| getDisplayFromWindow |
+
+
+### Properties and Messages functions  
+
+This set of functions will allow to directly query and control application or root windows, without the
+need of instantiating their corresponding classes described above. 
+
+These are very similar to their Xlib equivalent functions (more complex to use), and therefore will allow 
+custom, more advanced, perhaps more specific and/or non fully EWMH standard features; but they add some 
+useful help in order to simplify handling replies, values, atoms and so on.
+
+|  Property functions  |
+|:--------------------:|
+|     getProperty      |
+|   getPropertyValue   |
+|    changeProperty    |
+|     sendMessage      |
+
+
+### Properties, atoms and hints values
+
+These values are accessible through `Props` class (ewmhlib.Props.*). 
+They include all properties, atoms and hints values recognized by EWMH specs, so makes it easier 
+to find, enumerate or use them.
+
+They have been organized in different subclasses, according to their type or when they should be used.
+
+### Data Structs
+
+Aimed to facilitate understanding and handling complex reply data structures and fields.
+
+| Data Structs  |
+|:-------------:|
+| DisplaysInfo  |
+|  ScreensInfo  |
+|    WmHints    |
+| WmNormalHints |
+
+
+## INSTALL <a name="install"></a>
+
+To install this module on your system, you can use pip: 
+
+    pip3 install ewmhlib
+
+or
+
+    python3 -m pip install ewmhlib
+
+Alternatively, you can download the wheel file (.whl) available in the [Download page](https://pypi.org/project/EWMHlib/#files) and the [dist folder](https://github.com/Kalmat/EWMHlib/tree/master/dist), and run this (don't forget to replace 'x.xx' with proper version number):
+
+    pip install EWMHlib-x.xx-py3-none-any.whl
+
+You may want to add `--force-reinstall` option to be sure you are installing the right dependencies version.
+
+Then, you can use it on your own projects just importing it:
+
+    import ewmhlib
+
+## SUPPORT <a name="support"></a>
+
+In case you have a problem, comments or suggestions, do not hesitate to [open issues](https://github.com/Kalmat/EWMHlib/issues) on the [project homepage](https://github.com/Kalmat/EWMHlib)
+
+## USING THIS CODE <a name="using"></a>
+
+If you want to use this code or contribute, you can either:
+
+* Create a fork of the [repository](https://github.com/Kalmat/EWMHlib), or 
+* [Download the repository](https://github.com/Kalmat/EWMHlib/archive/refs/heads/master.zip), uncompress, and open it on your IDE of choice (e.g. PyCharm)
+
+Be sure you install all dependencies described on "docs/requirements.txt" by using pip
+
+## TEST <a name="test"></a>
+
+To test this module on your own system, cd to "tests" folder and run:
+
+    python3 test_ewmhlib.py
+ 
+
+## List of window managers that support Extended Window Manager Hints
+
+An (likely) incomplete list of EWMH-compliant window managers is (via Wikipedia, [here](https://en.wikipedia.org/wiki/Extended_Window_Manager_Hints) and [here](https://en.wikipedia.org/wiki/Comparison_of_X_window_managers#General_information)):
+
+|         Name         |  Comments   |
+|:--------------------:|:-----------:|
+|         aewm         |             |
+|       awesome        |             |
+|       Blackbox       |     (1)     |
+|        bspwm         |   Partial   |
+|         CTWM         |     (2)     |
+|        Compiz        |             |
+|       echinus        |             |
+|        edewm         |             |
+|    Enlightenment     |             |
+|        evilwm        | Partial (3) |
+|         EXWM         |   Partial   |
+|       Fluxbox        |             |
+|         FVWM         |             |
+|       goomwwm        |             |
+|     herbstluftwm     |             |
+|          i3          |             |
+|        IceWM         |             |
+|     interfacewm      |             |
+|         JWM          |             |
+|      KWin (KDE)      |             |
+|        LeftWM        |             |
+|        Marco         |             |
+|       Matchbox       |             |
+|   Metacity (GNOME)   |             |
+| Mutter (GNOME/MeeGo) |             |
+|        Notion        |             |
+|       Openbox        |             |
+|        PekWM         |   Partial   |
+|        PlayWM        |             |
+|        Qtile         |             |
+|       Sawfish        |   Partial   |
+|       spectrwm       |             |
+|        subtle        |             |
+|     Window Maker     |   Partial   |
+|        Wingo         |             |
+|         WMFS         |             |
+|         wmii         |             |
+|     Xfwm (Xfce)      |             |
+|        xmonad        |     (4)     |
+
+(1) Through 0.65 / from 0.70
+
+(2) As of 4.0.0
+
+(3) Releases following and including version 1.1.0 follow the EWMH standard
+
+(4) Must activate EWMH (XMonad.Hooks.EwmhDesktops)
