@@ -4484,22 +4484,6 @@ Developer - 為資深愛好者提供高度自訂的設定</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>MT UI Display</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>&lt;b&gt;Enable the MT UI display for Mazda vehicles.&lt;/b&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>MT Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>&lt;b&gt;Enable MT mode for Mazda vehicles.&lt;/b&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Automatic Door Lock</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4549,6 +4533,14 @@ Developer - 為資深愛好者提供高度自訂的設定</translation>
     </message>
     <message>
         <source>Parking Brake</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mazda2 MT Support</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Enable support for Mazda2 DJ Manual Transmission.&lt;/b&gt;&lt;br&gt;&lt;br&gt;Adds gear and clutch display on the UI and limits acceleration when the clutch is pressed.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
