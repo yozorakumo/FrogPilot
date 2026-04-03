@@ -258,7 +258,7 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
     paintWeather(p, frogpilotPlan, frogpilot_scene);
   }
 
-  if (fpsm["carParams"].getCarParams().getTransmissionType() == cereal::CarParams::TransmissionType::MANUAL || frogpilot_toggles.value("MazdaMTUI").toBool()) {
+  if (fpsm["carParams"].getCarParams().getTransmissionType() == cereal::CarParams::TransmissionType::MANUAL || frogpilot_toggles.value("mazda_2_mt").toBool()) {
     paintMTGear(p, carState, frogpilotCarState);
   }
 }

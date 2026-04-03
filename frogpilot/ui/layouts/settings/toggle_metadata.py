@@ -2265,6 +2265,13 @@ VEHICLE_SETTINGS_TOGGLES = (
     tuning_level=0,
   ),
   ToggleDefinition(
+    title=("Mazda2 MT Support"),
+    param="Mazda2MT",
+    description=("<b>Enable support for Mazda2 DJ Manual Transmission.</b><br><br>Adds gear and clutch display on the UI and limits acceleration when the clutch is pressed."),
+    parent_param="MazdaToggles",
+    tuning_level=0,
+  ),
+  ToggleDefinition(
     title=("Automatic Door Lock"),
     param="MazdaAutoLock",
     button_labels=["SELECT"],
@@ -2307,13 +2314,6 @@ VEHICLE_SETTINGS_TOGGLES = (
     toggle_type=ToggleType.NUMERIC,
     tuning_level=0,
     unit="kph",
-  ),
-  ToggleDefinition(
-    title=("Mazda2 MT Support"),
-    param="Mazda2MT",
-    description=("<b>Enable support for Mazda2 DJ Manual Transmission.</b><br><br>Adds gear and clutch display on the UI and limits acceleration when the clutch is pressed."),
-    parent_param="MazdaToggles",
-    tuning_level=0,
   ),
   ToggleDefinition(
     title=("Stop-and-Go Hack"),

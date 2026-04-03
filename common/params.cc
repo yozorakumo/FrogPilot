@@ -414,8 +414,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"MazdaAutoUnlock", PERSISTENT},
     {"MazdaLockSpeed", PERSISTENT},
     {"MazdaUnlockSpeed", PERSISTENT},
-    {"MazdaMTMode", PERSISTENT},
-    {"MazdaMTUI", PERSISTENT},
     {"MazdaToggles", PERSISTENT},
     {"MaxDesiredAcceleration", PERSISTENT},
     {"MinimumBackupSize", PERSISTENT},

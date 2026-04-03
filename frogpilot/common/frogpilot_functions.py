@@ -167,7 +167,10 @@ def frogpilot_boot_functions(build_metadata, params_cache):
       params.put("KonikDongleId", register(show_spinner=True, register_konik=True))
       params.put("DongleId", params.get("KonikDongleId", encoding="utf8"))
   elif params.get("DongleId", encoding="utf8") == params.get("KonikDongleId", encoding="utf8"):
-    params.remove("DongleId")
+    if params.get("StockDongleId", encoding="utf8") != None:
+      params.put("DongleId", params.get("StockDongleId", encoding="utf8"))
+    else:
+      params.remove("DongleId")
 
   params.put("BuildMetadata", json.dumps(dataclasses.asdict(build_metadata)))
 

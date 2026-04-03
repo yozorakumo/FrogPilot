@@ -191,8 +191,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
     {"SubaruSNG", tr("Stop and Go"), tr("Stop and go for supported Subaru vehicles."), ""},
 
     {"MazdaToggles", tr("Mazda Settings"), tr("<b>FrogPilot features for Mazda vehicles.</b>"), ""},
-    {"MazdaMTUI", tr("MT UI Display"), tr("<b>Enable the MT UI display for Mazda vehicles.</b>"), ""},
-    {"MazdaMTMode", tr("MT Mode"), tr("<b>Enable MT mode for Mazda vehicles.</b>"), ""},
+    {"Mazda2MT", tr("Mazda2 MT Support"), tr("<b>Enable support for Mazda2 DJ Manual Transmission.</b><br><br>Adds gear and clutch display on the UI and limits acceleration when the clutch is pressed."), ""},
     {"MazdaAutoLock", tr("Automatic Door Lock"), tr("<b>Automatically lock doors.</b>"), ""},
     {"MazdaLockSpeed", tr("Lock Speed"), tr("<b>The speed at which the doors will automatically lock.</b>"), ""},
     {"MazdaAutoUnlock", tr("Automatic Door Unlock"), tr("<b>Automatically unlock doors.</b>"), ""},
