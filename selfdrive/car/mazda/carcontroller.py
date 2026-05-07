@@ -76,9 +76,6 @@ class CarController(CarControllerBase):
         if frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_unlock_speed and CS.out.vEgo <= frogpilot_toggles.mazda_unlock_speed * CV.KPH_TO_MS:
           can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
           self.doors_locked = False
-        elif frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_unlock_ignition and not CS.out.engineRunning:
-          can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
-          self.doors_locked = False
         elif frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_unlock_park_brake and CS.out.parkingBrake:
           can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
           self.doors_locked = False
