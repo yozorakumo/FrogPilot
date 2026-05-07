@@ -63,30 +63,37 @@ def create_steering_control(packer, CP, frame, apply_steer, lkas):
 
 
 def create_alert_command(packer, cam_msg: dict, ldw: bool, steer_required: bool):
-  # Use .get() with default 0 to handle DBC files that don't define all signals
-  # (e.g., mazda_2_dj_mt.dbc only has LANE_LINES in CAM_LANEINFO)
-  values = {s: cam_msg.get(s, 0) for s in [
-    "LINE_VISIBLE",
-    "LINE_NOT_VISIBLE",
-    "LANE_LINES",
-    "BIT1",
-    "BIT2",
-    "BIT3",
-    "NO_ERR_BIT",
-    "S1",
-    "S1_HBEAM",
-  ]}
-  values.update({
-    # TODO: what's the difference between all these? do we need to send all?
-    "HANDS_WARN_3_BITS": 0b111 if steer_required else 0,
-    "HANDS_ON_STEER_WARN": steer_required,
-    "HANDS_ON_STEER_WARN_2": steer_required,
+  # LANE_LINES exists in all Mazda CAM_LANEINFO DBC definitions
+  values = {
+    "LANE_LINES": cam_msg.get("LANE_LINES", 0),
+  }
 
-    # TODO: right lane works, left doesn't
-    # TODO: need to do something about L/R
-    "LDW_WARN_LL": 0,
-    "LDW_WARN_RL": 0,
-  })
+  # Check if this DBC has the full CAM_LANEINFO signal set.
+  # mazda_2017.dbc defines LINE_VISIBLE and many other signals in CAM_LANEINFO,
+  # but mazda_2_dj_mt.dbc only defines LANE_LINES.
+  # Sending undefined signals to the packer causes massive log spam (26+ errors/sec)
+  # which can trigger UI watchdog timeouts and device reboots.
+  has_full_laneinfo = "LINE_VISIBLE" in cam_msg
+
+  if has_full_laneinfo:
+    values.update({s: cam_msg.get(s, 0) for s in [
+      "LINE_VISIBLE",
+      "LINE_NOT_VISIBLE",
+      "BIT1",
+      "BIT2",
+      "BIT3",
+      "NO_ERR_BIT",
+      "S1",
+      "S1_HBEAM",
+    ]})
+    values.update({
+      "HANDS_WARN_3_BITS": 0b111 if steer_required else 0,
+      "HANDS_ON_STEER_WARN": steer_required,
+      "HANDS_ON_STEER_WARN_2": steer_required,
+      "LDW_WARN_LL": 0,
+      "LDW_WARN_RL": 0,
+    })
+
   return packer.make_can_msg("CAM_LANEINFO", 0, values)
 
 
