@@ -45,9 +45,15 @@ class CarState(CarStateBase):
 
     if self.CP.flags & MazdaFlags.MT:
       ret.clutchPressed = cp.vl["PEDALS"]["CLUTCH_PRESSED"] == 1
-      # Use custom field for gear display
-      fp_ret.gearStep = int(cp.vl["PEDALS"]["GEAR_RAW"])
-      ret.gearShifter = car.CarState.GearShifter.drive # Always in drive for openpilot logic
+      # MT gear detection: NEW_MSG_28 (0x166) for R gear, ID_9E (0x9E) for Neutral
+      gear_pos = int(cp.vl["NEW_MSG_28"]["GEAR_POS"])
+      if gear_pos >= 6:  # R gear (Byte2 upper nibble >= 0x6)
+        ret.gearShifter = car.CarState.GearShifter.reverse
+      elif cp.vl["ID_9E"]["NEUTRAL_SW"] == 1:  # Neutral switch active
+        ret.gearShifter = car.CarState.GearShifter.neutral
+      else:  # Forward gear (1-6)
+        ret.gearShifter = car.CarState.GearShifter.drive
+      fp_ret.gearStep = gear_pos
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
       ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
@@ -155,6 +161,12 @@ class CarState(CarStateBase):
     if CP.flags & MazdaFlags.GEN1 and not (CP.flags & MazdaFlags.MT):
       messages += [
         ("GEAR", 20),
+      ]
+
+    if CP.flags & MazdaFlags.GEN1 and CP.flags & MazdaFlags.MT:
+      messages += [
+        ("NEW_MSG_28", 50),
+        ("ID_9E", 50),
       ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
