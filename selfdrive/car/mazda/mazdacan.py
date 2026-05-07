@@ -63,7 +63,9 @@ def create_steering_control(packer, CP, frame, apply_steer, lkas):
 
 
 def create_alert_command(packer, cam_msg: dict, ldw: bool, steer_required: bool):
-  values = {s: cam_msg[s] for s in [
+  # Use .get() with default 0 to handle DBC files that don't define all signals
+  # (e.g., mazda_2_dj_mt.dbc only has LANE_LINES in CAM_LANEINFO)
+  values = {s: cam_msg.get(s, 0) for s in [
     "LINE_VISIBLE",
     "LINE_NOT_VISIBLE",
     "LANE_LINES",
