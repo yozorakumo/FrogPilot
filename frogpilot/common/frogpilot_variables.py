@@ -1051,6 +1051,7 @@ class FrogPilotVariables:
     toggle.tethering_config = params.get_int("TetheringEnabled")
 
     mazda_toggles = toggle.car_make == "mazda" and (params.get_bool("MazdaToggles") if toggle.tuning_level >= level["MazdaToggles"] else default.get_bool("MazdaToggles"))
+    toggle.experimental_mode = params.get_bool("ExperimentalMode")
     mazda_auto_lock = params.get_int("MazdaAutoLock") if mazda_toggles and toggle.tuning_level >= level["MazdaAutoLock"] else default.get_int("MazdaAutoLock")
     toggle.mazda_auto_lock_speed = mazda_auto_lock == 1
     toggle.mazda_lock_speed = params.get_int("MazdaLockSpeed") if toggle.mazda_auto_lock_speed and toggle.tuning_level >= level["MazdaLockSpeed"] else default.get_int("MazdaLockSpeed")

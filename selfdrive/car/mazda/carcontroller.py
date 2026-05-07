@@ -69,17 +69,17 @@ class CarController(CarControllerBase):
     # FrogPilot Mazda carcontroller functions
     if self.CP.carFingerprint == CAR.MAZDA_2_DJ_MT:
       if not self.doors_locked:
-        if frogpilot_toggles.mazda_auto_lock_speed and CS.out.vEgo >= frogpilot_toggles.mazda_lock_speed * CV.KPH_TO_MS:
+        if frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_lock_speed and CS.out.vEgo >= frogpilot_toggles.mazda_lock_speed * CV.KPH_TO_MS:
           can_sends.append(mazdacan.create_door_lock_command(self.packer, True))
           self.doors_locked = True
       elif self.doors_locked:
-        if frogpilot_toggles.mazda_auto_unlock_speed and CS.out.vEgo <= frogpilot_toggles.mazda_unlock_speed * CV.KPH_TO_MS:
+        if frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_unlock_speed and CS.out.vEgo <= frogpilot_toggles.mazda_unlock_speed * CV.KPH_TO_MS:
           can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
           self.doors_locked = False
-        elif frogpilot_toggles.mazda_auto_unlock_ignition and not CS.out.engineRunning:
+        elif frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_unlock_ignition and not CS.out.engineRunning:
           can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
           self.doors_locked = False
-        elif frogpilot_toggles.mazda_auto_unlock_park_brake and CS.out.parkingBrake:
+        elif frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_unlock_park_brake and CS.out.parkingBrake:
           can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
           self.doors_locked = False
 
