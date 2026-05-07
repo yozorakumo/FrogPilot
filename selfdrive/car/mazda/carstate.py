@@ -44,9 +44,9 @@ class CarState(CarStateBase):
     ret.standstill = speed_kph <= .1
 
     if self.CP.flags & MazdaFlags.MT:
-      ret.clutchPressed = cp.vl["MT_CLUTCH"]["CLUTCH_PRESSED"] == 1
+      ret.clutchPressed = cp.vl["PEDALS"]["CLUTCH_PRESSED"] == 1
       # Use custom field for gear display
-      fp_ret.gearStep = int(cp.vl["MT_CLUTCH"]["GEAR_RAW"])
+      fp_ret.gearStep = int(cp.vl["PEDALS"]["GEAR_RAW"])
       ret.gearShifter = car.CarState.GearShifter.drive # Always in drive for openpilot logic
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
@@ -138,11 +138,6 @@ class CarState(CarStateBase):
     if CP.flags & MazdaFlags.GEN1:
       messages += [
         ("ENGINE_DATA", 100),
-      ]
-
-    if CP.flags & MazdaFlags.MT:
-      messages += [
-        ("MT_CLUTCH", 50),
       ]
 
     if CP.flags & MazdaFlags.GEN1:

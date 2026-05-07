@@ -44,60 +44,115 @@ BO_ 158 ID_9E: 8 XXX
  SG_ CLUTCH_ALT : 5|1@0+ (1,0) [0|1] "" XXX
  SG_ NEUTRAL_SW : 0|1@0+ (1,0) [0|1] "" XXX
 
-BO_ 357 MT_CLUTCH: 8 XXX
+BO_ 357 PEDALS: 8 XXX
+ SG_ NEW_SIGNAL_6 : 31|4@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_7 : 8|3@1+ (1,0) [0|7] "" XXX
+ SG_ ACC_ACTIVE : 3|1@0+ (1,0) [0|1] "" XXX
+ SG_ ACC_OFF : 2|1@1+ (1,0) [0|15] "" XXX
+ SG_ CHKSUM : 63|8@0+ (1,0) [0|15] "" XXX
+ SG_ STANDSTILL : 26|1@0+ (1,0) [0|16777215] "" XXX
+ SG_ NEW_SIGNAL_3 : 23|8@0+ (1,0) [0|3] "" XXX
+ SG_ BRAKE_ON : 4|1@0+ (1,0) [0|1] "" XXX
+ SG_ NO_BRAKE : 6|1@0+ (1,0) [0|7] "" XXX
+ SG_ BRAKE_ON_2 : 7|1@1+ (1,0) [0|255] "" XXX
+ SG_ NO_BRAKE_2 : 15|1@0+ (1,0) [0|7] "" XXX
+ SG_ GEAR : 48|5@1+ (1,0) [0|255] "" XXX
  SG_ CLUTCH_PRESSED : 43|1@0+ (1,0) [0|1] "" XXX
  SG_ GEAR_POS : 55|8@0+ (1,0) [0|255] "" XXX
  SG_ GEAR_RAW : 3|4@0+ (1,0) [0|15] "" XXX
 
 BO_ 514 ENGINE_DATA: 8 XXX
+ SG_ CHKSUM : 63|8@0+ (1,0) [0|127] "" XXX
  SG_ RPM : 7|16@0+ (0.25,0) [0|8500] "rpm" XXX
  SG_ SPEED : 23|16@0+ (0.01,0) [0|32767] "kph" XXX
- SG_ PEDAL_GAS : 39|8@0+ (0.3921568627,0) [0|100] "%" XXX
+ SG_ PEDAL_GAS : 39|12@0+ (1,0) [0|255] "%" XXX
 
-BO_ 513 GEAR: 8 XXX
- SG_ GEAR : 51|4@0+ (1,0) [0|15] "" XXX
+BO_ 533 WHEEL_SPEEDS: 8 XXX
+ SG_ FL : 7|16@0+ (0.01,-100) [0|16383] "kph" XXX
+ SG_ FR : 23|16@0+ (0.01,-100) [0|65535] "kph" XXX
+ SG_ RL : 39|16@0+ (0.01,-100) [0|15] "kph" XXX
+ SG_ RR : 55|16@0+ (0.01,-100) [0|65535] "kph" XXX
 
-BO_ 608 STEER: 8 XXX
- SG_ STEER_ANGLE : 7|16@0+ (-0.1,0) [-3276.7|3276.7] "deg" XXX
+BO_ 130 STEER: 8 XXX
+ SG_ NEW_SIGNAL_5 : 55|8@0+ (1,0) [0|255] "" XXX
+ SG_ NEW_SIGNAL_6 : 63|8@0+ (1,0) [0|255] "" XXX
+ SG_ CTR : 47|4@0+ (1,0) [0|255] "" XXX
+ SG_ STEER_ANGLE : 23|16@0+ (0.05,-1600) [500|-500] "deg" XXX
+ SG_ CHKSUM_MAYBE : 39|8@0+ (1,0) [0|255] "" XXX
 
 BO_ 576 STEER_TORQUE: 8 XXX
- SG_ STEER_TORQUE_SENSOR : 7|16@0+ (1,0) [-32768|32767] "" XXX
- SG_ STEER_TORQUE_MOTOR : 23|16@0+ (1,0) [-32768|32767] "" XXX
+ SG_ NEW_SIGNAL_1 : 23|4@0+ (1,0) [0|255] "" XXX
+ SG_ NEW_SIGNAL_3 : 47|1@0+ (1,0) [0|1] "" XXX
+ SG_ SENSOR1 : 39|8@0+ (1,-128) [0|127] "" XXX
+ SG_ STEER_TORQUE_MOTOR : 46|15@0- (0.1,0) [-3000|3000] "tbd" XXX
+ SG_ NEW_SIGNAL_2 : 62|4@0+ (1,0) [0|31] "" XXX
+ SG_ NEW_SIGNAL_4 : 15|8@0+ (1,0) [0|127] "" XXX
+ SG_ STEER_TORQUE_SENSOR : 7|8@0+ (1,-127) [-85|85] "" XXX
 
-BO_ 582 STEER_RATE: 8 XXX
- SG_ STEER_ANGLE_RATE : 7|16@0+ (1,0) [-32768|32767] "" XXX
- SG_ LKAS_BLOCK : 23|1@0+ (1,0) [0|1] "" XXX
+BO_ 577 STEER_RATE: 8 XXX
+ SG_ STEER_ANGLE_RATE : 23|16@0+ (0.25,-8192) [0|1] "deg/s" XXX
+ SG_ CTR : 7|4@0+ (1,0) [0|15] "" XXX
+ SG_ LKAS_REQUEST : 3|12@0+ (1,-2048) [0|15] "" XXX
+ SG_ LKAS_EFFECTIVE : 39|12@0+ (1,-2048) [0|255] "" XXX
+ SG_ HANDS_OFF_5_SECONDS : 51|1@0+ (1,0) [0|1] "" XXX
+ SG_ LKAS_BLOCK : 50|1@1+ (1,0) [0|3] "" XXX
+ SG_ LKAS_TRACK_STATE : 52|1@0+ (1,0) [0|3] "" XXX
+ SG_ CHKSUM : 63|8@0+ (1,0) [0|255] "" XXX
 
-BO_ 585 WHEEL_SPEEDS: 8 XXX
- SG_ FL : 7|16@0+ (0.01,0) [0|250] "kph" XXX
- SG_ FR : 23|16@0+ (0.01,0) [0|250] "kph" XXX
- SG_ RL : 39|16@0+ (0.01,0) [0|250] "kph" XXX
- SG_ RR : 55|16@0+ (0.01,0) [0|250] "kph" XXX
+BO_ 154 BLINK_INFO: 8 XXX
+ SG_ LEFT_BLINK : 18|1@1+ (1,0) [0|3] "" XXX
+ SG_ RIGHT_BLINK : 19|1@0+ (1,0) [0|255] "" XXX
+ SG_ REAR_WIPER_ON : 0|1@0+ (1,0) [0|1] "" XXX
+ SG_ WIPER_LO : 33|1@1+ (1,0) [0|31] "" XXX
+ SG_ WIPER_HI : 34|1@0+ (1,0) [0|1] "" XXX
+ SG_ LOW_BEAMS : 5|2@0+ (1,0) [0|3] "" XXX
+ SG_ HIGH_BEAMS : 7|2@0+ (1,0) [0|3] "" XXX
+ SG_ LBEAM1 : 17|1@0+ (1,0) [0|1] "" XXX
+ SG_ LBEAM2 : 50|1@0+ (1,0) [0|1] "" XXX
+ SG_ LBEAM3 : 60|1@0+ (1,0) [0|1] "" XXX
 
-BO_ 144 BLINK_INFO: 8 XXX
- SG_ LEFT_BLINK : 1|1@0+ (1,0) [0|1] "" XXX
- SG_ RIGHT_BLINK : 0|1@0+ (1,0) [0|1] "" XXX
- SG_ HIGH_BEAMS : 33|1@0+ (1,0) [0|1] "" XXX
+BO_ 1143 BSM: 8 XXX
+ SG_ BSM_OFF : 0|1@0+ (1,0) [0|1] "" XXX
+ SG_ RIGHT_BS_3 : 37|1@0+ (1,0) [0|1] "" XXX
+ SG_ STANDSTILL : 8|1@0+ (1,0) [0|1] "" XXX
+ SG_ LEFT_BS_STATUS : 13|2@0+ (1,0) [0|3] "" XXX
+ SG_ RIGHT_BS_STATUS : 15|2@0+ (1,0) [0|3] "" XXX
+ SG_ LEFT_BS3 : 38|1@0+ (1,0) [0|1] "" XXX
+ SG_ RIGHT_BS4 : 39|1@0+ (1,0) [0|1] "" XXX
+ SG_ LEFT_BS_SIDE : 36|1@0+ (1,0) [0|1] "" XXX
+ SG_ IS_MOVING : 9|1@0+ (1,0) [0|1] "" XXX
+ SG_ LEFT_BS_BEHIND : 46|2@1+ (1,0) [0|16777215] "" XXX
+ SG_ RIGHT_BS_DISTANCE : 35|3@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_1 : 32|1@0+ (1,0) [0|1] "" XXX
+ SG_ REAR_CT_ALERT : 23|5@0+ (1,0) [0|63] "" XXX
 
-BO_ 1024 BSM: 8 XXX
- SG_ LEFT_BS_STATUS : 7|1@0+ (1,0) [0|1] "" XXX
- SG_ RIGHT_BS_STATUS : 15|1@0+ (1,0) [0|1] "" XXX
+BO_ 120 BRAKE: 8 XXX
+ SG_ CTR : 55|8@0+ (1,0) [0|255] "" XXX
+ SG_ BRAKE_PRESSURE : 39|8@0+ (1,0) [0|255] "" XXX
+ SG_ VEHICLE_ACC_X : 5|13@0+ (0.01,-40) [-40|40] "m/s^2" XXX
+ SG_ VEHICLE_ACC_Y : 8|13@0+ (0.001,-4.096) [-4.096|4.096] "m/s^2" XXX
 
-BO_ 789 PEDALS: 8 XXX
- SG_ BRAKE_ON : 16|1@0+ (1,0) [0|1] "" XXX
- SG_ STANDSTILL : 23|1@0+ (1,0) [0|1] "" XXX
+BO_ 832 SEATBELT: 8 XXX
+ SG_ NEW_SIGNAL_1 : 7|8@0+ (1,0) [0|255] "" XXX
+ SG_ PASSENGER_SEATBELT : 26|1@1+ (1,0) [0|7] "" XXX
+ SG_ CTR1 : 15|4@0+ (1,0) [0|15] "" XXX
+ SG_ CTR2 : 23|4@0+ (1,0) [0|255] "" XXX
+ SG_ NEW_SIGNAL_4 : 8|4@1+ (1,0) [0|3] "" XXX
+ SG_ DRIVER_SEATBELT : 27|1@0+ (1,0) [0|1] "" XXX
 
-BO_ 528 BRAKE: 8 XXX
- SG_ BRAKE_PRESSURE : 7|16@0+ (1,0) [0|65535] "" XXX
-
-BO_ 1238 SEATBELT: 8 XXX
- SG_ DRIVER_SEATBELT : 57|1@0+ (1,0) [0|1] "" XXX
-
-BO_ 1184 DOORS: 8 XXX
- SG_ FL : 52|1@0+ (1,0) [0|1] "" XXX
- SG_ FR : 53|1@0+ (1,0) [0|1] "" XXX
- SG_ BL : 54|1@0+ (1,0) [0|1] "" XXX
- SG_ BR : 55|1@0+ (1,0) [0|1] "" XXX
+BO_ 1086 DOORS: 8 XXX
+ SG_ LEFTGATE : 32|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_3 : 53|1@0+ (1,0) [0|255] "" XXX
+ SG_ KEYFOB_HORN : 2|1@0+ (1,0) [0|1] "" XXX
+ SG_ KEYFOB_LOCK : 3|1@0+ (1,0) [0|1] "" XXX
+ SG_ KEYFOB_UNLOCK : 4|1@0+ (1,0) [0|1] "" XXX
+ SG_ CTR1 : 8|4@1+ (1,0) [0|3] "" XXX
+ SG_ CTR2 : 16|4@1+ (1,0) [0|15] "" XXX
+ SG_ BR : 34|1@0+ (1,0) [0|1] "" XXX
+ SG_ BL : 35|1@0+ (1,0) [0|1] "" XXX
+ SG_ FR : 36|1@0+ (1,0) [0|255] "" XXX
+ SG_ FL : 37|1@0+ (1,0) [0|255] "" XXX
+ SG_ DOORS_UNLOCKED : 30|1@0+ (1,0) [0|255] "" XXX
 
 BO_ 1056 BCM: 8 XXX
  SG_ DOOR_OPEN_FL : 7|1@0+ (1,0) [0|1] "" XXX
@@ -105,36 +160,108 @@ BO_ 1056 BCM: 8 XXX
  SG_ DOOR_LOCK_STATUS : 3|4@0+ (1,0) [0|15] "" XXX
  SG_ DOOR_LOCK_ALL : 13|1@0+ (1,0) [0|1] "" XXX
 
-BO_ 354 CRZ_CTRL: 8 XXX
- SG_ CRZ_AVAILABLE : 29|1@0+ (1,0) [0|1] "" XXX
- SG_ CRZ_ACTIVE : 28|1@0+ (1,0) [0|1] "" XXX
+BO_ 540 CRZ_CTRL: 8 XXX
+ SG_ NEW_SIGNAL_6 : 10|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_9 : 31|1@0+ (1,0) [0|255] "" XXX
+ SG_ ACC_GAS_MAYBE2 : 29|1@0+ (1,0) [0|1] "" XXX
+ SG_ HANDS_OFF_STEERING : 48|1@0+ (1,0) [0|1] "" XXX
+ SG_ HANDS_ON_STEER_WARN : 59|4@0+ (1,0) [0|255] "" XXX
+ SG_ CRZ_ACTIVE : 3|1@0+ (1,0) [0|1] "" XXX
+ SG_ CRZ_AVAILABLE : 17|1@0+ (1,0) [0|255] "" XXX
+ SG_ DISTANCE_SETTING : 20|3@0+ (1,0) [0|7] "" XXX
+ SG_ MSG_1_INV : 1|1@0+ (1,0) [0|1] "" XXX
+ SG_ MSG_1_COPY : 9|1@0+ (1,0) [0|1] "" XXX
+ SG_ ACC_GAS_MAYBE : 23|1@0+ (1,0) [0|31] "" XXX
+ SG_ ACC_ACTIVE_2 : 52|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_10 : 30|1@0+ (1,0) [0|1] "" XXX
+ SG_ MSG_1 : 0|1@0+ (1,0) [0|3] "" XXX
+ SG_ 5_SEC_DISABLE_TIMER : 45|3@0+ (1,0) [0|7] "" XXX
+ SG_ NEW_SIGNAL_3 : 13|1@0+ (1,0) [0|3] "" XXX
+ SG_ MSG_1_INV_COPY : 8|1@0+ (1,0) [0|7] "" XXX
+ SG_ RADAR_HAS_LEAD : 23|1@0+ (1,0) [0|1] "" XXX
+ SG_ RADAR_LEAD_RELATIVE_DISTANCE : 31|3@0+ (1,0) [0|5] "" XXX
 
-BO_ 1064 CRZ_EVENTS: 8 XXX
- SG_ CRZ_SPEED : 7|8@0+ (1,0) [0|255] "kph" XXX
+BO_ 543 CRZ_EVENTS: 8 XXX
+ SG_ CTR : 51|4@0+ (1,0) [0|15] "" XXX
+ SG_ NEW_SIGNAL_21 : 23|1@0+ (1,0) [0|15] "" XXX
+ SG_ GAS_MAYBE : 22|1@0+ (1,0) [0|1] "" XXX
+ SG_ ACCEL_CMD : 46|8@0- (1,0) [0|15] "" XXX
+ SG_ CRUISE_ACTIVE_CAR_MOVING : 16|1@0+ (1,0) [0|1] "" XXX
+ SG_ PLUS_ONE_CRZ : 17|1@0+ (1,0) [0|255] "" XXX
+ SG_ CRZ_STARTED : 18|1@0+ (1,0) [0|1] "" XXX
+ SG_ CHKSUM : 63|8@0+ (1,0) [0|15] "" XXX
+ SG_ PLUS_ONE_CRZ_2 : 19|1@0+ (1,0) [0|1] "" XXX
+ SG_ ACCEL_CMD_LOW_RES : 29|8@0- (1,0) [0|255] "" XXX
+ SG_ CRZ_SPEED : 7|16@0+ (0.005,-0.5) [0|328] "kph" XXX
 
-BO_ 1136 CRZ_BTNS: 8 XXX
+BO_ 157 CRZ_BTNS: 8 XXX
+ SG_ BIT1 : 16|1@0+ (1,0) [0|1] "" XXX
+ SG_ BIT2 : 18|1@0+ (1,0) [0|1] "" XXX
+ SG_ BIT3 : 20|1@0+ (1,0) [0|1] "" XXX
+ SG_ SET_P_INV : 21|1@0+ (1,0) [0|1] "" XXX
+ SG_ CAN_OFF_INV : 17|1@0+ (1,0) [0|1] "" XXX
+ SG_ CAN_OFF : 0|1@0+ (1,0) [0|1] "" XXX
+ SG_ SET_M_INV : 22|1@0+ (1,0) [0|1] "" XXX
+ SG_ SET_M : 5|1@0+ (1,0) [0|1] "" XXX
+ SG_ SET_P : 4|1@0+ (1,0) [0|1] "" XXX
+ SG_ RES_INV : 19|1@0+ (1,0) [0|1] "" XXX
+ SG_ RES : 2|1@0+ (1,0) [0|1] "" XXX
+ SG_ DISTANCE_LESS : 7|1@0+ (1,0) [0|1] "" XXX
+ SG_ DISTANCE_LESS_INV : 8|1@0+ (1,0) [0|1] "" XXX
+ SG_ DISTANCE_MORE : 6|1@0+ (1,0) [0|1] "" XXX
+ SG_ DISTANCE_MORE_INV : 23|1@0+ (1,0) [0|1] "" XXX
+ SG_ MODE_Y : 13|1@0+ (1,0) [0|1] "" XXX
+ SG_ MODE_X : 14|1@0+ (1,0) [0|1] "" XXX
+ SG_ MODE_Y_INV : 30|1@0+ (1,0) [0|1] "" XXX
+ SG_ MODE_X_INV : 31|1@0+ (1,0) [0|1] "" XXX
+ SG_ CTR : 29|4@0+ (1,0) [0|15] "" XXX
+
+BO_ 579 CAM_LKAS: 8 XXX
  SG_ CTR : 7|4@0+ (1,0) [0|15] "" XXX
- SG_ DISTANCE_LESS : 16|1@0+ (1,0) [0|1] "" XXX
- SG_ RES : 14|1@0+ (1,0) [0|1] "" XXX
- SG_ SET_M : 15|1@0+ (1,0) [0|1] "" XXX
- SG_ CAN_OFF : 13|1@0+ (1,0) [0|1] "" XXX
- SG_ SET_P : 12|1@0+ (1,0) [0|1] "" XXX
+ SG_ ERR_BIT_1 : 16|1@0+ (1,0) [0|1] "" XXX
+ SG_ CHKSUM : 63|8@0+ (1,0) [0|15] "" XXX
+ SG_ LINE_NOT_VISIBLE : 19|1@0+ (1,0) [0|1] "" XXX
+ SG_ BIT_1 : 29|1@0+ (1,0) [0|1] "" XXX
+ SG_ LDW : 23|1@0+ (1,0) [0|1] "" XXX
+ SG_ LKAS_REQUEST : 3|12@0+ (1,-2048) [0|2048] "" XXX
+ SG_ ERR_BIT_2 : 30|1@0+ (1,0) [0|1] "" XXX
+ SG_ ANGLE_ENABLED : 52|1@0+ (1,0) [0|1] "" XXX
+ SG_ STEERING_ANGLE : 33|12@0+ (1,-2048) [-2048|2047] "" XXX
 
-BO_ 616 CAM_LKAS: 8 XXX
- SG_ LKAS_REQUEST : 7|16@0+ (1,0) [-2048|2047] "" XXX
- SG_ CTR : 23|4@0+ (1,0) [0|15] "" XXX
- SG_ ERR_BIT_1 : 24|1@0+ (1,0) [0|1] "" XXX
- SG_ LINE_NOT_VISIBLE : 25|1@0+ (1,0) [0|1] "" XXX
- SG_ LDW : 26|1@0+ (1,0) [0|1] "" XXX
- SG_ BIT_1 : 27|1@0+ (1,0) [0|1] "" XXX
- SG_ ERR_BIT_2 : 28|1@0+ (1,0) [0|1] "" XXX
- SG_ STEERING_ANGLE : 39|16@0+ (1,0) [-2048|2047] "" XXX
- SG_ ANGLE_ENABLED : 48|1@0+ (1,0) [0|1] "" XXX
- SG_ CHKSUM : 63|8@0+ (1,0) [0|255] "" XXX
+BO_ 1088 CAM_LANEINFO: 8 XXX
+ SG_ BIT3 : 62|1@0+ (1,0) [0|3] "" XXX
+ SG_ HANDS_ON_STEER_WARN_2 : 59|1@0+ (1,0) [0|1] "" XXX
+ SG_ HANDS_ON_STEER_WARN : 56|1@0+ (1,0) [0|3] "" XXX
+ SG_ S1_HBEAM : 54|1@0+ (1,0) [0|31] "" XXX
+ SG_ S1 : 52|1@0+ (1,0) [0|1] "" XXX
+ SG_ HANDS_WARN_3_BITS : 51|3@0+ (1,0) [0|7] "" XXX
+ SG_ ERR_BIT : 40|1@0+ (1,0) [0|1] "" XXX
+ SG_ NO_ERR_BIT : 14|1@0+ (1,0) [0|1] "" XXX
+ SG_ BIT2 : 13|1@0+ (1,0) [0|15] "" XXX
+ SG_ LANE_LINES : 10|3@0+ (1,0) [0|3] "" XXX
+ SG_ BIT1 : 6|1@0+ (1,0) [0|65535] "" XXX
+ SG_ LINE_NOT_VISIBLE : 1|1@0+ (1,0) [0|1] "" XXX
+ SG_ LINE_VISIBLE : 0|1@0+ (1,0) [0|3] "" XXX
+ SG_ LDW_WARN_RL : 58|1@0+ (1,0) [0|1] "" XXX
+ SG_ LDW_WARN_LL : 57|1@0+ (1,0) [0|1] "" XXX
+ SG_ TJA : 38|3@0+ (1,0) [0|7] "" XXX
+ SG_ TJA_TRANSITION : 27|2@0+ (1,0) [0|63] "" XXX
 
-BO_ 1157 CAM_LANEINFO: 8 XXX
- SG_ LANE_LINES : 1|2@0+ (1,0) [0|3] "" XXX
+CM_ SG_ 357 GEAR "13P, 26R, 13N, 24D";
+CM_ SG_ 1088 LANE_LINES "0 LKAS disabled, 1 no lines, 2 two lines, 3 left line, 4 right line";
+CM_ SG_ 1088 TJA "2: crz not active,  3: TJA not allowed,  4: TJA allowed";
+CM_ SG_ 1088 TJA_TRANSITION "3: if TJA signal is 3, otherwise set to 0";
+CM_ SG_ 120 VEHICLE_ACC_X "Vehicle acceleration of X-axis wrt. NED frame.";
+CM_ SG_ 120 VEHICLE_ACC_Y "Vehicle acceleration of Y-axis wrt. NED frame.";
+CM_ SG_ 157 CAN_OFF "Disengage Cruise if enabled, if already disabled  TURN it OFF ";
+CM_ SG_ 540 HANDS_ON_STEER_WARN "0 no warning, b warning";
+CM_ SG_ 540 DISTANCE_SETTING "Radar distance 0: disabled, 1: 4 bars, 2: 3 bars, 3: 2 bars, 4: 1 bar";
+CM_ SG_ 1143 REAR_CT_ALERT "Rear Cross Traffic Alert";
+CM_ SG_ 579 STEERING_ANGLE "steering angle aligns with 0.022 factor and -45.06 offset";
 
-VAL_ 513 GEAR 15 "N" 14 "P" 13 "R" 1 "D" ;
 VAL_ 357 GEAR_POS 2 "6th" 3 "5th" 4 "4th" 5 "3rd" 7 "2nd" 13 "1st" 14 "1st_hi" ;
 VAL_ 357 GEAR_RAW 0 "Neutral" 1 "1st" 2 "2nd" 3 "3rd" 4 "4th" 5 "5th" 6 "6th" 7 "6th_巡航" 15 "Reverse" ;
+VAL_ 540 RADAR_HAS_LEAD 0 "NO LEAD" 1 "HAS LEAD" ;
+VAL_ 540 RADAR_LEAD_RELATIVE_DISTANCE 0 "NO LEAD" 1 "FARTHEST" 2 "4" 3 "3" 4 "2" 5 "NEAREST" ;
+VAL_ 1143 LEFT_BS_STATUS 0 "No object detected" 1 "Object detected in left blindspot" 2 "Object detected in left blindspot with blinker - warning" ;
+VAL_ 1143 RIGHT_BS_STATUS 0 "No object detected" 1 "Object detected in right blindspot" 2 "Object detected in right blindspot with blinker - warning" ;
