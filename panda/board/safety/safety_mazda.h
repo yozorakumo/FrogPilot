@@ -120,6 +120,7 @@ static int mazda_fwd_hook(int bus, int addr) {
 }
 
 static safety_config mazda_init(uint16_t param) {
+  (void)param;
   return BUILD_SAFETY_CFG(mazda_rx_checks, MAZDA_TX_MSGS);
 }
 
