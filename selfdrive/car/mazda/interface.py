@@ -36,6 +36,7 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.57
       ret.steerRatio = 14.8
       ret.transmissionType = car.CarParams.TransmissionType.manual
+      ret.safetyConfigs[0].safetyParam = 1  # MAZDA_PARAM_2_DJ_MT for panda safety
 
     return ret
 

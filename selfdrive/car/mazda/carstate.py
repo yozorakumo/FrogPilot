@@ -45,15 +45,18 @@ class CarState(CarStateBase):
 
     if self.CP.flags & MazdaFlags.MT:
       ret.clutchPressed = cp.vl["PEDALS"]["CLUTCH_PRESSED"] == 1
-      # MT gear detection: NEW_MSG_28 (0x166) for R gear, ID_9E (0x9E) for Neutral
-      gear_pos = int(cp.vl["NEW_MSG_28"]["GEAR_POS"])
-      if gear_pos >= 6:  # R gear (Byte2 upper nibble >= 0x6)
+      # MT gear detection using PEDALS (0x165) GEAR signal
+      # Values from DBC comment: 13=P, 26=R, 13=N, 24=D (raw GEAR byte values)
+      can_gear = int(cp.vl["PEDALS"]["GEAR"])
+      if can_gear == 26:  # R
         ret.gearShifter = car.CarState.GearShifter.reverse
-      elif cp.vl["ID_9E"]["NEUTRAL_SW"] == 1:  # Neutral switch active
+      elif can_gear == 13:  # N (same value as P, use clutch to distinguish)
         ret.gearShifter = car.CarState.GearShifter.neutral
-      else:  # Forward gear (1-6)
+      elif can_gear == 24:  # D
         ret.gearShifter = car.CarState.GearShifter.drive
-      fp_ret.gearStep = gear_pos
+      else:
+        ret.gearShifter = car.CarState.GearShifter.drive
+      fp_ret.gearStep = can_gear
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
       ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
