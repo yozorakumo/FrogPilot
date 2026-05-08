@@ -1035,6 +1035,11 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.PERMANENT: NormalPermanentAlert("Vehicle Sensors Calibrating", "Drive to Calibrate"),
     ET.NO_ENTRY: NoEntryAlert("Vehicle Sensors Calibrating"),
   },
+
+  EventName.clutchPressed: {
+    ET.SOFT_DISABLE: user_soft_disable_alert("Clutch Pressed"),
+    ET.NO_ENTRY: NoEntryAlert("Clutch Pressed"),
+  },
 }
 
 FROGPILOT_EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
