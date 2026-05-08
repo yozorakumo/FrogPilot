@@ -67,8 +67,9 @@ class CarState(CarStateBase):
     left_blink = cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1
     right_blink = cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1
 
-    # ハザード判定: 左右同時点滅 = ハザード
-    if left_blink and right_blink:
+    # ハザード判定: TURN_SWITCHのHAZARDシグナルを使用
+    hazard = cp.vl.get("TURN_SWITCH", {}).get("HAZARD", 0) == 1
+    if hazard:
       ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, False, False)
     else:
       ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, left_blink, right_blink)
@@ -144,6 +145,7 @@ class CarState(CarStateBase):
     messages = [
       # sig_address, frequency
       ("BLINK_INFO", 10),
+      ("TURN_SWITCH", 10),
       ("STEER", 67),
       ("STEER_RATE", 83),
       ("STEER_TORQUE", 83),
