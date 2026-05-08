@@ -64,8 +64,14 @@ class CarState(CarStateBase):
     ret.genericToggle = bool(cp.vl["BLINK_INFO"]["HIGH_BEAMS"])
     ret.leftBlindspot = cp.vl["BSM"]["LEFT_BS_STATUS"] != 0
     ret.rightBlindspot = cp.vl["BSM"]["RIGHT_BS_STATUS"] != 0
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1,
-                                                                      cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1)
+    left_blink = cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1
+    right_blink = cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1
+
+    # ハザード判定: 左右同時点滅 = ハザード
+    if left_blink and right_blink:
+      ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, False, False)
+    else:
+      ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, left_blink, right_blink)
 
     ret.steeringAngleDeg = cp.vl["STEER"]["STEER_ANGLE"]
     ret.steeringTorque = cp.vl["STEER_TORQUE"]["STEER_TORQUE_SENSOR"]
