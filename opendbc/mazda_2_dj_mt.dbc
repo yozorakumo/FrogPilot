@@ -75,6 +75,27 @@ BO_ 533 WHEEL_SPEEDS: 8 XXX
  SG_ RL : 39|16@0+ (0.01,-100) [0|15] "kph" XXX
  SG_ RR : 55|16@0+ (0.01,-100) [0|65535] "kph" XXX
 
+BO_ 117 STEER_RELATED: 8 XXX
+ SG_ CTR : 7|8@0+ (1,0) [0|255] "" XXX
+ SG_ NEW_SIGNAL_1 : 48|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_2 : 49|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_5 : 50|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_4 : 54|4@0+ (1,0) [0|31] "" XXX
+ SG_ NEW_SIGNAL_3 : 55|1@0+ (1,0) [0|63] "" XXX
+ SG_ STEER_ANGLE_2 : 39|16@0+ (0.1,-1800) [0|131071] "" XXX
+ SG_ STEER_TORQUE : 19|12@0+ (1,-2000) [0|255] "" XXX
+
+BO_ 134 STEER2: 8 XXX
+ SG_ CTR : 22|4@0+ (1,0) [0|7] "" XXX
+ SG_ NEW_SIGNAL_4 : 23|1@0+ (1,0) [0|1] "" XXX
+ SG_ CTR_2 : 28|3@1+ (1,0) [0|7] "" XXX
+ SG_ STEER_ANGLE_ROUGH : 26|11@0+ (1,-1000) [0|15] "" XXX
+ SG_ NEW_SIGNAL_5 : 18|3@0+ (1,0) [0|1] "" XXX
+ SG_ STEER_ANGLE : 7|16@0+ (0.1,-1600) [-500|500] "deg" XXX
+ SG_ NEW_SIGNAL_1 : 63|2@0+ (1,0) [0|3] "" XXX
+ SG_ NEW_SIGNAL_3 : 55|8@0+ (1,0) [0|255] "" XXX
+ SG_ NEW_SIGNAL_2 : 47|8@0+ (1,0) [0|7] "" XXX
+
 BO_ 130 STEER: 8 XXX
  SG_ NEW_SIGNAL_5 : 55|8@0+ (1,0) [0|255] "" XXX
  SG_ NEW_SIGNAL_6 : 63|8@0+ (1,0) [0|255] "" XXX
@@ -169,6 +190,21 @@ BO_ 1056 BCM: 8 XXX
  SG_ DOOR_LOCK_STATUS : 3|4@0+ (1,0) [0|15] "" XXX
  SG_ DOOR_LOCK_ALL : 13|1@0+ (1,0) [0|1] "" XXX
 
+BO_ 539 CRZ_INFO: 8 XXX
+ SG_ STATUS : 7|8@0+ (1,0) [0|255] "" XXX
+ SG_ STATIC_1 : 15|11@0+ (1,0) [0|2047] "" XXX
+ SG_ ACCEL_CMD : 17|13@0+ (1,-4096) [0|8191] "" XXX
+ SG_ STATIC_2 : 18|3@1+ (1,0) [0|7] "" XXX
+ SG_ ACC_ACTIVE : 33|1@0+ (1,0) [0|1] "" XXX
+ SG_ ACC_SET_ALLOWED : 34|1@0+ (1,0) [0|1] "" XXX
+ SG_ CRZ_ENDED : 36|1@0+ (1,0) [0|255] "" XXX
+ SG_ STOPPING_MAYBE : 42|1@0+ (1,0) [0|1] "" XXX
+ SG_ MYSTERY_BIT : 47|1@0+ (1,0) [0|255] "" XXX
+ SG_ CTR1 : 51|4@0+ (1,0) [0|255] "" XXX
+ SG_ STOPPING_MAYBE2 : 52|1@0+ (1,0) [0|1] "" XXX
+ SG_ RESUME_UNLATCHING_MAYBE : 54|1@0+ (1,0) [0|1] "" XXX
+ SG_ CHECKSUM : 56|8@1+ (1,0) [0|255] "" XXX
+
 BO_ 540 CRZ_CTRL: 8 XXX
  SG_ NEW_SIGNAL_6 : 10|1@0+ (1,0) [0|1] "" XXX
  SG_ NEW_SIGNAL_9 : 31|1@0+ (1,0) [0|255] "" XXX
@@ -189,6 +225,10 @@ BO_ 540 CRZ_CTRL: 8 XXX
  SG_ MSG_1_INV_COPY : 8|1@0+ (1,0) [0|7] "" XXX
  SG_ RADAR_HAS_LEAD : 23|1@0+ (1,0) [0|1] "" XXX
  SG_ RADAR_LEAD_RELATIVE_DISTANCE : 31|3@0+ (1,0) [0|5] "" XXX
+ SG_ NEW_SIGNAL_7 : 22|2@0+ (1,0) [0|3] "" XXX
+ SG_ NEW_SIGNAL_8 : 16|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_5 : 42|6@0+ (1,0) [0|63] "" XXX
+ SG_ LC_NEW_SIGNAL_6 : 49|3@1+ (1,0) [0|7] "" XXX
 
 BO_ 543 CRZ_EVENTS: 8 XXX
  SG_ CTR : 51|4@0+ (1,0) [0|15] "" XXX
@@ -274,3 +314,14 @@ VAL_ 540 RADAR_HAS_LEAD 0 "NO LEAD" 1 "HAS LEAD" ;
 VAL_ 540 RADAR_LEAD_RELATIVE_DISTANCE 0 "NO LEAD" 1 "FARTHEST" 2 "4" 3 "3" 4 "2" 5 "NEAREST" ;
 VAL_ 1143 LEFT_BS_STATUS 0 "No object detected" 1 "Object detected in left blindspot" 2 "Object detected in left blindspot with blinker - warning" ;
 VAL_ 1143 RIGHT_BS_STATUS 0 "No object detected" 1 "Object detected in right blindspot" 2 "Object detected in right blindspot with blinker - warning" ;
+
+CM_ BO_ 117 "Added for longitudinal control support (based on PR commaai/opendbc#3355). May need verification on Mazda 2 DJ MT.";
+CM_ BO_ 134 "Added for longitudinal control support (based on PR commaai/opendbc#3355). May need verification on Mazda 2 DJ MT.";
+CM_ BO_ 539 "Added for longitudinal control support (based on PR commaai/opendbc#3355). CRZ_INFO provides ACC/accel command signals.";
+CM_ SG_ 539 ACCEL_CMD "Acceleration command for longitudinal control, range -4096 to +4095";
+CM_ SG_ 539 ACC_ACTIVE "1 when ACC is actively controlling speed";
+CM_ SG_ 539 ACC_SET_ALLOWED "1 when ACC can be set/engaged";
+CM_ SG_ 540 NEW_SIGNAL_7 "Added for longitudinal control support (PR commaai/opendbc#3355)";
+CM_ SG_ 540 NEW_SIGNAL_8 "Added for longitudinal control support (PR commaai/opendbc#3355)";
+CM_ SG_ 540 NEW_SIGNAL_5 "Added for longitudinal control support (PR commaai/opendbc#3355)";
+CM_ SG_ 540 LC_NEW_SIGNAL_6 "Added for longitudinal control support (PR commaai/opendbc#3355). Renamed from NEW_SIGNAL_6 to avoid conflict with existing signal at bit 10.";

@@ -4,10 +4,13 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.mazda.values import CAR, LKAS_LIMITS
 from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
+from openpilot.selfdrive.car.mazda.longitudinal import enter_radar_programming_session
 
 ButtonType = car.CarState.ButtonEvent.Type
 FrogPilotButtonType = custom.FrogPilotCarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
+
+MAZDA_LONG_SAFETY_PARAM = 1
 
 class CarInterface(CarInterfaceBase):
 
@@ -38,7 +41,36 @@ class CarInterface(CarInterfaceBase):
       ret.transmissionType = car.CarParams.TransmissionType.manual
       ret.safetyConfigs[0].safetyParam = 1  # MAZDA_PARAM_2_DJ_MT for panda safety
 
+    # Alpha longitudinal control for Mazda 2 DJ MT
+    ret.alphaLongitudinalAvailable = candidate == CAR.MAZDA_2_DJ_MT
+    ret.openpilotLongitudinalControl = experimental_long and ret.alphaLongitudinalAvailable
+
+    if ret.openpilotLongitudinalControl:
+      ret.pcmCruise = True
+      ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.mazda, MAZDA_LONG_SAFETY_PARAM)]
+      ret.radarUnavailable = True
+      ret.startingState = True
+      ret.startAccel = 1.2
+      ret.vEgoStarting = 0.15
+      ret.vEgoStopping = 0.5
+      ret.longitudinalActuatorDelay = 0.36
+      ret.longitudinalTuning.kpBP = [20.]
+      ret.longitudinalTuning.kpV = [1.2, 1.0, 0.8]
+      ret.longitudinalTuning.kiBP = [20.]
+      ret.longitudinalTuning.kiV = [0.18, 0.12, 0.08]
+      ret.centerToFront = ret.wheelbase * 0.41
+
     return ret
+
+  @staticmethod
+  def init(CP, logcan, sendcan):
+    if CP.openpilotLongitudinalControl:
+      enter_radar_programming_session(logcan, sendcan)
+
+  @staticmethod
+  def deinit(CP, logcan, sendcan):
+    if CP.openpilotLongitudinalControl:
+      return
 
   # returns a car.CarState
   def _update(self, c, frogpilot_toggles):
@@ -49,6 +81,11 @@ class CarInterface(CarInterfaceBase):
       *create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise}),
       *create_button_events(self.CS.lkas_enabled, self.CS.lkas_previously_enabled, {1: FrogPilotButtonType.lkas}),
     ]
+
+    # Longitudinal button events
+    if self.CP.openpilotLongitudinalControl:
+      ret.buttonEvents += create_button_events(self.CS.cancel_button, self.CS.prev_cancel_button, ButtonType.cancel)
+      ret.buttonEvents += create_button_events(self.CS.main_button, self.CS.prev_main_button, ButtonType.mainCruise)
 
     # events
     events = self.create_common_events(ret)

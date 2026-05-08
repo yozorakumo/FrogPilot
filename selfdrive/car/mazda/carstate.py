@@ -22,6 +22,11 @@ class CarState(CarStateBase):
     self.prev_distance_button = 0
     self.distance_button = 0
 
+    self.prev_cancel_button = False
+    self.cancel_button = False
+    self.prev_main_button = False
+    self.main_button = False
+
   def update(self, cp, cp_cam, frogpilot_toggles):
 
     ret = car.CarState.new_message()
@@ -29,6 +34,12 @@ class CarState(CarStateBase):
 
     self.prev_distance_button = self.distance_button
     self.distance_button = cp.vl["CRZ_BTNS"]["DISTANCE_LESS"]
+
+    # Button state tracking for longitudinal control
+    self.prev_cancel_button = self.cancel_button
+    self.cancel_button = cp.vl["CRZ_BTNS"]["CAN_OFF"] == 1
+    self.prev_main_button = self.main_button
+    self.main_button = bool(cp.vl["CRZ_BTNS"]["MODE_X"] and cp.vl["CRZ_BTNS"]["MODE_Y"])
 
     ret.wheelSpeeds = self.get_wheel_speeds(
       cp.vl["WHEEL_SPEEDS"]["FL"],
@@ -67,8 +78,8 @@ class CarState(CarStateBase):
     left_blink = cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1
     right_blink = cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1
 
-    # ハザード判定: TURN_SWITCHのHAZARDシグナルを使用
-    hazard = cp.vl.get("TURN_SWITCH", {}).get("HAZARD", 0) == 1
+    # ハザード判定: 左右ウインカーが同時に点滅している場合
+    hazard = left_blink and right_blink
     if hazard:
       ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, False, False)
     else:
@@ -108,8 +119,15 @@ class CarState(CarStateBase):
 
     # TODO: the signal used for available seems to be the adaptive cruise signal, instead of the main on
     #       it should be used for carState.cruiseState.nonAdaptive instead
-    ret.cruiseState.available = cp.vl["CRZ_CTRL"]["CRZ_AVAILABLE"] == 1
-    ret.cruiseState.enabled = cp.vl["CRZ_CTRL"]["CRZ_ACTIVE"] == 1
+    if self.CP.openpilotLongitudinalControl:
+      # Alpha-longitudinal mode: PEDALS-based cruise state detection
+      acc_armed = cp.vl["PEDALS"]["ACC_OFF"] == 1
+      acc_active = cp.vl["PEDALS"]["ACC_ACTIVE"] == 1
+      ret.cruiseState.available = acc_armed or acc_active
+      ret.cruiseState.enabled = acc_active
+    else:
+      ret.cruiseState.available = cp.vl["CRZ_CTRL"]["CRZ_AVAILABLE"] == 1
+      ret.cruiseState.enabled = cp.vl["CRZ_CTRL"]["CRZ_ACTIVE"] == 1
     ret.cruiseState.standstill = cp.vl["PEDALS"]["STANDSTILL"] == 1
     ret.cruiseState.speed = cp.vl["CRZ_EVENTS"]["CRZ_SPEED"] * CV.KPH_TO_MS
 
