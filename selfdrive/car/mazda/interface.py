@@ -41,9 +41,9 @@ class CarInterface(CarInterfaceBase):
       ret.transmissionType = car.CarParams.TransmissionType.manual
       ret.safetyConfigs[0].safetyParam = 1  # MAZDA_PARAM_2_DJ_MT for panda safety
 
-    # Alpha longitudinal control for Mazda 2 DJ MT
-    ret.alphaLongitudinalAvailable = candidate == CAR.MAZDA_2_DJ_MT
-    ret.openpilotLongitudinalControl = experimental_long and ret.alphaLongitudinalAvailable
+    # Experimental longitudinal control for Mazda 2 DJ MT
+    ret.experimentalLongitudinalAvailable = candidate == CAR.MAZDA_2_DJ_MT
+    ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
 
     if ret.openpilotLongitudinalControl:
       ret.pcmCruise = True
