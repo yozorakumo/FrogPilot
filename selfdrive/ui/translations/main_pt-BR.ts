@@ -4078,6 +4078,112 @@ Desenvolvedor - Configurações altamente personalizáveis para entusiastas expe
         <source>Are you sure you want to reset all toggles to match stock openpilot?</source>
         <translation type="gpt-5-generated">Tem certeza de que deseja redefinir todas as alternâncias para corresponder ao openpilot padrão?</translation>
     </message>
+    <message>
+        <source>Pair to "The Pond"</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>UNPAIR</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>PAIR</source>
+        <translation type="unfinished">PAREAR</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Pair this device with your frogpilot.com account&lt;/b&gt; to remotely manage settings from anywhere.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Please connect to the internet first!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to unpair from "The Pond"?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unpair</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unpairing...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Requesting code...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Authentication failed. Please restart your device.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unofficial or modified build detected.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Access denied: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Too many attempts. Please wait and try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Server is temporarily unavailable. Please try again later.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Server error (%1): %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unknown error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Network error: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Failed to unpair</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Failed to get pairing code.
+
+%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unpaired!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Failed to get pairing code. Please try again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Code: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Go to "frogpilot.com/the_pond" and enter this code: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Code expired</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paired!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Device successfully paired to "The Pond"!</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>FrogPilotVehiclesPanel</name>
@@ -4368,6 +4474,82 @@ Desenvolvedor - Configurações altamente personalizáveis para entusiastas expe
     <message>
         <source>&lt;b&gt;Improves acceleration from a standstill for a more responsive throttle feel in city driving.&lt;/b&gt;</source>
         <translation type="gpt-5-generated">&lt;b&gt;Melhora a aceleração a partir da imobilidade para uma resposta do acelerador mais ágil na condução urbana.&lt;/b&gt;</translation>
+    </message>
+    <message>
+        <source>Mazda Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;FrogPilot features for Mazda vehicles.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MT UI Display</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Enable the MT UI display for Mazda vehicles.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MT Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Enable MT mode for Mazda vehicles.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Automatic Door Lock</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Automatically lock doors.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lock Speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;The speed at which the doors will automatically lock.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Automatic Door Unlock</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Automatically unlock doors.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unlock Speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;The speed at which the doors will automatically unlock.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation type="unfinished">Desligado</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> kph</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Ignition</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Parking Brake</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
