@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - feat-mazda2-dj-mt-frog
+      - test-mazda2-dj-mt-frog
+      - dev-mazda2-dj-mt-frog
   workflow_dispatch:
     inputs:
       not_vetted:
