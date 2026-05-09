@@ -42,10 +42,8 @@ class CarInterface(CarInterfaceBase):
       ret.safetyConfigs[0].safetyParam = 1  # MAZDA_PARAM_2_DJ_MT for panda safety
 
     # Alpha longitudinal control for Mazda 2 DJ MT
-    # DISABLED: longitudinal.py import paths need fixing for FrogPilot
-    # ret.alphaLongitudinalAvailable = candidate == CAR.MAZDA_2_DJ_MT
-    ret.alphaLongitudinalAvailable = False
-    ret.openpilotLongitudinalControl = False
+    ret.alphaLongitudinalAvailable = candidate == CAR.MAZDA_2_DJ_MT
+    ret.openpilotLongitudinalControl = experimental_long and ret.alphaLongitudinalAvailable
 
     if ret.openpilotLongitudinalControl:
       ret.pcmCruise = True
