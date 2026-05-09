@@ -60,6 +60,8 @@ echo "Configuring runner..."
 
 # サービスとしてインストール・起動
 echo "Installing and starting runner service..."
+# comma threeはルートファイルシステムが読み取り専用の場合がある
+sudo mount -o remount,rw / 2>/dev/null || true
 sudo ./svc.sh install
 sudo ./svc.sh start
 
