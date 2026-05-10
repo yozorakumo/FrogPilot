@@ -77,11 +77,12 @@ class CarState(CarStateBase):
     ret.rightBlindspot = cp.vl["BSM"]["RIGHT_BS_STATUS"] != 0
     left_blink = cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1
     right_blink = cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1
+    hazard_switch = cp.vl["TURN_SWITCH"]["HAZARD"] == 1
 
-    # ハザード判定: 左右ウインカーが同時に点滅している場合
-    hazard = left_blink and right_blink
+    # ハザードはTURN_SWITCHのHAZARDシグナルで判定
+    hazard = hazard_switch or (left_blink and right_blink)
     if hazard:
-      ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, False, False)
+      ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, True, True)
     else:
       ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, left_blink, right_blink)
 

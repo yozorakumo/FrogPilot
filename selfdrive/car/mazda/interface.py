@@ -77,15 +77,17 @@ class CarInterface(CarInterfaceBase):
     ret, fp_ret = self.CS.update(self.cp, self.cp_cam, frogpilot_toggles)
 
      # TODO: add button types for inc and dec
-    ret.buttonEvents = [
+    button_events = [
       *create_button_events(self.CS.distance_button, self.CS.prev_distance_button, {1: ButtonType.gapAdjustCruise}),
       *create_button_events(self.CS.lkas_enabled, self.CS.lkas_previously_enabled, {1: FrogPilotButtonType.lkas}),
     ]
 
     # Longitudinal button events
     if self.CP.openpilotLongitudinalControl:
-      ret.buttonEvents += create_button_events(self.CS.cancel_button, self.CS.prev_cancel_button, ButtonType.cancel)
-      ret.buttonEvents += create_button_events(self.CS.main_button, self.CS.prev_main_button, ButtonType.mainCruise)
+      button_events += create_button_events(self.CS.cancel_button, self.CS.prev_cancel_button, {True: ButtonType.cancel})
+      button_events += create_button_events(self.CS.main_button, self.CS.prev_main_button, {True: ButtonType.mainCruise})
+
+    ret.buttonEvents = button_events
 
     # events
     events = self.create_common_events(ret)

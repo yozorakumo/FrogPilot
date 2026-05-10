@@ -422,8 +422,8 @@ BO_ 157 CRZ_BTNS: 8 XXX
  SG_ CTR : 29|4@0+ (1,0) [0|15] "" XXX
 
 BO_ 154 BLINK_INFO: 8 XXX
- SG_ LEFT_BLINK : 18|1@1+ (1,0) [0|3] "" XXX
- SG_ RIGHT_BLINK : 19|1@0+ (1,0) [0|255] "" XXX
+ SG_ LEFT_BLINK : 18|1@1+ (1,0) [0|1] "" XXX
+ SG_ RIGHT_BLINK : 19|1@1+ (1,0) [0|1] "" XXX
  SG_ REAR_WIPER_ON : 0|1@0+ (1,0) [0|1] "" XXX
  SG_ WIPER_LO : 33|1@1+ (1,0) [0|31] "" XXX
  SG_ WIPER_HI : 34|1@0+ (1,0) [0|1] "" XXX
