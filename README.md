@@ -45,6 +45,44 @@
 
 ---
 
+## 🔄 CI/CD パイプライン（自動ビルド・デプロイ）
+
+本リポジトリでは、GitHub Actions を利用した **自動ビルド＆デプロイパイプライン** を構築しています。コードをプッシュするだけで、comma デバイス上で自動的にビルドが行われ、ビルド済みの成果物がリポジトリに反映されます。
+
+### 対象ブランチ
+以下のブランチにプッシュされた際、自動的にCIがトリガーされます。
+- `feat-mazda2-dj-mt-frog`
+- `test-mazda2-dj-mt-frog`
+- `dev-mazda2-dj-mt-frog`
+
+### 自動ビルドの流れ
+1. **プッシュ → CIトリガー**: 対象ブランチにコードをプッシュすると、[Compile FrogPilot](.github/workflows/compile_frogpilot.yaml) ワークフローが自動起動します。
+2. **セルフホストランナーでビルド**: comma デバイス（c3/c3x）自体がセルフホストランナーとして動作し、`/data/openpilot` 上で以下を実行します:
+   - `git fetch` → `git reset --hard` で最新コードを取得
+   - `poetry install` で依存関係を解決
+   - `scons` でネイティブビルドを実行
+3. **ビルド成果物をコミット**: ビルドが完了すると、成果物をコミット（メッセージ: `Compile FrogPilot [skip ci]`）し、`git push --force` でリポジトリに反映します。
+4. **`[skip ci]` による無限ループ防止**: ビルドコミットには `[skip ci]` を付与しており、CI が再トリガーされるのを防ぎます。
+
+### 手動実行（workflow_dispatch）
+GitHub の Actions タブから手動でワークフローを実行することも可能です。以下のオプションを指定できます:
+- **runner**: `c3` または `c3x` を選択
+- **publish_frogpilot**: `FrogPilot` ブランチへプッシュ
+- **publish_staging**: `FrogPilot-Staging` ブランチへプッシュ
+- **publish_testing**: `FrogPilot-Testing` ブランチへプッシュ
+- **update_translations**: 翻訳の自動更新を実行
+
+### その他のワークフロー
+| ワークフロー | 説明 |
+|---|---|
+| [`compile_frogpilot.yaml`](.github/workflows/compile_frogpilot.yaml) | メインのビルド＆デプロイ |
+| [`schedule_update.yaml`](.github/workflows/schedule_update.yaml) | 定期スケジュールによる自動更新 |
+| [`update_pr_branch.yaml`](.github/workflows/update_pr_branch.yaml) | PR ブランチの自動更新 |
+| [`update_release_branch.yaml`](.github/workflows/update_release_branch.yaml) | リリースブランチの自動更新 |
+| [`review_pull_request.yaml`](.github/workflows/review_pull_request.yaml) | PR の自動レビュー |
+
+---
+
 ## ⚠️ 注意事項・免責
 
 - **本ブランチの利用・改造・実車適用はすべて自己責任で行ってください。**
