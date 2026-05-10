@@ -83,6 +83,60 @@ GitHub の Actions タブから手動でワークフローを実行すること�
 
 ---
 
+## 🔧 ロンジチューディナル制御（縦方向制御）のアーキテクチャ
+
+Mazda2 DJ MT では、**experimental longitudinal mode** により縦方向（加減速）の制御を openpilot が担います。以下にその技術的な仕組みを説明します。
+
+### レーダーECUの UDS プログラミングモードによる無効化
+
+Mazda のストック ACC（MRCC）は **レーダーECU が縦方向を制御** する設計になっています。openpilot が縦方向を制御するには、このレーダーECU の制御を無効化する必要があります。
+
+| 項目 | 詳細 |
+|---|---|
+| **レーダーECU アドレス** | `0x764`（CAN バス 0） |
+| **無効化方式** | UDS 診断セッション制御（`0x10 0x02` → PROGRAMMING SESSION） |
+| **セッション維持** | テスタープレゼント（`0x3E 0x80`）を約 2Hz で定期送信 |
+| **参照実装** | [`longitudinal.py`](selfdrive/car/mazda/longitudinal.py) |
+
+### なぜ「レーダーサポート: いいえ」なのか
+
+レーダーECU を **PROGRAMMING SESSION** に移行させると、レーダーは通常の CAN メッセージ出力を停止します。これには以下が含まれます：
+
+- **レーダートラックデータ**（`0x361`〜`0x366`：距離・角度・相対速度）
+- **ACC 制御メッセージ**（`CRZ_CTRL` 等）
+
+したがって、[`mazda_radar.dbc`](opendbc/mazda_radar.dbc) がリポジトリに存在しても、PROGRAMMING モード中はこれらのメッセージが流れないため **レーダーデータを取得できません**。これは [`interface.py`](selfdrive/car/mazda/interface.py) で `radarUnavailable = True` が設定されている理由です。
+
+> **参考**: upstream の [commaai/opendbc#3355](https://github.com/commaai/opendbc/pull/3355)（yummydirtx による CX-5 2022 向け alpha longitudinal）でも全く同じアプローチを採用しており、"Radar remains unavailable while longitudinal is synthesized" と明記されています。
+
+### 代わりの先行車検出: ビジョンベース
+
+レーダーデータが利用できないため、openpilot の **ビジョンモデル**（カメラベース）が先行車の検出を担当します。これにより、レーダーなしでも追従制御が可能です。
+
+### 合成 ACC メッセージの送信
+
+レーダーECU の代わりに、openpilot が以下の合成メッセージを送信します：
+
+| メッセージ | ID | 内容 |
+|---|---|---|
+| `CRZ_INFO` | `0x21B` | 加速度コマンド、ACC 状態、ストップ/レジュームビット |
+| `CRZ_CTRL` | `0x21C` | クルーズ状態、先行車有無、距離設定、プロファイルテンプレート |
+
+これらは Mazda の期待する状態遷移（ストップ＆ゴーのホールド/ラッチ/レジューム）をエミュレートするよう設計されています。詳細は [`longitudinal.py`](selfdrive/car/mazda/longitudinal.py) の `MazdaLongitudinalProfile` を参照してください。
+
+### ⚠️ 制限事項
+
+- **AEB（自動緊急ブレーキ）が無効化されます** — レーダーECU がプログラミングモードにあるため
+- **ダッシュボードにレーダー関連の警告灯が表示される場合があります**（走行への影響は確認されていません）
+- **FCW（前方衝突警告）も無効化されます**
+
+### 🔮 将来の改善可能性
+
+- comma デバイスで CAN ダンプを取得し、PROGRAMMING モード中にレーダートラックデータ（`0x361`〜`0x366`）が流れているか検証
+- もし流れていれば、`RadarInterface` を実装してビジョン + レーダーの融合が可能になる（upstream PR #3355 の "Future Work" にも記載）
+
+---
+
 ## ⚠️ 注意事項・免責
 
 - **本ブランチの利用・改造・実車適用はすべて自己責任で行ってください。**
