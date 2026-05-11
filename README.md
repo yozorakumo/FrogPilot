@@ -43,6 +43,31 @@
 ## 🛠 開発・調査の記録
 今回の対応にあたって実施した CAN バス解析の詳細は、プロジェクト内の設計ドキュメントを参照してください。
 
+### Mazda 2 DJ MT (FrogPilot) 修正履歴
+
+#### 1. ISO-TP Flow Control許可の追加 (`safety_mazda.h`)
+- **問題**: バイトオフセット修正（`data[1]==0x3E`）後、"Can Error Check connections"エラーが発生
+- **原因**: ISO-TP Flow Controlフレーム（`0x30`）がセーフティホワイトリストでブロックされていた
+- **修正**: `data[0] >> 4` でフレームタイプを抽出し、Flow Control（type=`0x3`）を許可リストに追加
+- **ファイル**: [`panda/board/safety/safety_mazda.h`](panda/board/safety/safety_mazda.h)
+
+#### 2. ステアリング角度エラー値ガード (`carstate.py`)
+- **問題**: 右ウインカー/ハザード時にハンドルマークが右に急激に回転したまま戻らない
+- **原因**: ステアリング角度センサーがエラーマーカー値 `0xFFFE`（1676.70°）を出力
+- **修正**: `abs(steer_angle) > 360` の異常値を検出し、前回の有効値を保持
+- **ファイル**: [`selfdrive/car/mazda/carstate.py`](selfdrive/car/mazda/carstate.py)
+
+#### 3. MT ギアポジション信号の修正 (`carstate.py`)
+- **問題**: MT車なのにAT用のGEAR信号を読んでいた
+- **原因**: `GEAR`（AT用、`48|5@1+`）ではなく`GEAR_POS`（MT用、`55|8@0+`）を使用すべきだった
+- **修正**: `GEAR` → `GEAR_POS` に変更、値マッピングを更新
+- **ファイル**: [`selfdrive/car/mazda/carstate.py`](selfdrive/car/mazda/carstate.py)
+- **CAN ID**: `0x165` (PEDALS), byte[6]
+- **値マッピング**: `2=6th`, `3=5th`, `4=4th`, `5=3rd`, `7=2nd`, `13=1st`, `14=1st(clutch)`
+
+#### 検証に使用した実データ
+- `Y:\Github\mazda2canbus\realdata` の rlog データ（43,135件のUDSメッセージ、359,174 CAN フレーム）
+
 ---
 
 ## 🔄 CI/CD パイプライン（自動ビルド・デプロイ）
