@@ -71,7 +71,9 @@ class CarState(CarStateBase):
         14: car.CarState.GearShifter.first,  # clutch transitional
       }
       ret.gearShifter = gear_map.get(can_gear, car.CarState.GearShifter.neutral)
-      fp_ret.gearStep = can_gear
+      # Map raw CAN GEAR_POS values to actual gear numbers (1-6), 0 for neutral/unknown
+      gear_step_map = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1, 14: 1}
+      fp_ret.gearStep = gear_step_map.get(can_gear, 0)
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
       ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
