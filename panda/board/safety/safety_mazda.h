@@ -168,12 +168,16 @@ static bool mazda_tx_hook(const CANPacket_t *to_send) {
       }
     }
 
-    // longitudinal: RADAR UDS whitelist (only allow tester present and session control)
+    // longitudinal: RADAR UDS whitelist (only allow tester present, session control, and ISO-TP flow control)
     // ISO-TP single frame: data[0]=PCI, data[1]=SID, data[2]=SubFunction
+    // ISO-TP flow control: data[0]=0x30 (FC type), data[1]=BS, data[2]=STmin
+    // ISO-TP consecutive frame: data[0]=0x2X (CF type)
     if (mazda_longitudinal && (addr == MAZDA_RADAR_UDS)) {
-      bool tester_present = (to_send->data[1] == 0x3EU) && (to_send->data[2] == 0x80U);
-      bool session_control = (to_send->data[1] == 0x10U) && ((to_send->data[2] == 0x01U) || (to_send->data[2] == 0x02U));
-      if (!(tester_present || session_control)) {
+      uint8_t frame_type = to_send->data[0] >> 4U;
+      bool tester_present = (frame_type == 0x0U) && (to_send->data[1] == 0x3EU) && (to_send->data[2] == 0x80U);
+      bool session_control = (frame_type == 0x0U) && (to_send->data[1] == 0x10U) && ((to_send->data[2] == 0x01U) || (to_send->data[2] == 0x02U));
+      bool flow_control = (frame_type == 0x3U);
+      if (!(tester_present || session_control || flow_control)) {
         tx = false;
       }
     }
