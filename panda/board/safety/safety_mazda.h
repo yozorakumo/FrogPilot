@@ -169,9 +169,10 @@ static bool mazda_tx_hook(const CANPacket_t *to_send) {
     }
 
     // longitudinal: RADAR UDS whitelist (only allow tester present and session control)
+    // ISO-TP single frame: data[0]=PCI, data[1]=SID, data[2]=SubFunction
     if (mazda_longitudinal && (addr == MAZDA_RADAR_UDS)) {
-      bool tester_present = (to_send->data[2] == 0x3EU) && (to_send->data[3] == 0x80U);
-      bool session_control = (to_send->data[2] == 0x10U) && ((to_send->data[3] == 0x01U) || (to_send->data[3] == 0x02U));
+      bool tester_present = (to_send->data[1] == 0x3EU) && (to_send->data[2] == 0x80U);
+      bool session_control = (to_send->data[1] == 0x10U) && ((to_send->data[2] == 0x01U) || (to_send->data[2] == 0x02U));
       if (!(tester_present || session_control)) {
         tx = false;
       }
