@@ -65,6 +65,16 @@
 - **CAN ID**: `0x165` (PEDALS), byte[6]
 - **値マッピング**: `2=6th`, `3=5th`, `4=4th`, `5=3rd`, `7=2nd`, `13=1st`, `14=1st(clutch)`
 
+#### 4. サイドブレーキ・クラッチ・ニュートラルのCAN信号調査
+- **サイドブレーキ (PARKING_BRAKE)**: CAN ID `0x09F` (159), MSG_11, byte0 bit4、ON=1/OFF=0
+  - DBC定義に `SG_ PARKING_BRAKE : 4|1@0+` を追加
+- **クラッチ**: **CAN信号なし**（物理スイッチがCANバスに出力されない）
+  - `CLUTCH_PRESSED` (0x165 byte5 bit3)、`CLUTCH_ALT` (0x09E byte0 bit5) ともに機能せず
+  - クラッチ検出には別のアプローチ（RPM変化等）が必要
+- **ニュートラル**: `GEAR_POS=13` は N と 1st で共通
+  - GEAR_POSだけでは N と 1st の区別に不十分
+  - 値テーブルを `13 "1st_or_N"` に更新し、曖昧さを明記
+
 #### 検証に使用した実データ
 - `Y:\Github\mazda2canbus\realdata` の rlog データ（43,135件のUDSメッセージ、359,174 CAN フレーム）
 
