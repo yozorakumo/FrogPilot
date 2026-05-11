@@ -56,11 +56,16 @@ class CarState(CarStateBase):
     ret.standstill = speed_kph <= .1
 
     if self.CP.flags & MazdaFlags.MT:
-      ret.clutchPressed = cp.vl["PEDALS"]["CLUTCH_PRESSED"] == 1
-      # MT gear detection using PEDALS (0x165) GEAR_POS signal
-      # Real data mapping from Mazda 2 DJ MT:
-      #   13=1st, 14=1st (clutch half-engaged), 7=2nd, 5=3rd, 4=4th, 3=5th, 2=6th
-      can_gear = int(cp.vl["PEDALS"]["GEAR_POS"])
+      # GEAR_POS値からクラッチ・ニュートラル状態を判定
+      # GEAR_POS値の意味: 2=6速, 3=5速, 4=4速, 5=3速, 7=2速, 13=1速
+      # 中間値: 14=ニュートラル/クラッチ, 6/8/9/10/11/12=シフト遷移中
+      gear_pos = int(cp.vl["PEDALS"]["GEAR_POS"])
+      GEAR_VALUES = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1}  # GEAR_POS -> ギア番号
+      VALID_GEAR_POS = set(GEAR_VALUES.keys())
+
+      ret.clutchPressed = gear_pos not in VALID_GEAR_POS  # クラッチが踏まれている = ギアが確定していない
+      # ニュートラル判定はGEAR_POS==14（ギア変更時に必ず経由する中間値）
+
       gear_map = {
         2: car.CarState.GearShifter.sixth,
         3: car.CarState.GearShifter.fifth,
@@ -68,12 +73,10 @@ class CarState(CarStateBase):
         5: car.CarState.GearShifter.third,
         7: car.CarState.GearShifter.second,
         13: car.CarState.GearShifter.first,
-        14: car.CarState.GearShifter.first,  # clutch transitional
       }
-      ret.gearShifter = gear_map.get(can_gear, car.CarState.GearShifter.neutral)
+      ret.gearShifter = gear_map.get(gear_pos, car.CarState.GearShifter.neutral)
       # Map raw CAN GEAR_POS values to actual gear numbers (1-6), 0 for neutral/unknown
-      gear_step_map = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1, 14: 1}
-      fp_ret.gearStep = gear_step_map.get(can_gear, 0)
+      fp_ret.gearStep = GEAR_VALUES.get(gear_pos, 0)
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
       ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
@@ -209,7 +212,6 @@ class CarState(CarStateBase):
     if CP.flags & MazdaFlags.GEN1 and CP.flags & MazdaFlags.MT:
       messages += [
         ("NEW_MSG_28", 50),
-        ("ID_9E", 50),
       ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)

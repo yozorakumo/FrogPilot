@@ -40,10 +40,6 @@ BS_:
 BU_:
 
 
-BO_ 158 ID_9E: 8 XXX
- SG_ CLUTCH_ALT : 5|1@0+ (1,0) [0|1] "" XXX
- SG_ NEUTRAL_SW : 0|1@0+ (1,0) [0|1] "" XXX
-
 BO_ 159 MSG_11: 8 XXX
  SG_ PARKING_BRAKE : 4|1@0+ (1,0) [0|1] "" XXX
 
@@ -59,8 +55,6 @@ BO_ 357 PEDALS: 8 XXX
  SG_ NO_BRAKE : 6|1@0+ (1,0) [0|7] "" XXX
  SG_ BRAKE_ON_2 : 7|1@1+ (1,0) [0|255] "" XXX
  SG_ NO_BRAKE_2 : 15|1@0+ (1,0) [0|7] "" XXX
- SG_ GEAR : 48|5@1+ (1,0) [0|255] "" XXX
- SG_ CLUTCH_PRESSED : 43|1@0+ (1,0) [0|1] "" XXX
  SG_ GEAR_POS : 55|8@0+ (1,0) [0|255] "" XXX
 
 BO_ 358 NEW_MSG_28: 8 XXX
@@ -299,7 +293,7 @@ BO_ 1088 CAM_LANEINFO: 8 XXX
  SG_ TJA : 38|3@0+ (1,0) [0|7] "" XXX
  SG_ TJA_TRANSITION : 27|2@0+ (1,0) [0|63] "" XXX
 
-CM_ SG_ 357 GEAR "13P, 26R, 13N, 24D";
+CM_ SG_ 357 GEAR_POS "MT gear position signal for Mazda 2 DJ. Values: 2=6th, 3=5th, 4=4th, 5=3rd, 7=2nd, 13=1st, 14=Neutral/Clutch transitional. Values 6/8/9/10/11/12=shift transition (clutch pressed). Clutch is detected when GEAR_POS is NOT in {2,3,4,5,7,13}.";
 CM_ SG_ 1088 LANE_LINES "0 LKAS disabled, 1 no lines, 2 two lines, 3 left line, 4 right line";
 CM_ SG_ 1088 TJA "2: crz not active,  3: TJA not allowed,  4: TJA allowed";
 CM_ SG_ 1088 TJA_TRANSITION "3: if TJA signal is 3, otherwise set to 0";
@@ -311,7 +305,7 @@ CM_ SG_ 540 DISTANCE_SETTING "Radar distance 0: disabled, 1: 4 bars, 2: 3 bars, 
 CM_ SG_ 1143 REAR_CT_ALERT "Rear Cross Traffic Alert";
 CM_ SG_ 579 STEERING_ANGLE "steering angle aligns with 0.022 factor and -45.06 offset";
 
-VAL_ 357 GEAR_POS 2 "6th" 3 "5th" 4 "4th" 5 "3rd" 7 "2nd" 13 "1st_or_N" 14 "1st" ;
+VAL_ 357 GEAR_POS 2 "6th" 3 "5th" 4 "4th" 5 "3rd" 7 "2nd" 13 "1st" 14 "Neutral/Clutch" ;
 VAL_ 159 PARKING_BRAKE 0 "OFF" 1 "ON" ;
 VAL_ 358 GEAR_POS 4 "Forward" 5 "Forward" 6 "Reverse" ;
 VAL_ 540 RADAR_HAS_LEAD 0 "NO LEAD" 1 "HAS LEAD" ;
@@ -329,6 +323,4 @@ CM_ SG_ 540 NEW_SIGNAL_7 "Added for longitudinal control support (PR commaai/ope
 CM_ SG_ 540 NEW_SIGNAL_8 "Added for longitudinal control support (PR commaai/opendbc#3355)";
 CM_ SG_ 540 NEW_SIGNAL_5 "Added for longitudinal control support (PR commaai/opendbc#3355)";
 CM_ SG_ 540 LC_NEW_SIGNAL_6 "Added for longitudinal control support (PR commaai/opendbc#3355). Renamed from NEW_SIGNAL_6 to avoid conflict with existing signal at bit 10.";
-CM_ SG_ 357 CLUTCH_PRESSED "NOT FUNCTIONAL on Mazda 2 DJ MT: clutch pedal switch does not produce CAN signal on this vehicle";
-CM_ SG_ 158 CLUTCH_ALT "NOT FUNCTIONAL on Mazda 2 DJ MT: no CAN output from clutch switch";
-CM_ SG_ 158 NEUTRAL_SW "NOT FUNCTIONAL on Mazda 2 DJ MT: no CAN output from neutral switch";
+CM_ SG_ 357 GEAR_POS "Removed signals: CLUTCH_PRESSED (byte5 bit3, always 0), GEAR (AT-only signal). Removed BO_ 158 (ID_9E): CLUTCH_ALT and NEUTRAL_SW (both always 0). Clutch/neutral detection uses GEAR_POS values instead.";
