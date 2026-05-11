@@ -57,17 +57,20 @@ class CarState(CarStateBase):
 
     if self.CP.flags & MazdaFlags.MT:
       ret.clutchPressed = cp.vl["PEDALS"]["CLUTCH_PRESSED"] == 1
-      # MT gear detection using PEDALS (0x165) GEAR signal
-      # Values from DBC comment: 13=P, 26=R, 13=N, 24=D (raw GEAR byte values)
-      can_gear = int(cp.vl["PEDALS"]["GEAR"])
-      if can_gear == 26:  # R
-        ret.gearShifter = car.CarState.GearShifter.reverse
-      elif can_gear == 13:  # N (same value as P, use clutch to distinguish)
-        ret.gearShifter = car.CarState.GearShifter.neutral
-      elif can_gear == 24:  # D
-        ret.gearShifter = car.CarState.GearShifter.drive
-      else:
-        ret.gearShifter = car.CarState.GearShifter.drive
+      # MT gear detection using PEDALS (0x165) GEAR_POS signal
+      # Real data mapping from Mazda 2 DJ MT:
+      #   13=1st, 14=1st (clutch half-engaged), 7=2nd, 5=3rd, 4=4th, 3=5th, 2=6th
+      can_gear = int(cp.vl["PEDALS"]["GEAR_POS"])
+      gear_map = {
+        2: car.CarState.GearShifter.sixth,
+        3: car.CarState.GearShifter.fifth,
+        4: car.CarState.GearShifter.fourth,
+        5: car.CarState.GearShifter.third,
+        7: car.CarState.GearShifter.second,
+        13: car.CarState.GearShifter.first,
+        14: car.CarState.GearShifter.first,  # clutch transitional
+      }
+      ret.gearShifter = gear_map.get(can_gear, car.CarState.GearShifter.neutral)
       fp_ret.gearStep = can_gear
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
