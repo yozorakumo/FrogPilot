@@ -18,6 +18,7 @@ class CarState(CarStateBase):
     self.low_speed_alert = False
     self.lkas_allowed_speed = False
     self.lkas_disabled = False
+    self.steering_angle_prev = 0.0
 
     self.prev_distance_button = 0
     self.distance_button = 0
@@ -86,7 +87,14 @@ class CarState(CarStateBase):
     else:
       ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, left_blink, right_blink)
 
-    ret.steeringAngleDeg = cp.vl["STEER"]["STEER_ANGLE"]
+    steer_angle = cp.vl["STEER"]["STEER_ANGLE"]
+    # Guard against sensor error values (e.g., 0xFFFE = 1676.70°)
+    # Mazda 2 DJ steering angle sensor outputs invalid marker values
+    # during hazard/right blinker activation
+    if abs(steer_angle) > 360:  # Physical steering range is approximately ±500°
+      steer_angle = self.steering_angle_prev
+    self.steering_angle_prev = steer_angle
+    ret.steeringAngleDeg = steer_angle
     ret.steeringTorque = cp.vl["STEER_TORQUE"]["STEER_TORQUE_SENSOR"]
     ret.steeringPressed = abs(ret.steeringTorque) > LKAS_LIMITS.STEER_THRESHOLD
 
