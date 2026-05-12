@@ -262,8 +262,15 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
     paintMTGear(p, carState, frogpilotCarState);
   }
 
-  if (frogpilot_toggles.value("brake_pb_clutch_ui").toBool()) {
-    paintBrakePBClutchStatus(p, carState);
+  if (frogpilot_toggles.value("brake_pb_clutch_ui").toBool() ||
+      frogpilot_toggles.value("mazda_brake_ui").toBool() ||
+      frogpilot_toggles.value("mazda_pb_ui").toBool() ||
+      frogpilot_toggles.value("mazda_clutch_ui").toBool()) {
+    paintBrakePBClutchStatus(p, carState, frogpilot_toggles);
+  }
+
+  if (frogpilot_toggles.value("mazda_rp_meter").toBool()) {
+    paintRPMeter(p, carState);
   }
 }
 
@@ -1006,12 +1013,15 @@ void FrogPilotAnnotatedCameraWidget::paintMTGear(QPainter &p, const cereal::CarS
   p.restore();
 }
 
-void FrogPilotAnnotatedCameraWidget::paintBrakePBClutchStatus(QPainter &p, const cereal::CarState::Reader &carState) {
-  bool brake_pressed = carState.getBrakePressed();
-  bool parking_brake = carState.getParkingBrake();
-  bool clutch_pressed = carState.getClutchPressed();
+void FrogPilotAnnotatedCameraWidget::paintBrakePBClutchStatus(QPainter &p, const cereal::CarState::Reader &carState, const QJsonObject &frogpilot_toggles) {
+  bool show_brake = carState.getBrakePressed() &&
+    (frogpilot_toggles.value("brake_pb_clutch_ui").toBool() || frogpilot_toggles.value("mazda_brake_ui").toBool());
+  bool show_pb = carState.getParkingBrake() &&
+    (frogpilot_toggles.value("brake_pb_clutch_ui").toBool() || frogpilot_toggles.value("mazda_pb_ui").toBool());
+  bool show_clutch = carState.getClutchPressed() &&
+    (frogpilot_toggles.value("brake_pb_clutch_ui").toBool() || frogpilot_toggles.value("mazda_clutch_ui").toBool());
 
-  if (!brake_pressed && !parking_brake && !clutch_pressed) {
+  if (!show_brake && !show_pb && !show_clutch) {
     return;
   }
 
@@ -1026,7 +1036,7 @@ void FrogPilotAnnotatedCameraWidget::paintBrakePBClutchStatus(QPainter &p, const
   p.setFont(InterFont(36, QFont::Bold));
 
   // Brake pedal - Red
-  if (brake_pressed) {
+  if (show_brake) {
     QRect brakeRect(startX, startY, itemWidth, 60);
     p.setBrush(QColor(201, 34, 49, 180));
     p.setPen(QPen(QColor(201, 34, 49), 4));
@@ -1036,8 +1046,8 @@ void FrogPilotAnnotatedCameraWidget::paintBrakePBClutchStatus(QPainter &p, const
   }
 
   // Parking brake - Orange
-  if (parking_brake) {
-    int pbX = brake_pressed ? startX + itemWidth + spacing : startX;
+  if (show_pb) {
+    int pbX = show_brake ? startX + itemWidth + spacing : startX;
     QRect pbRect(pbX, startY, itemWidth, 60);
     p.setBrush(QColor(255, 165, 0, 180));
     p.setPen(QPen(QColor(255, 165, 0), 4));
@@ -1047,16 +1057,94 @@ void FrogPilotAnnotatedCameraWidget::paintBrakePBClutchStatus(QPainter &p, const
   }
 
   // Clutch - Blue
-  if (clutch_pressed) {
+  if (show_clutch) {
     int clutchX = startX;
-    if (brake_pressed) clutchX += itemWidth + spacing;
-    if (parking_brake) clutchX += itemWidth + spacing;
+    if (show_brake) clutchX += itemWidth + spacing;
+    if (show_pb) clutchX += itemWidth + spacing;
     QRect clutchRect(clutchX, startY, itemWidth, 60);
     p.setBrush(QColor(0, 100, 255, 180));
     p.setPen(QPen(QColor(0, 100, 255), 4));
     p.drawRoundedRect(clutchRect, 12, 12);
     p.setPen(QPen(whiteColor()));
     p.drawText(clutchRect, Qt::AlignCenter, "CL");
+  }
+
+  p.restore();
+}
+
+void FrogPilotAnnotatedCameraWidget::paintRPMeter(QPainter &p, const cereal::CarState::Reader &carState) {
+  float rpm = carState.getEngineRpm();
+  if (rpm <= 0) return;
+
+  p.save();
+
+  const int centerX = width() / 2;
+  const int centerY = height() - 120;
+  const int radius = 90;
+  const int arcThickness = 12;
+
+  // RPM範囲（0-8000rpm）
+  const float maxRPM = 8000.0f;
+  const float rpmRatio = std::min(rpm / maxRPM, 1.0f);
+
+  // GT7風カラー: 低RPM=緑、中RPM=黄、高RPM=赤
+  QColor rpmColor;
+  if (rpmRatio < 0.5f) {
+    // 緑 → 黄
+    float t = rpmRatio / 0.5f;
+    rpmColor = QColor(
+      static_cast<int>(0 + t * 255),
+      255,
+      static_cast<int>(100 * (1 - t))
+    );
+  } else {
+    // 黄 → 赤
+    float t = (rpmRatio - 0.5f) / 0.5f;
+    rpmColor = QColor(255, static_cast<int>(255 * (1 - t)), 0);
+  }
+
+  // 背景円弧（暗いグレー）
+  QPen bgPen(QColor(40, 40, 40, 180));
+  bgPen.setWidth(arcThickness);
+  bgPen.setCapStyle(Qt::RoundCap);
+  p.setPen(bgPen);
+  p.drawArc(centerX - radius, centerY - radius, radius * 2, radius * 2,
+            210 * 16, -240 * 16);  // 210° から反時計回りに240°（下部にギャップ）
+
+  // RPM円弧
+  QPen rpmPen(rpmColor);
+  rpmPen.setWidth(arcThickness);
+  rpmPen.setCapStyle(Qt::RoundCap);
+  p.setPen(rpmPen);
+  int spanAngle = static_cast<int>(-240 * 16 * rpmRatio);
+  p.drawArc(centerX - radius, centerY - radius, radius * 2, radius * 2,
+            210 * 16, spanAngle);
+
+  // RPM数値表示
+  p.setPen(Qt::white);
+  QFont rpmFont = InterFont(36, QFont::Bold);
+  p.setFont(rpmFont);
+  QString rpmText = QString::number(static_cast<int>(rpm));
+  QFontMetrics fm(rpmFont);
+  int textWidth = fm.horizontalAdvance(rpmText);
+  p.drawText(centerX - textWidth / 2, centerY + 12, rpmText);
+
+  // "RPM" ラベル
+  QFont labelFont = InterFont(12);
+  p.setFont(labelFont);
+  p.setPen(QColor(180, 180, 180));
+  QString label = "RPM";
+  int labelWidth = QFontMetrics(labelFont).horizontalAdvance(label);
+  p.drawText(centerX - labelWidth / 2, centerY + 30, label);
+
+  // レブリミット警告（7500rpm以上で点滅風に色を変える）
+  if (rpm >= 7500) {
+    p.setPen(QColor(255, 0, 0, 200));
+    QFont warnFont = InterFont(10, QFont::Bold);
+    p.setFont(warnFont);
+    QString warn = "REDLINE";
+    int warnWidth = QFontMetrics(warnFont).horizontalAdvance(warn);
+    p.drawText(centerX - warnWidth / 2, centerY - radius - 10, warn);
   }
 
   p.restore();

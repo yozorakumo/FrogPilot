@@ -192,6 +192,10 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
 
     {"MazdaToggles", tr("Mazda Settings"), tr("<b>FrogPilot features for Mazda vehicles.</b>"), ""},
     {"MazdaMTUI", tr("MT UI Display"), tr("<b>Enable the MT UI display for Mazda vehicles.</b>"), ""},
+    {"MazdaBrakeUI", tr("Brake Indicator"), tr("Show the brake pedal status indicator on the driving screen."), ""},
+    {"MazdaClutchUI", tr("Clutch Indicator"), tr("Show the clutch pedal status indicator on the driving screen."), ""},
+    {"MazdaPBUI", tr("Parking Brake Indicator"), tr("Show the parking brake status indicator on the driving screen."), ""},
+    {"MazdaRPMeter", tr("GT-Style RPM Meter"), tr("Display a Gran Turismo-style tachometer on the driving screen showing engine RPM with color-coded arc (green → yellow → red) and digital RPM readout."), ""},
     {"MazdaMTMode", tr("MT Mode"), tr("<b>Enable MT mode for Mazda vehicles.</b>"), ""},
     {"MazdaAutoLock", tr("Automatic Door Lock"), tr("<b>Automatically lock doors.</b>"), ""},
     {"MazdaLockSpeed", tr("Lock Speed"), tr("<b>The speed at which the doors will automatically lock.</b>"), ""},
