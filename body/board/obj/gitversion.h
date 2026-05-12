@@ -1,1 +1,1 @@
-const uint8_t gitversion[8] = "dad57bb6";
+const uint8_t gitversion[8] = "f6b52981";
