@@ -246,6 +246,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"BlindSpotMetrics", PERSISTENT},
     {"BlindSpotPath", PERSISTENT},
     {"BorderMetrics", PERSISTENT},
+    {"BrakePBClutchUI", PERSISTENT},
     {"BuildMetadata", PERSISTENT},
     {"CalibratedLateralAcceleration", PERSISTENT},
     {"CalibrationProgress", PERSISTENT},
