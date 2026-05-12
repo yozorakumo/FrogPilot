@@ -220,7 +220,6 @@ class CarState(CarStateBase):
 
     if CP.flags & MazdaFlags.GEN1:
       messages += [
-        ("CRZ_CTRL", 50),
         ("CRZ_EVENTS", 50),
         ("CRZ_BTNS", 10),
         ("PEDALS", 50),
@@ -230,8 +229,10 @@ class CarState(CarStateBase):
         ("BSM", 10),
       ]
 
+    # CRZ_CTRL is only available on AT cars with factory ACC
     if CP.flags & MazdaFlags.GEN1 and not (CP.flags & MazdaFlags.MT):
       messages += [
+        ("CRZ_CTRL", 50),
         ("GEAR", 20),
       ]
 
