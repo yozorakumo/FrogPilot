@@ -5245,6 +5245,14 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <source>Longitudinal MPC: Danger Factor</source>
         <translation type="gpt-5-generated">Boylamsal MPC: Tehlike Faktörü</translation>
     </message>
+    <message>
+        <source>Brake / Parking Brake / Clutch Indicators</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Display brake pedal, parking brake, and clutch status&lt;/b&gt; on the driving screen.&lt;br&gt;&lt;br&gt;&lt;b&gt;BRK&lt;/b&gt; (Red): Brake pedal pressed&lt;br&gt;&lt;b&gt;P&lt;/b&gt; (Orange): Parking brake engaged&lt;br&gt;&lt;b&gt;CL&lt;/b&gt; (Blue): Clutch pressed</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>FrogPilotWheelPanel</name>
