@@ -15,7 +15,7 @@
 #define MAZDA_AUX  1
 #define MAZDA_CAM  2
 
-enum { MAZDA_PARAM_LONGITUDINAL = 1 };
+enum { MAZDA_PARAM_LONGITUDINAL = 1, MAZDA_PARAM_MT = 2 };
 
 const SteeringLimits MAZDA_STEERING_LIMITS = {
   .max_steer = 800,
@@ -63,6 +63,8 @@ RxCheck mazda_long_rx_checks[] = {
 };
 
 static bool mazda_longitudinal = false;
+static bool mazda_mt = false;
+static bool mt_main_btn_prev = false;
 
 // track msgs coming from OP so that we know what CAM msgs to drop and what to forward
 static void mazda_rx_hook(const CANPacket_t *to_push) {
@@ -83,7 +85,8 @@ static void mazda_rx_hook(const CANPacket_t *to_push) {
     }
 
     // enter controls on rising edge of ACC, exit controls on ACC off
-    if (!mazda_longitudinal && (addr == MAZDA_CRZ_CTRL)) {
+    // MT cars: skip CRZ_CTRL check (no factory ACC), use button-based control
+    if (!mazda_longitudinal && !mazda_mt && (addr == MAZDA_CRZ_CTRL)) {
       bool cruise_engaged = GET_BYTE(to_push, 0) & 0x8U;
       pcm_cruise_check(cruise_engaged);
     }
@@ -98,7 +101,8 @@ static void mazda_rx_hook(const CANPacket_t *to_push) {
       brake_pressed = (GET_BYTE(to_push, 0) & 0x10U);
 
       // longitudinal: get cruise state from PEDALS instead of CRZ_CTRL
-      if (mazda_longitudinal) {
+      // MT cars: skip PEDALS ACC check (signals always 0), use button-based control
+      if (mazda_longitudinal && !mazda_mt) {
         bool cruise_engaged = GET_BIT(to_push, 3);   // PEDALS.ACC_ACTIVE (bit 3)
         bool acc_armed = GET_BIT(to_push, 2);          // PEDALS.ACC_OFF (bit 2)
         acc_main_on = acc_armed;
@@ -109,11 +113,35 @@ static void mazda_rx_hook(const CANPacket_t *to_push) {
       }
     }
 
-    // CRZ_BTNS cancel handling for longitudinal
-    if (mazda_longitudinal && (addr == MAZDA_CRZ_BTNS)) {
-      bool cancel = GET_BIT(to_push, 0);  // CRZ_BTNS.CAN_OFF (bit 0)
-      if (cancel) {
-        controls_allowed = false;
+    // CRZ_BTNS handling for MT and longitudinal modes
+    if (addr == MAZDA_CRZ_BTNS) {
+      if (mazda_mt) {
+        // MT mode: main button toggle and cancel handling
+        bool cancel = GET_BIT(to_push, 0);    // CRZ_BTNS.CAN_OFF (bit 0)
+        bool mode_x = GET_BIT(to_push, 14);   // CRZ_BTNS.MODE_X (bit 14)
+        bool mode_y = GET_BIT(to_push, 13);   // CRZ_BTNS.MODE_Y (bit 13)
+        bool main_btn = mode_x && mode_y;
+
+        // Cancel: disable controls
+        if (cancel) {
+          controls_allowed = false;
+          acc_main_on = false;
+        }
+
+        // Main button rising edge: toggle acc_main_on
+        if (main_btn && !mt_main_btn_prev) {
+          acc_main_on = !acc_main_on;
+          if (acc_main_on && vehicle_moving) {
+            controls_allowed = true;
+          }
+        }
+        mt_main_btn_prev = main_btn;
+      } else if (mazda_longitudinal) {
+        // AT longitudinal: cancel handling only
+        bool cancel = GET_BIT(to_push, 0);  // CRZ_BTNS.CAN_OFF (bit 0)
+        if (cancel) {
+          controls_allowed = false;
+        }
       }
     }
 
@@ -205,7 +233,9 @@ static int mazda_fwd_hook(int bus, int addr) {
 
 static safety_config mazda_init(uint16_t param) {
   mazda_longitudinal = GET_FLAG(param, MAZDA_PARAM_LONGITUDINAL);
+  mazda_mt = GET_FLAG(param, MAZDA_PARAM_MT);
   acc_main_on = false;
+  mt_main_btn_prev = false;
 
   safety_config ret;
   if (mazda_longitudinal) {

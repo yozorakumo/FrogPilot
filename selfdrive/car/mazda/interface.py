@@ -11,6 +11,7 @@ FrogPilotButtonType = custom.FrogPilotCarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
 
 MAZDA_LONG_SAFETY_PARAM = 1
+MAZDA_MT_SAFETY_PARAM = 2
 
 class CarInterface(CarInterfaceBase):
 
@@ -39,7 +40,7 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.57
       ret.steerRatio = 14.8
       ret.transmissionType = car.CarParams.TransmissionType.manual
-      ret.safetyConfigs[0].safetyParam = 1  # MAZDA_PARAM_2_DJ_MT for panda safety
+      ret.safetyConfigs[0].safetyParam = MAZDA_MT_SAFETY_PARAM
 
     # Experimental longitudinal control for Mazda 2 DJ MT
     ret.experimentalLongitudinalAvailable = candidate == CAR.MAZDA_2_DJ_MT
@@ -47,7 +48,10 @@ class CarInterface(CarInterfaceBase):
 
     if ret.openpilotLongitudinalControl:
       ret.pcmCruise = True
-      ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.mazda, MAZDA_LONG_SAFETY_PARAM)]
+      long_safety_param = MAZDA_LONG_SAFETY_PARAM
+      if candidate == CAR.MAZDA_2_DJ_MT:
+        long_safety_param |= MAZDA_MT_SAFETY_PARAM
+      ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.mazda, long_safety_param)]
       ret.radarUnavailable = True
       ret.startingState = True
       ret.startAccel = 1.2
