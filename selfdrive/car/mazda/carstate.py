@@ -74,34 +74,26 @@ class CarState(CarStateBase):
     speed_kph = cp.vl["ENGINE_DATA"]["SPEED"]
     ret.standstill = speed_kph <= .1
 
-    if self.CP.flags & MazdaFlags.MT:
-      # NEW_MSG_28(0x166)のGEAR_POSで大分類（FWD/REV/Neutral）を判定
-      new_msg28_gear = int(cp.vl["NEW_MSG_28"]["GEAR_POS"])
+    ret.engineRpm = cp.vl["ENGINE_DATA"]["RPM"]
 
-      # PEDALS(0x165)のGEAR_POSでギア段（1-6速）を判定
+    # MT gear and clutch detection
+    if self.CP.transmissionType == car.CarParams.TransmissionType.manual:
+      new_msg28_gear = int(cp.vl["NEW_MSG_28"]["GEAR_POS"])
       gear_pos = cp.vl["PEDALS"]["GEAR_POS"]
       GEAR_VALUES = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1}
-      VALID_GEAR_POS = set(GEAR_VALUES.keys())
 
-      # リバース判定
       if new_msg28_gear == 6:  # Reverse
         ret.gearShifter = car.CarState.GearShifter.reverse
+        fp_ret.gearStep = 15  # R
         ret.clutchPressed = False
-      # ニュートラル判定（NEW_MSG_28のGEAR_POSがForward以外）
-      elif new_msg28_gear not in [4, 5]:  # 4=Forward, 5=Forward 以外はNeutral扱い
+      elif new_msg28_gear in [4, 5]:  # Forward
+        ret.gearShifter = car.CarState.GearShifter.drive
+        fp_ret.gearStep = GEAR_VALUES.get(gear_pos, 0)
+        ret.clutchPressed = gear_pos not in GEAR_VALUES
+      else:  # Neutral
         ret.gearShifter = car.CarState.GearShifter.neutral
+        fp_ret.gearStep = 0  # N
         ret.clutchPressed = True
-      # 前進ギア段判定
-      elif gear_pos in GEAR_VALUES:
-        ret.gearShifter = car.CarState.GearShifter.drive
-        ret.clutchPressed = False
-      else:
-        # ギア変更中（シフト遷移中間値）
-        ret.gearShifter = car.CarState.GearShifter.drive
-        ret.clutchPressed = True
-
-      # Map raw CAN GEAR_POS values to actual gear numbers (1-6), 0 for neutral/unknown
-      fp_ret.gearStep = GEAR_VALUES.get(gear_pos, 0)
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
       ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
@@ -142,6 +134,8 @@ class CarState(CarStateBase):
     ret.seatbeltUnlatched = cp.vl["SEATBELT"]["DRIVER_SEATBELT"] == 0
     ret.doorOpen = any([cp.vl["DOORS"]["FL"], cp.vl["DOORS"]["FR"],
                         cp.vl["DOORS"]["BL"], cp.vl["DOORS"]["BR"]])
+
+    ret.parkingBrake = cp.vl["MSG_11"]["PARKING_BRAKE"] == 1
 
     # TODO: this should be from 0 - 1.
     ret.gas = cp.vl["ENGINE_DATA"]["PEDAL_GAS"]
@@ -244,6 +238,7 @@ class CarState(CarStateBase):
     if CP.flags & MazdaFlags.GEN1 and CP.flags & MazdaFlags.MT:
       messages += [
         ("NEW_MSG_28", 50),
+        ("MSG_11", 10),
       ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
