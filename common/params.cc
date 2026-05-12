@@ -545,6 +545,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"SpeedLimits", PERSISTENT | DONT_LOG},
     {"SpeedLimitsFiltered", PERSISTENT | DONT_LOG},
     {"SpeedLimitSources", PERSISTENT},
+    {"SpeedometerStyle", PERSISTENT},
     {"StandardFollow", PERSISTENT},
     {"StandardJerkAcceleration", PERSISTENT},
     {"StandardJerkDanger", PERSISTENT},
