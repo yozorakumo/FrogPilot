@@ -6,22 +6,48 @@
 
 本ブランチ (`FrogPilot`) では、マニュアルトランスミッション（MT）車両特有の挙動をサポートするために以下の実装を行っています。
 
-### 1. ネイティブギアポジション認識
-車両のネイティブ CAN 信号の解析により、高精度なギア判定を実現しました。
-- **対象信号**: `0x165` (PEDALS) `GEAR_POS` (byte6)
-- **対応ギア**: 1速〜6速、ニュートラル（N）を正確に識別
-- **クラッチ検出**: `GEAR_POS`値が確定ギア値（2, 3, 4, 5, 7, 13）以外の場合にクラッチが踏まれていると判定
-- **ニュートラル検出**: `GEAR_POS==14`（ギア変更時に必ず経由する中間値）で判定
-- **メリット**: RPM 比率による推定ではなく、CAN信号から直接ギア状態を取得。クラッチ操作中も正確な状態を検出可能
+### 1. デュアル信号ギアポジション認識
+車両のネイティブ CAN 信号の解析により、2つの信号を組み合わせた高精度なギア判定を実現しました。
+- **大分類信号**: `0x166` (NEW_MSG_28) `GEAR_POS` — Forward/Reverse/Neutral の大分類
+  - `GEAR_POS=4,5`: Forward（前進）
+  - `GEAR_POS=6`: Reverse（リバース）
+  - その他: Neutral（ニュートラル）
+  - **DBC定義修正**: 当初 `23|4@0+` → 実測データに基づき `20|4@0+` に修正
+- **ギア段信号**: `0x165` (PEDALS) `GEAR_POS` — 1速〜6速の具体的ギア段
+  - 値マッピング: `2=6th`, `3=5th`, `4=4th`, `5=3rd`, `7=2nd`, `13=1st`
+- **クラッチ検出**: PEDALS `GEAR_POS`値が確定ギア値 `{2, 3, 4, 5, 7, 13}` 以外の場合にクラッチが踏まれていると判定
+- **判定フロー**: NEW_MSG_28で大分類 → PEDALSでギア段（前進時のみ）
+- **メリット**: RPM 比率による推定ではなく、CAN信号から直接ギア状態を取得。リバース検出も正確に実行可能
 
-### 2. MT車最適化制御
+### 2. ステアリング角度センサーの二重化
+- **プライマリ**: `STEER2` (0x86) — 通常時のステアリング角度ソースとして使用
+- **フォールバック**: `STEER` (0x82) — STEER2が異常値（±360°超過）の場合のみ使用
+- **問題背景**: `STEER`(0x82)は右ウインカー/ハザード時に約26%の確率で異常値（1664°等）を出力するため、プライマリから外了
+- **異常値ガード**: `abs(steer_angle) > 360` を検出した場合、フォールバック→前回有効値の順に復元
+
+### 3. MT車最適化制御
 - **クラッチ連動ディスエンゲージ**: `GEAR_POS`信号に基づき、クラッチペダルが踏まれた状態（ギア未確定）を検出して、安全にオープンパイロットの制御を解除（ディスエンゲージ）します。
 - **エンスト防止ロジック**: 縦方向制御において、MT 車の特性に合わせた加減速の調整を行っています。
-- **判定方式**: `0x165` (PEDALS) の`GEAR_POS`信号を唯一のソースとして使用。`0x09E`の信号（CLUTCH_ALT, NEUTRAL_SW）は実車検証で常に0であることが確認され、使用されていません。
+- **判定方式**: NEW_MSG_28(0x166)で大分類 + PEDALS(0x165)の`GEAR_POS`でギア段を判定。`0x09E`の信号（CLUTCH_ALT, NEUTRAL_SW）は実車検証で常に0であることが確認され、使用されていません。
 
-### 3. MT専用 UI 表示
-- 走行中のギア数値をダッシュボードにリアルタイム表示します。
-- クラッチが踏まれている状態（Clutch Pressed）を視覚的にフィードバックします。
+### 4. pandaセーフティ MT対応
+- **safetyParam=2** (`MAZDA_PARAM_MT`): MT車用のセーフティパラメータを追加。AT車用のCRZ_CTRLチェックをスキップし、ボタンベースの制御に切り替え
+- **CRZ_BTNS メインボタン制御**: `MODE_X && MODE_Y` の立ち上がりエッジで `controls_allowed` をトグル。キャンセルボタン（`CAN_OFF`）で `controls_allowed` を無効化
+- **AT車との互換性**: AT車は従来通りCRZ_CTRLのACC信号で `controls_allowed` を管理
+
+### 5. SET_P/SET_M ボタンイベント
+- クルーズコントロールの速度+/-ボタン（`SET_P`, `SET_M`）のイベントを追加
+- `SET_P` → `accelCruise`（速度増加）、`SET_M` → `decelCruise`（速度減少）としてボタンイベントを生成
+- MT車の longitudinal control で速度調整に使用
+
+### 6. 青信号アラートのCEM依存解消
+- 青信号（信号機）検出を Conditional Experimental Mode (CEM) の有効/無効に関わらず常時実行するよう変更
+- `stop_sign_and_light()` がCEM状態によらず常に呼び出され、CEMがオフでも青信号アラートが機能
+
+### 7. MT専用 UI 表示
+- **ギア表示**: 走行中のギア数値（1-6速）をダッシュボードにリアルタイム表示（`paintMTGear`）
+- **クラッチ表示**: クラッチが踏まれている状態を視覚的にフィードバック
+- **BrakePBClutchUI トグル**: ブレーキペダル・パーキングブレーキ・クラッチの状態表示をトグルで切り替え可能（`paintBrakePBClutchStatus`）
 
 ### 4. 正確な車両識別 (Fingerprinting)
 - Mazda2 DJ MT モデル固有の ECU（カメラ、レーダー、EPS、エンジン、ABS）のファームウェアバージョンをデータベースに登録。
@@ -53,19 +79,22 @@
 - **修正**: `data[0] >> 4` でフレームタイプを抽出し、Flow Control（type=`0x3`）を許可リストに追加
 - **ファイル**: [`panda/board/safety/safety_mazda.h`](panda/board/safety/safety_mazda.h)
 
-#### 2. ステアリング角度エラー値ガード (`carstate.py`)
+#### 2. ステアリング角度センサーの二重化 (`carstate.py`)
 - **問題**: 右ウインカー/ハザード時にハンドルマークが右に急激に回転したまま戻らない
-- **原因**: ステアリング角度センサーがエラーマーカー値 `0xFFFE`（1676.70°）を出力
-- **修正**: `abs(steer_angle) > 360` の異常値を検出し、前回の有効値を保持
+- **原因**: `STEER`(0x82)のステアリング角度が右ウインカー時に約26%の確率で異常値（1664°等）を出力
+- **修正**: `STEER2`(0x86)をプライマリソースに変更。`abs(steer_angle) > 360` の異常値を検出した場合、`STEER`(0x82)にフォールバック、さらに前回の有効値で保持
 - **ファイル**: [`selfdrive/car/mazda/carstate.py`](selfdrive/car/mazda/carstate.py)
 
-#### 3. MT ギアポジション信号の修正 (`carstate.py`)
-- **問題**: MT車なのにAT用のGEAR信号を読んでいた
+#### 3. デュアル信号ギアポジション判定 (`carstate.py`, `mazda_2_dj_mt.dbc`)
+- **問題**: MT車なのにAT用のGEAR信号を読んでいた。また単一信号ではリバース検出が不可能だった
 - **原因**: `GEAR`（AT用、`48|5@1+`）ではなく`GEAR_POS`（MT用、`55|8@0+`）を使用すべきだった
-- **修正**: `GEAR` → `GEAR_POS` に変更、値マッピングを更新
-- **ファイル**: [`selfdrive/car/mazda/carstate.py`](selfdrive/car/mazda/carstate.py)
-- **CAN ID**: `0x165` (PEDALS), byte[6]
-- **値マッピング**: `2=6th`, `3=5th`, `4=4th`, `5=3rd`, `7=2nd`, `13=1st`, `14=1st(clutch)`
+- **修正**: NEW_MSG_28(0x166) + PEDALS(0x165) のデュアル信号方式に変更
+  - **NEW_MSG_28(0x166)**: GEAR_POSで大分類（Forward/Reverse/Neutral）
+    - DBC定義修正: `23|4@0+` → `20|4@0+`（実測データに基づくビットオフセット修正）
+    - `GEAR_POS=6` でリバース検出
+  - **PEDALS(0x165)**: GEAR_POSでギア段（1-6速）判定
+- **ファイル**: [`selfdrive/car/mazda/carstate.py`](selfdrive/car/mazda/carstate.py), [`opendbc/mazda_2_dj_mt.dbc`](opendbc/mazda_2_dj_mt.dbc)
+- **値マッピング**: `2=6th`, `3=5th`, `4=4th`, `5=3rd`, `7=2nd`, `13=1st`
 
 #### 4. サイドブレーキ・クラッチ・ニュートラルのCAN信号調査
 - **サイドブレーキ (PARKING_BRAKE)**: CAN ID `0x09F` (159), MSG_11, byte0 bit4、ON=1/OFF=0
@@ -73,10 +102,30 @@
 - **クラッチ**: `GEAR_POS`ベースの間接検出を実装
   - `CLUTCH_PRESSED` (0x165 byte5 bit3) → **常に0、クラッチ信号ではない**（DBCから削除済み）
   - `CLUTCH_ALT` (0x09E byte0 bit5) → **常に0、クラッチ信号ではない**（DBCから削除済み）
-  - **解決策**: `GEAR_POS`値が確定ギア値（2, 3, 4, 5, 7, 13）以外の場合にクラッチが踏まれていると判定
-- **ニュートラル**: `GEAR_POS==14`で判定
-  - ギア変更時に必ず経由する中間値（14）をニュートラル/クラッチ状態として扱う
-  - 旧調査の「GEAR_POS=13はNと1st共通」は、実際には13=1速確定、14=ニュートラル/クラッチ遷移状態
+  - **解決策**: `GEAR_POS`値が確定ギア値 `{2, 3, 4, 5, 7, 13}` 以外の場合にクラッチが踏まれていると判定
+- **ニュートラル**: NEW_MSG_28のGEAR_POSがForward(4,5)以外で判定
+- **リバース**: NEW_MSG_28のGEAR_POS=6で判定（従来はリバース検出手段がなかった）
+
+#### 5. pandaセーフティ MT対応 (`safety_mazda.h`)
+- **safetyParam**: MT車用に `MAZDA_PARAM_MT = 2` を追加
+- **CRZ_BTNS制御**: `MODE_X && MODE_Y`（メインボタン）の立ち上がりエッジで `controls_allowed` をトグル
+- **キャンセル処理**: `CAN_OFF` で `controls_allowed = false` と `acc_main_on = false` を設定
+- **ファイル**: [`panda/board/safety/safety_mazda.h`](panda/board/safety/safety_mazda.h)
+
+#### 6. SET_P/SET_M ボタンイベント追加 (`interface.py`)
+- **SET_P**: `accelCruise` ボタンイベントとして速度増加にマッピング
+- **SET_M**: `decelCruise` ボタンイベントとして速度減少にマッピング
+- **ファイル**: [`selfdrive/car/mazda/interface.py`](selfdrive/car/mazda/interface.py)
+
+#### 7. 青信号アラート CEM依存解消 (`conditional_experimental_mode.py`)
+- **変更**: `stop_sign_and_light()` をCEM条件判定の外で常時実行するよう変更
+- **効果**: CEMがオフでも青信号アラートが機能する
+- **ファイル**: [`frogpilot/controls/lib/conditional_experimental_mode.py`](frogpilot/controls/lib/conditional_experimental_mode.py)
+
+#### 8. BrakePBClutchUI トグル追加 (`frogpilot_annotated_camera.h`)
+- **機能**: ブレーキペダル・パーキングブレーキ・クラッチの状態をUIに表示するトグル
+- **メソッド**: `paintBrakePBClutchStatus()` で描画
+- **ファイル**: [`frogpilot/ui/qt/onroad/frogpilot_annotated_camera.h`](frogpilot/ui/qt/onroad/frogpilot_annotated_camera.h)
 
 #### 検証に使用した実データ
 - `Y:\Github\mazda2canbus\realdata` の rlog データ（43,135件のUDSメッセージ、359,174 CAN フレーム）
