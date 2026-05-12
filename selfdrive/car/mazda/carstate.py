@@ -120,13 +120,11 @@ class CarState(CarStateBase):
     else:
       ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, left_blink, right_blink)
 
-    steer_angle = cp.vl["STEER"]["STEER_ANGLE"]
-    # Guard against sensor error values (e.g., 0xFFFE = 1676.70°)
-    # Mazda 2 DJ steering angle sensor outputs invalid marker values
-    # during hazard/right blinker activation
+    # STEER2を通常使用（STEERは右ウインカー時に26%の確率で異常値1664°を出力する問題あり）
+    steer_angle = cp.vl["STEER2"]["STEER_ANGLE"]
     if abs(steer_angle) > 360:  # Physical steering range is approximately ±500°
-      # STEER2をフォールバックとして使用
-      steer_angle = cp.vl["STEER2"]["STEER_ANGLE"]
+      # フォールバック: STEERを試す
+      steer_angle = cp.vl["STEER"]["STEER_ANGLE"]
       if abs(steer_angle) > 360:
         steer_angle = self.steering_angle_prev
     self.steering_angle_prev = steer_angle
