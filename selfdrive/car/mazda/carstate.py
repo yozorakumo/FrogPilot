@@ -66,13 +66,15 @@ class CarState(CarStateBase):
       ret.clutchPressed = gear_pos not in VALID_GEAR_POS  # クラッチが踏まれている = ギアが確定していない
       # ニュートラル判定はGEAR_POS==14（ギア変更時に必ず経由する中間値）
 
+      # GearShifter enum has no per-gear values; all engaged gears map to 'drive'
+      # Actual gear number (1-6) is stored in fp_ret.gearStep below
       gear_map = {
-        2: car.CarState.GearShifter.sixth,
-        3: car.CarState.GearShifter.fifth,
-        4: car.CarState.GearShifter.fourth,
-        5: car.CarState.GearShifter.third,
-        7: car.CarState.GearShifter.second,
-        13: car.CarState.GearShifter.first,
+        2: car.CarState.GearShifter.drive,   # 6速
+        3: car.CarState.GearShifter.drive,   # 5速
+        4: car.CarState.GearShifter.drive,   # 4速
+        5: car.CarState.GearShifter.drive,   # 3速
+        7: car.CarState.GearShifter.drive,   # 2速
+        13: car.CarState.GearShifter.drive,  # 1速
       }
       ret.gearShifter = gear_map.get(gear_pos, car.CarState.GearShifter.neutral)
       # Map raw CAN GEAR_POS values to actual gear numbers (1-6), 0 for neutral/unknown
