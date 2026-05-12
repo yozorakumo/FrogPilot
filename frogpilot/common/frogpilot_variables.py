@@ -445,6 +445,7 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("SpeedLimitController", "1", 0, "0"),
   ("SpeedLimitFiller", "0", 0, "0"),
   ("SpeedLimitSources", "0", 3, "0"),
+  ("SpeedometerStyle", "0", 2, "0"),
   ("SshEnabled", "0", 0, "0"),
   ("StartupMessageBottom", "Human-tested, frog-approved 🐸", 0, "Always keep hands on wheel and eyes on road"),
   ("StartupMessageTop", "Hop in and buckle up!", 0, "Be ready to take over at any time"),
@@ -998,6 +999,7 @@ class FrogPilotVariables:
     toggle.camera_view = params.get_int("CameraView") if quality_of_life_visuals and toggle.tuning_level >= level["CameraView"] else default.get_int("CameraView")
     toggle.driver_camera_in_reverse = quality_of_life_visuals and (params.get_bool("DriverCamera") if toggle.tuning_level >= level["DriverCamera"] else default.get_bool("DriverCamera"))
     toggle.onroad_distance_button = toggle.openpilot_longitudinal and (quality_of_life_visuals and (params.get_bool("OnroadDistanceButton") if toggle.tuning_level >= level["OnroadDistanceButton"] else default.get_bool("OnroadDistanceButton")) or toggle.debug_mode)
+    toggle.speedometer_style = params.get_int("SpeedometerStyle") if quality_of_life_visuals and toggle.tuning_level >= level["SpeedometerStyle"] else default.get_int("SpeedometerStyle")
     toggle.stopped_timer = quality_of_life_visuals and (params.get_bool("StoppedTimer") if toggle.tuning_level >= level["StoppedTimer"] else default.get_bool("StoppedTimer"))
 
     toggle.rainbow_path = params.get_bool("RainbowPath") if toggle.tuning_level >= level["RainbowPath"] else default.get_bool("RainbowPath")

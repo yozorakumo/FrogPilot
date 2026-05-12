@@ -110,6 +110,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(FrogPilotSettingsWindow *parent) : 
     {"QOLVisuals", tr("Quality of Life"), tr("<b>Miscellaneous visual changes</b> to fine-tune how the driving screen looks."), "../../frogpilot/assets/toggle_icons/icon_quality_of_life.png"},
     {"CameraView", tr("Camera View"), tr("<b>Select the active camera view.</b> This is purely a visual change and doesn't impact how openpilot drives!"), ""},
     {"DriverCamera", tr("Show Driver Camera When In Reverse"), tr("<b>Show the driver camera feed</b> when the vehicle is in reverse."), ""},
+    {"SpeedometerStyle", tr("Speedometer Style"), tr("<b>Select the speedometer design</b> displayed on the driving screen.<br><br><b>Default</b>: Standard large speed display<br><b>Minimal</b>: Compact speed without unit<br><b>Circle</b>: Speed inside a circular outline<br><b>Arc</b>: Semicircular gauge with color gradient<br><b>Bar</b>: Horizontal speed bar at the bottom"), ""},
     {"StoppedTimer", tr("Stopped Timer"), tr("<b>Show a timer when stopped</b> in place of the current speed to indicate how long the vehicle has been stopped."), ""}
   };
 
@@ -336,6 +337,11 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(FrogPilotSettingsWindow *parent) : 
       std::vector<QString> cameraOptions{tr("Auto"), tr("Driver"), tr("Standard"), tr("Wide")};
       ButtonParamControl *cameraSelection = new ButtonParamControl(param, title, desc, icon, cameraOptions);
       visualToggle = cameraSelection;
+
+    } else if (param == "SpeedometerStyle") {
+      std::vector<QString> speedometerOptions{tr("Default"), tr("Minimal"), tr("Circle"), tr("Arc"), tr("Bar")};
+      ButtonParamControl *speedometerSelection = new ButtonParamControl(param, title, desc, icon, speedometerOptions);
+      visualToggle = speedometerSelection;
 
     } else {
       visualToggle = new ParamControl(param, title, desc, icon);

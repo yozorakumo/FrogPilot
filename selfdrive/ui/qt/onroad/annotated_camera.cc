@@ -244,10 +244,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::FrogPilotPlan::Re
 
   // current speed
   if (!frogpilot_nvg->bigMapOpen && frogpilot_nvg->standstillDuration == 0 && !frogpilot_toggles.value("hide_speed").toBool()) {
-    p.setFont(InterFont(176, QFont::Bold));
-    drawText(p, rect().center().x(), 210, speedStr);
-    p.setFont(InterFont(66));
-    drawText(p, rect().center().x(), 290, speedUnit, 200);
+    drawSpeedometer(p, speedStr, speedUnit, speed, frogpilot_toggles);
   }
 
   p.restore();
@@ -275,6 +272,133 @@ void AnnotatedCameraWidget::drawText(QPainter &p, int x, int y, const QString &t
 
   p.setPen(QColor(0xff, 0xff, 0xff, alpha));
   p.drawText(real_rect.x(), real_rect.bottom(), text);
+}
+
+void AnnotatedCameraWidget::drawSpeedometer(QPainter &p, const QString &speedStr, const QString &speedUnit, float speed, const QJsonObject &frogpilot_toggles) {
+  int style = frogpilot_toggles.value("speedometer_style").toInt();
+  float maxSpeed = is_metric ? 180.0f : 112.0f;
+
+  switch (style) {
+    case 1: drawSpeedometerMinimal(p, speedStr, speedUnit); break;
+    case 2: drawSpeedometerCircle(p, speedStr, speedUnit); break;
+    case 3: drawSpeedometerArc(p, speedStr, speedUnit, speed, maxSpeed); break;
+    case 4: drawSpeedometerBar(p, speedStr, speedUnit, speed, maxSpeed); break;
+    default: drawSpeedometerDefault(p, speedStr, speedUnit); break;
+  }
+}
+
+void AnnotatedCameraWidget::drawSpeedometerDefault(QPainter &p, const QString &speedStr, const QString &speedUnit) {
+  p.setFont(InterFont(176, QFont::Bold));
+  drawText(p, rect().center().x(), 210, speedStr);
+  p.setFont(InterFont(66));
+  drawText(p, rect().center().x(), 290, speedUnit, 200);
+}
+
+void AnnotatedCameraWidget::drawSpeedometerMinimal(QPainter &p, const QString &speedStr, const QString &speedUnit) {
+  p.setFont(InterFont(120, QFont::Bold));
+  drawText(p, 120, 120, speedStr);
+}
+
+void AnnotatedCameraWidget::drawSpeedometerCircle(QPainter &p, const QString &speedStr, const QString &speedUnit) {
+  int centerX = rect().center().x();
+  int centerY = 200;
+  int radius = 100;
+
+  // Draw circle outline
+  p.setPen(QPen(whiteColor(200), 4));
+  p.setBrush(Qt::NoBrush);
+  p.drawEllipse(QPoint(centerX, centerY), radius, radius);
+
+  // Draw speed text
+  p.setFont(InterFont(96, QFont::Bold));
+  drawText(p, centerX, centerY - 5, speedStr);
+
+  // Draw unit below speed
+  p.setFont(InterFont(30));
+  drawText(p, centerX, centerY + 45, speedUnit, 180);
+}
+
+void AnnotatedCameraWidget::drawSpeedometerArc(QPainter &p, const QString &speedStr, const QString &speedUnit, float speed, float maxSpeed) {
+  int centerX = rect().center().x();
+  int centerY = 280;
+  int radius = 140;
+  int arcThickness = 14;
+
+  float speedRatio = std::min(speed / maxSpeed, 1.0f);
+
+  // Color: green -> yellow -> red
+  QColor speedColor;
+  if (speedRatio < 0.5f) {
+    float t = speedRatio / 0.5f;
+    speedColor = QColor(static_cast<int>(0 + t * 255), 255, static_cast<int>(100 * (1 - t)));
+  } else {
+    float t = (speedRatio - 0.5f) / 0.5f;
+    speedColor = QColor(255, static_cast<int>(255 * (1 - t)), 0);
+  }
+
+  // Background arc (dark grey)
+  QPen bgPen(QColor(40, 40, 40, 180));
+  bgPen.setWidth(arcThickness);
+  bgPen.setCapStyle(Qt::RoundCap);
+  p.setPen(bgPen);
+  p.drawArc(centerX - radius, centerY - radius, radius * 2, radius * 2, 210 * 16, -240 * 16);
+
+  // Speed arc
+  QPen speedPen(speedColor);
+  speedPen.setWidth(arcThickness);
+  speedPen.setCapStyle(Qt::RoundCap);
+  p.setPen(speedPen);
+  int spanAngle = static_cast<int>(-240 * 16 * speedRatio);
+  p.drawArc(centerX - radius, centerY - radius, radius * 2, radius * 2, 210 * 16, spanAngle);
+
+  // Speed text in center
+  p.setPen(whiteColor());
+  p.setFont(InterFont(96, QFont::Bold));
+  drawText(p, centerX, centerY - 15, speedStr);
+
+  // Unit label
+  p.setFont(InterFont(30));
+  drawText(p, centerX, centerY + 35, speedUnit, 180);
+}
+
+void AnnotatedCameraWidget::drawSpeedometerBar(QPainter &p, const QString &speedStr, const QString &speedUnit, float speed, float maxSpeed) {
+  int barWidth = static_cast<int>(width() * 0.8);
+  int barHeight = 20;
+  int barX = (width() - barWidth) / 2;
+  int barY = height() - 100;
+
+  float speedRatio = std::min(speed / maxSpeed, 1.0f);
+
+  // Color: green -> yellow -> red
+  QColor speedColor;
+  if (speedRatio < 0.5f) {
+    float t = speedRatio / 0.5f;
+    speedColor = QColor(static_cast<int>(0 + t * 255), 255, static_cast<int>(100 * (1 - t)));
+  } else {
+    float t = (speedRatio - 0.5f) / 0.5f;
+    speedColor = QColor(255, static_cast<int>(255 * (1 - t)), 0);
+  }
+
+  // Background bar
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(40, 40, 40, 180));
+  p.drawRoundedRect(barX, barY, barWidth, barHeight, barHeight / 2, barHeight / 2);
+
+  // Speed fill bar
+  int fillWidth = static_cast<int>(barWidth * speedRatio);
+  if (fillWidth > 0) {
+    p.setBrush(speedColor);
+    p.drawRoundedRect(barX, barY, fillWidth, barHeight, barHeight / 2, barHeight / 2);
+  }
+
+  // Speed text above bar
+  p.setPen(whiteColor());
+  p.setFont(InterFont(60, QFont::Bold));
+  drawText(p, rect().center().x(), barY - 30, speedStr);
+
+  // Unit label
+  p.setFont(InterFont(28));
+  drawText(p, rect().center().x(), barY - 70, speedUnit, 180);
 }
 
 void AnnotatedCameraWidget::initializeGL() {

@@ -2817,6 +2817,21 @@ APPEARANCE_TOGGLES = (
     tuning_level=2,
   ),
   ToggleDefinition(
+    title=("Speedometer Style"),
+    param="SpeedometerStyle",
+    button_labels=["SELECT"],
+    button_options=["Default", "Minimal", "Circle", "Arc", "Bar"],
+    description=("<b>Select the speedometer display style.</b><br><br>"
+                 "<b>Default</b>: Large digital display.<br>"
+                 "<b>Minimal</b>: Small speed number only.<br>"
+                 "<b>Circle</b>: Speed inside a circle.<br>"
+                 "<b>Arc</b>: Analog arc gauge.<br>"
+                 "<b>Bar</b>: Horizontal bar gauge."),
+    parent_param="QOLVisuals",
+    toggle_type=ToggleType.BUTTON_PARAM,
+    tuning_level=2,
+  ),
+  ToggleDefinition(
     title=("Show Driver Camera When In Reverse"),
     param="DriverCamera",
     description=("<b>Show the driver camera feed</b> when the vehicle is in reverse."),
