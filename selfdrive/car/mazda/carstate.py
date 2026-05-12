@@ -28,6 +28,11 @@ class CarState(CarStateBase):
     self.prev_main_button = False
     self.main_button = False
 
+    self.prev_set_plus = False
+    self.set_plus = False
+    self.prev_set_minus = False
+    self.set_minus = False
+
   def update(self, cp, cp_cam, frogpilot_toggles):
 
     ret = car.CarState.new_message()
@@ -41,6 +46,11 @@ class CarState(CarStateBase):
     self.cancel_button = cp.vl["CRZ_BTNS"]["CAN_OFF"] == 1
     self.prev_main_button = self.main_button
     self.main_button = bool(cp.vl["CRZ_BTNS"]["MODE_X"] and cp.vl["CRZ_BTNS"]["MODE_Y"])
+
+    self.prev_set_plus = self.set_plus
+    self.set_plus = cp.vl["CRZ_BTNS"]["SET_P"] == 1
+    self.prev_set_minus = self.set_minus
+    self.set_minus = cp.vl["CRZ_BTNS"]["SET_M"] == 1
 
     ret.wheelSpeeds = self.get_wheel_speeds(
       cp.vl["WHEEL_SPEEDS"]["FL"],
@@ -56,27 +66,31 @@ class CarState(CarStateBase):
     ret.standstill = speed_kph <= .1
 
     if self.CP.flags & MazdaFlags.MT:
-      # GEAR_POS値からクラッチ・ニュートラル状態を判定
-      # GEAR_POS値の意味: 2=6速, 3=5速, 4=4速, 5=3速, 7=2速, 13=1速
-      # 中間値: 14=ニュートラル/クラッチ, 6/8/9/10/11/12=シフト遷移中
-      gear_pos = int(cp.vl["PEDALS"]["GEAR_POS"])
-      GEAR_VALUES = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1}  # GEAR_POS -> ギア番号
+      # NEW_MSG_28(0x166)のGEAR_POSで大分類（FWD/REV/Neutral）を判定
+      new_msg28_gear = int(cp.vl["NEW_MSG_28"]["GEAR_POS"])
+
+      # PEDALS(0x165)のGEAR_POSでギア段（1-6速）を判定
+      gear_pos = cp.vl["PEDALS"]["GEAR_POS"]
+      GEAR_VALUES = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1}
       VALID_GEAR_POS = set(GEAR_VALUES.keys())
 
-      ret.clutchPressed = gear_pos not in VALID_GEAR_POS  # クラッチが踏まれている = ギアが確定していない
-      # ニュートラル判定はGEAR_POS==14（ギア変更時に必ず経由する中間値）
+      # リバース判定
+      if new_msg28_gear == 6:  # Reverse
+        ret.gearShifter = car.CarState.GearShifter.reverse
+        ret.clutchPressed = False
+      # ニュートラル判定（NEW_MSG_28のGEAR_POSがForward以外）
+      elif new_msg28_gear not in [4, 5]:  # 4=Forward, 5=Forward 以外はNeutral扱い
+        ret.gearShifter = car.CarState.GearShifter.neutral
+        ret.clutchPressed = True
+      # 前進ギア段判定
+      elif gear_pos in GEAR_VALUES:
+        ret.gearShifter = car.CarState.GearShifter.drive
+        ret.clutchPressed = False
+      else:
+        # ギア変更中（シフト遷移中間値）
+        ret.gearShifter = car.CarState.GearShifter.drive
+        ret.clutchPressed = True
 
-      # GearShifter enum has no per-gear values; all engaged gears map to 'drive'
-      # Actual gear number (1-6) is stored in fp_ret.gearStep below
-      gear_map = {
-        2: car.CarState.GearShifter.drive,   # 6速
-        3: car.CarState.GearShifter.drive,   # 5速
-        4: car.CarState.GearShifter.drive,   # 4速
-        5: car.CarState.GearShifter.drive,   # 3速
-        7: car.CarState.GearShifter.drive,   # 2速
-        13: car.CarState.GearShifter.drive,  # 1速
-      }
-      ret.gearShifter = gear_map.get(gear_pos, car.CarState.GearShifter.neutral)
       # Map raw CAN GEAR_POS values to actual gear numbers (1-6), 0 for neutral/unknown
       fp_ret.gearStep = GEAR_VALUES.get(gear_pos, 0)
     else:
@@ -102,7 +116,10 @@ class CarState(CarStateBase):
     # Mazda 2 DJ steering angle sensor outputs invalid marker values
     # during hazard/right blinker activation
     if abs(steer_angle) > 360:  # Physical steering range is approximately ±500°
-      steer_angle = self.steering_angle_prev
+      # STEER2をフォールバックとして使用
+      steer_angle = cp.vl["STEER2"]["STEER_ANGLE"]
+      if abs(steer_angle) > 360:
+        steer_angle = self.steering_angle_prev
     self.steering_angle_prev = steer_angle
     ret.steeringAngleDeg = steer_angle
     ret.steeringTorque = cp.vl["STEER_TORQUE"]["STEER_TORQUE_SENSOR"]
@@ -184,6 +201,7 @@ class CarState(CarStateBase):
       ("BLINK_INFO", 10),
       ("TURN_SWITCH", 10),
       ("STEER", 67),
+      ("STEER2", 83),
       ("STEER_RATE", 83),
       ("STEER_TORQUE", 83),
       ("WHEEL_SPEEDS", 100),

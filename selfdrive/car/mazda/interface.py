@@ -86,6 +86,8 @@ class CarInterface(CarInterfaceBase):
     if self.CP.openpilotLongitudinalControl:
       button_events += create_button_events(self.CS.cancel_button, self.CS.prev_cancel_button, {True: ButtonType.cancel})
       button_events += create_button_events(self.CS.main_button, self.CS.prev_main_button, {True: ButtonType.altButton1})
+      button_events += create_button_events(self.CS.set_plus, self.CS.prev_set_plus, {True: ButtonType.accelCruise})
+      button_events += create_button_events(self.CS.set_minus, self.CS.prev_set_minus, {True: ButtonType.decelCruise})
 
     ret.buttonEvents = button_events
 
