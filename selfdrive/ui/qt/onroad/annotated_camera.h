@@ -27,12 +27,12 @@ public:
 
 private:
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
-  void drawSpeedometer(QPainter &p, const QString &speedStr, const QString &speedUnit, float speed, const QJsonObject &frogpilot_toggles);
-  void drawSpeedometerDefault(QPainter &p, const QString &speedStr, const QString &speedUnit);
-  void drawSpeedometerMinimal(QPainter &p, const QString &speedStr, const QString &speedUnit);
-  void drawSpeedometerCircle(QPainter &p, const QString &speedStr, const QString &speedUnit);
-  void drawSpeedometerArc(QPainter &p, const QString &speedStr, const QString &speedUnit, float speed, float maxSpeed);
-  void drawSpeedometerBar(QPainter &p, const QString &speedStr, const QString &speedUnit, float speed, float maxSpeed);
+  void drawSpeedometer(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, const QJsonObject &frogpilot_toggles);
+  void drawSpeedometerDefault(QPainter &p, const QString &speed_str, const QString &speed_unit);
+  void drawSpeedometerMinimal(QPainter &p, const QString &speed_str, const QString &speed_unit);
+  void drawSpeedometerCircle(QPainter &p, const QString &speed_str, const QString &speed_unit);
+  void drawSpeedometerArc(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float max_speed);
+  void drawSpeedometerBar(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float max_speed);
 
   QVBoxLayout *main_layout;
   ExperimentalButton *experimental_btn;
