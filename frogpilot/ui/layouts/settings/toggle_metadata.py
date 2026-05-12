@@ -2316,6 +2316,21 @@ VEHICLE_SETTINGS_TOGGLES = (
     tuning_level=0,
   ),
   ToggleDefinition(
+    title=("Speedometer Style"),
+    param="SpeedometerStyle",
+    button_labels=["SELECT"],
+    button_options=["Default", "Minimal", "Circle", "Arc", "Bar"],
+    description=("<b>Select the speedometer display style.</b><br><br>"
+                 "<b>Default</b>: Large digital display.<br>"
+                 "<b>Minimal</b>: Small speed number only.<br>"
+                 "<b>Circle</b>: Speed inside a circle.<br>"
+                 "<b>Arc</b>: Analog arc gauge.<br>"
+                 "<b>Bar</b>: Horizontal bar gauge."),
+    parent_param="MazdaToggles",
+    toggle_type=ToggleType.BUTTON_PARAM,
+    tuning_level=0,
+  ),
+  ToggleDefinition(
     title=("Stop-and-Go Hack"),
     param="SNGHack",
     car_params=["toyota_brand", "openpilot_longitudinal", "!gas_interceptor", "!stock_sng"],
@@ -2812,21 +2827,6 @@ APPEARANCE_TOGGLES = (
     button_labels=["SELECT"],
     button_options=["Auto", "Driver", "Standard", "Wide"],
     description=("<b>Select the active camera view.</b> This is purely a visual change and doesn't impact how openpilot drives!"),
-    parent_param="QOLVisuals",
-    toggle_type=ToggleType.BUTTON_PARAM,
-    tuning_level=2,
-  ),
-  ToggleDefinition(
-    title=("Speedometer Style"),
-    param="SpeedometerStyle",
-    button_labels=["SELECT"],
-    button_options=["Default", "Minimal", "Circle", "Arc", "Bar"],
-    description=("<b>Select the speedometer display style.</b><br><br>"
-                 "<b>Default</b>: Large digital display.<br>"
-                 "<b>Minimal</b>: Small speed number only.<br>"
-                 "<b>Circle</b>: Speed inside a circle.<br>"
-                 "<b>Arc</b>: Analog arc gauge.<br>"
-                 "<b>Bar</b>: Horizontal bar gauge."),
     parent_param="QOLVisuals",
     toggle_type=ToggleType.BUTTON_PARAM,
     tuning_level=2,

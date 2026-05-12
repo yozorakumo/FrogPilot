@@ -201,6 +201,12 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
     {"MazdaLockSpeed", tr("Lock Speed"), tr("<b>The speed at which the doors will automatically lock.</b>"), ""},
     {"MazdaAutoUnlock", tr("Automatic Door Unlock"), tr("<b>Automatically unlock doors.</b>"), ""},
     {"MazdaUnlockSpeed", tr("Unlock Speed"), tr("<b>The speed at which the doors will automatically unlock.</b>"), ""},
+    {"SpeedometerStyle", tr("Speedometer Style"), tr("<b>Select the speedometer display style.</b><br><br>"
+                                                     "<b>Default</b>: Large digital display.<br>"
+                                                     "<b>Minimal</b>: Small speed number only.<br>"
+                                                     "<b>Circle</b>: Speed inside a circle.<br>"
+                                                     "<b>Arc</b>: Analog arc gauge.<br>"
+                                                     "<b>Bar</b>: Horizontal bar gauge."), ""},
 
     {"ToyotaToggles", tr("Toyota/Lexus Settings"), tr("<b>FrogPilot features for Lexus and Toyota vehicles.</b>"), ""},
     {"ToyotaDoors", tr("Automatically Lock/Unlock Doors"), tr("<b>Automatically lock/unlock doors</b> when shifting in and out of drive."), ""},
@@ -275,6 +281,10 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
       vehicleToggle = unlockToggle;
     } else if (param == "MazdaUnlockSpeed") {
       vehicleToggle = new FrogPilotParamValueControl(param, title, desc, icon, 1, 50, tr(" kph"));
+    } else if (param == "SpeedometerStyle") {
+      std::vector<QString> speedometerOptions{tr("Default"), tr("Minimal"), tr("Circle"), tr("Arc"), tr("Bar")};
+      ButtonParamControl *speedometerSelection = new ButtonParamControl(param, title, desc, icon, speedometerOptions);
+      vehicleToggle = speedometerSelection;
 
     } else if (param == "ToyotaToggles") {
       ButtonControl *toyotaButton = new ButtonControl(title, tr("MANAGE"), desc);

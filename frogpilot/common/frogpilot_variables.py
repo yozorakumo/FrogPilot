@@ -445,7 +445,7 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("SpeedLimitController", "1", 0, "0"),
   ("SpeedLimitFiller", "0", 0, "0"),
   ("SpeedLimitSources", "0", 3, "0"),
-  ("SpeedometerStyle", "0", 2, "0"),
+  ("SpeedometerStyle", "0", 0, "0"),
   ("SshEnabled", "0", 0, "0"),
   ("StartupMessageBottom", "Human-tested, frog-approved 🐸", 0, "Always keep hands on wheel and eyes on road"),
   ("StartupMessageTop", "Hop in and buckle up!", 0, "Be ready to take over at any time"),
