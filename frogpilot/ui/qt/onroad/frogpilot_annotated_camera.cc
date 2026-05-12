@@ -261,6 +261,10 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
   if (fpsm["carParams"].getCarParams().getTransmissionType() == cereal::CarParams::TransmissionType::MANUAL || frogpilot_toggles.value("MazdaMTUI").toBool()) {
     paintMTGear(p, carState, frogpilotCarState);
   }
+
+  if (frogpilot_toggles.value("brake_pb_clutch_ui").toBool()) {
+    paintBrakePBClutchStatus(p, carState);
+  }
 }
 
 void FrogPilotAnnotatedCameraWidget::paintAdjacentPaths(QPainter &p, const cereal::CarState::Reader &carState, const FrogPilotUIScene &frogpilot_scene, const QJsonObject &frogpilot_toggles) {
@@ -998,6 +1002,62 @@ void FrogPilotAnnotatedCameraWidget::paintMTGear(QPainter &p, const cereal::CarS
   p.setFont(InterFont(150, QFont::Bold));
   p.setPen(clutch ? QColor(255, 165, 0) : whiteColor()); // Orange if clutch pressed
   p.drawText(gearRect, Qt::AlignCenter, gearStr);
+
+  p.restore();
+}
+
+void FrogPilotAnnotatedCameraWidget::paintBrakePBClutchStatus(QPainter &p, const cereal::CarState::Reader &carState) {
+  bool brake_pressed = carState.getBrakePressed();
+  bool parking_brake = carState.getParkingBrake();
+  bool clutch_pressed = carState.getClutchPressed();
+
+  if (!brake_pressed && !parking_brake && !clutch_pressed) {
+    return;
+  }
+
+  p.save();
+
+  int startX = width() / 2 - 120;
+  int startY = 560;
+
+  int itemWidth = 80;
+  int spacing = 10;
+
+  p.setFont(InterFont(36, QFont::Bold));
+
+  // Brake pedal - Red
+  if (brake_pressed) {
+    QRect brakeRect(startX, startY, itemWidth, 60);
+    p.setBrush(QColor(201, 34, 49, 180));
+    p.setPen(QPen(QColor(201, 34, 49), 4));
+    p.drawRoundedRect(brakeRect, 12, 12);
+    p.setPen(QPen(whiteColor()));
+    p.drawText(brakeRect, Qt::AlignCenter, "BRK");
+  }
+
+  // Parking brake - Orange
+  if (parking_brake) {
+    int pbX = brake_pressed ? startX + itemWidth + spacing : startX;
+    QRect pbRect(pbX, startY, itemWidth, 60);
+    p.setBrush(QColor(255, 165, 0, 180));
+    p.setPen(QPen(QColor(255, 165, 0), 4));
+    p.drawRoundedRect(pbRect, 12, 12);
+    p.setPen(QPen(whiteColor()));
+    p.drawText(pbRect, Qt::AlignCenter, "P");
+  }
+
+  // Clutch - Blue
+  if (clutch_pressed) {
+    int clutchX = startX;
+    if (brake_pressed) clutchX += itemWidth + spacing;
+    if (parking_brake) clutchX += itemWidth + spacing;
+    QRect clutchRect(clutchX, startY, itemWidth, 60);
+    p.setBrush(QColor(0, 100, 255, 180));
+    p.setPen(QPen(QColor(0, 100, 255), 4));
+    p.drawRoundedRect(clutchRect, 12, 12);
+    p.setPen(QPen(whiteColor()));
+    p.drawText(clutchRect, Qt::AlignCenter, "CL");
+  }
 
   p.restore();
 }

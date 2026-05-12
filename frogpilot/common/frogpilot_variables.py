@@ -181,6 +181,7 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("AvailableModelNames", "", 1, ""),
   ("AvailableModels", "", 1, ""),
   ("BigMap", "0", 2, "0"),
+  ("BrakePBClutchUI", "0", 0, "0"),
   ("BlacklistedModels", "", 2, ""),
   ("BlindSpotMetrics", "1", 3, "0"),
   ("BlindSpotPath", "1", 1, "0"),
@@ -773,6 +774,7 @@ class FrogPilotVariables:
     toggle.pedals_on_ui = toggle.openpilot_longitudinal and (custom_ui and (params.get_bool("PedalsOnUI") if toggle.tuning_level >= level["PedalsOnUI"] else default.get_bool("PedalsOnUI")))
     toggle.dynamic_pedals_on_ui = toggle.pedals_on_ui and (params.get_bool("DynamicPedalsOnUI") if toggle.tuning_level >= level["DynamicPedalsOnUI"] else default.get_bool("DynamicPedalsOnUI"))
     toggle.static_pedals_on_ui = toggle.pedals_on_ui and (params.get_bool("StaticPedalsOnUI") if toggle.tuning_level >= level["StaticPedalsOnUI"] else default.get_bool("StaticPedalsOnUI"))
+    toggle.brake_pb_clutch_ui = custom_ui and (params.get_bool("BrakePBClutchUI") if toggle.tuning_level >= level["BrakePBClutchUI"] else default.get_bool("BrakePBClutchUI"))
     toggle.rotating_wheel = custom_ui and (params.get_bool("RotatingWheel") if toggle.tuning_level >= level["RotatingWheel"] else default.get_bool("RotatingWheel"))
 
     toggle.developer_ui = params.get_bool("DeveloperUI") if toggle.tuning_level >= level["DeveloperUI"] else default.get_bool("DeveloperUI")

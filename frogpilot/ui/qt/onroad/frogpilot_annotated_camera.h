@@ -80,6 +80,7 @@ private:
   void paintTurnSignals(QPainter &p, const cereal::CarState::Reader &carState);
   void paintWeather(QPainter &p, const cereal::FrogPilotPlan::Reader &frogpilotPlan, FrogPilotUIScene &frogpilot_scene);
   void paintMTGear(QPainter &p, const cereal::CarState::Reader &carState, const cereal::FrogPilotCarState::Reader &frogpilotCarState);
+  void paintBrakePBClutchStatus(QPainter &p, const cereal::CarState::Reader &carState);
   void updateSignals();
 
   int animationFrameIndex;

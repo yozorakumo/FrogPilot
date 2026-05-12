@@ -88,6 +88,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(FrogPilotSettingsWindow *parent) : 
     {"Compass", tr("Compass"), tr("<b>Show the current driving direction</b> with a simple on-screen compass."), ""},
     {"OnroadDistanceButton", tr("Driving Personality Button"), tr("<b>Control and view the current driving personality</b> via a driving screen widget."), ""},
     {"PedalsOnUI", tr("Gas / Brake Pedal Indicators"), tr("<b>On-screen gas and brake indicators.</b><br><br><b>Dynamic</b>: Opacity changes according to how much openpilot is accelerating or braking<br><b>Static</b>: Full when active, dim when not"), ""},
+    {"BrakePBClutchUI", tr("Brake / Parking Brake / Clutch Indicators"), tr("<b>Display brake pedal, parking brake, and clutch status</b> on the driving screen.<br><br><b>BRK</b> (Red): Brake pedal pressed<br><b>P</b> (Orange): Parking brake engaged<br><b>CL</b> (Blue): Clutch pressed"), ""},
     {"RotatingWheel", tr("Rotating Steering Wheel"), tr("<b>Rotate the driving screen wheel</b> with the physical steering wheel."), ""},
 
     {"ModelUI", tr("Model UI"), tr("<b>Model visualizations</b> for the driving path, lane lines, path edges, and road edges."), "../../frogpilot/assets/toggle_icons/icon_road.png"},

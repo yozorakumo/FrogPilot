@@ -22,16 +22,18 @@ class ConditionalExperimentalMode:
     else:
       self.status_value = 0
 
+    # Always update stop sign/light detection for green light alert
+    self.stop_sign_and_light(v_ego, sm, frogpilot_toggles.conditional_model_stop_time)
+
     if self.status_value not in (1, 2) and not sm["carState"].standstill:
-      self.update_conditions(v_ego, sm, frogpilot_toggles)
+      self.curve_detection(v_ego, frogpilot_toggles)
+      self.slow_lead(v_ego, frogpilot_toggles)
 
       self.experimental_mode = self.check_conditions(v_ego, sm, frogpilot_toggles)
 
       params_memory.put_int("CEStatus", self.status_value if self.experimental_mode else 0)
     else:
       self.experimental_mode = self.status_value == 2 or sm["carState"].standstill and self.experimental_mode and self.frogpilot_planner.model_stopped
-      self.stop_light_detected &= self.status_value not in (1, 2)
-      self.stop_light_filter.x = 0
 
   def check_conditions(self, v_ego, sm, frogpilot_toggles):
     below_speed = not self.frogpilot_planner.frogpilot_following.following_lead and 1 <= v_ego < frogpilot_toggles.conditional_limit
@@ -72,7 +74,6 @@ class ConditionalExperimentalMode:
   def update_conditions(self, v_ego, sm, frogpilot_toggles):
     self.curve_detection(v_ego, frogpilot_toggles)
     self.slow_lead(v_ego, frogpilot_toggles)
-    self.stop_sign_and_light(v_ego, sm, frogpilot_toggles.conditional_model_stop_time)
 
   def curve_detection(self, v_ego, frogpilot_toggles):
     self.curvature_filter.update(self.frogpilot_planner.road_curvature_detected or self.frogpilot_planner.driving_in_curve)
