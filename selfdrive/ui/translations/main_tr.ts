@@ -4550,6 +4550,62 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <source>Parking Brake</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Brake Indicator</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show the brake pedal status indicator on the driving screen.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Clutch Indicator</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show the clutch pedal status indicator on the driving screen.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Parking Brake Indicator</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show the parking brake status indicator on the driving screen.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Speedometer Style</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Select the speedometer display style.&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Default&lt;/b&gt;: Large digital display.&lt;br&gt;&lt;b&gt;F1 LED&lt;/b&gt;: F1-style LED bar.&lt;br&gt;&lt;b&gt;GT7&lt;/b&gt;: Gran Turismo-style gauge.&lt;br&gt;&lt;b&gt;Forza&lt;/b&gt;: Forza-style speedometer.&lt;br&gt;&lt;b&gt;NFS Neon&lt;/b&gt;: Neon-style gauge.&lt;br&gt;&lt;b&gt;SimHub&lt;/b&gt;: SimHub-style display.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>F1 LED</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GT7</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Forza</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>NFS Neon</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>SimHub</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>FrogPilotVisualsPanel</name>
