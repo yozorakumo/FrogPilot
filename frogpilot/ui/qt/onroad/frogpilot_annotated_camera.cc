@@ -1,6 +1,7 @@
 #include <QMovie>
 
 #include "frogpilot/ui/qt/onroad/frogpilot_annotated_camera.h"
+#include "frogpilot/ui/qt/onroad/ui_edit_mode.h"
 
 FrogPilotAnnotatedCameraWidget::FrogPilotAnnotatedCameraWidget(QWidget *parent) : QWidget(parent) {
   animationTimer = new QTimer(this);
@@ -43,6 +44,10 @@ FrogPilotAnnotatedCameraWidget::FrogPilotAnnotatedCameraWidget(QWidget *parent) 
 
     frogHopCount = 0;
   });
+}
+
+void FrogPilotAnnotatedCameraWidget::setEditModeManager(UIEditModeManager *manager) {
+  edit_mode_manager_ = manager;
 }
 
 void FrogPilotAnnotatedCameraWidget::showEvent(QShowEvent *event) {
@@ -184,7 +189,17 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
   }
 
   if (!frogpilot_scene.map_open && !hideBottomIcons && frogpilot_toggles.value("compass").toBool()) {
+    p.save();
+    float compass_ox = edit_mode_manager_ ? edit_mode_manager_->getOffsetX("compass") : 0.0f;
+    float compass_oy = edit_mode_manager_ ? edit_mode_manager_->getOffsetY("compass") : 0.0f;
+    float compass_sc = edit_mode_manager_ ? edit_mode_manager_->getScale("compass") : 1.0f;
+    p.translate(compass_ox, compass_oy);
+    if (compass_sc != 1.0f) p.scale(compass_sc, compass_sc);
     paintCompass(p, frogpilot_toggles);
+    if (edit_mode_manager_) {
+      edit_mode_manager_->updateBounds("compass", QRect(compassPosition, QSize(widget_size, widget_size)).translated(compass_ox, compass_oy));
+    }
+    p.restore();
   } else {
     compassPosition.setX(0);
     compassPosition.setY(0);
@@ -265,7 +280,17 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
 
   if (!use_integrated_speedometer) {
     if (fpsm["carParams"].getCarParams().getTransmissionType() == cereal::CarParams::TransmissionType::MANUAL || frogpilot_toggles.value("MazdaMTUI").toBool()) {
+      p.save();
+      float gear_ox = edit_mode_manager_ ? edit_mode_manager_->getOffsetX("gear") : 0.0f;
+      float gear_oy = edit_mode_manager_ ? edit_mode_manager_->getOffsetY("gear") : 0.0f;
+      float gear_sc = edit_mode_manager_ ? edit_mode_manager_->getScale("gear") : 1.0f;
+      p.translate(gear_ox, gear_oy);
+      if (gear_sc != 1.0f) p.scale(gear_sc, gear_sc);
       paintMTGear(p, carState, frogpilotCarState);
+      if (edit_mode_manager_) {
+        edit_mode_manager_->updateBounds("gear", QRect(width() / 2 - 100, 350, 200, 200).translated(gear_ox, gear_oy));
+      }
+      p.restore();
     }
 
     if (frogpilot_toggles.value("mazda_rp_meter").toBool()) {

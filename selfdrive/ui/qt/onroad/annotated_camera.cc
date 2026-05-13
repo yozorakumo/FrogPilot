@@ -33,6 +33,9 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   distance_btn = new DistanceButton(this);
   screen_recorder = new ScreenRecorder(this);
 
+  edit_manager_ = new UIEditModeManager(this);
+  frogpilot_nvg->setEditModeManager(edit_manager_);
+
   distance_btn->setVisible(false);
 }
 
@@ -155,7 +158,9 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::FrogPilotPlan::Re
   int top_radius = 32;
   int bottom_radius = has_eu_speed_limit ? 100 : 32;
 
-  QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2, 45), set_speed_size);
+  float max_speed_ox = edit_manager_->getOffsetX("max_speed");
+  float max_speed_oy = edit_manager_->getOffsetY("max_speed");
+  QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2 + max_speed_ox, 45 + max_speed_oy), set_speed_size);
   if (!frogpilot_toggles.value("hide_max_speed").toBool()) {
     if (fs.frogpilot_scene.traffic_mode_enabled) {
       p.setPen(QPen(redColor(), 10));
@@ -243,6 +248,9 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::FrogPilotPlan::Re
     p.restore();
   }
 
+  edit_manager_->updateBounds("max_speed", set_speed_rect);
+  edit_manager_->updateBounds("speed_limit", sign_rect);
+
   // current speed
   if (!frogpilot_nvg->bigMapOpen && frogpilot_nvg->standstillDuration == 0 && !frogpilot_toggles.value("hide_speed").toBool()) {
     // RPM・ギアデータを取得
@@ -296,15 +304,29 @@ void AnnotatedCameraWidget::drawSpeedometer(QPainter &p, const QString &speed_st
 }
 
 void AnnotatedCameraWidget::drawSpeedometerDefault(QPainter &p, const QString &speed_str, const QString &speed_unit) {
+  float ox = edit_manager_->getOffsetX("speedometer");
+  float oy = edit_manager_->getOffsetY("speedometer");
+  float sc = edit_manager_->getScale("speedometer");
+  p.save();
+  p.translate(ox, oy);
+  if (sc != 1.0f) p.scale(sc, sc);
   p.setFont(InterFont(176, QFont::Bold));
   drawText(p, rect().center().x(), 210, speed_str);
   p.setFont(InterFont(66));
   drawText(p, rect().center().x(), 290, speed_unit, 200);
+  edit_manager_->updateBounds("speedometer", QRect(rect().center().x() - 120, 120, 240, 200).translated(ox, oy));
+  p.restore();
 }
 
 // Style 1: F1 LED Bar Style
 void AnnotatedCameraWidget::drawSpeedometerF1LED(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float rpm, int gear) {
   p.save();
+
+  float ox = edit_manager_->getOffsetX("speedometer");
+  float oy = edit_manager_->getOffsetY("speedometer");
+  float sc = edit_manager_->getScale("speedometer");
+  p.translate(ox, oy);
+  if (sc != 1.0f) p.scale(sc, sc);
 
   const float maxRPM = 8000.0f;
   const float rpmRatio = (rpm > 0) ? std::min(rpm / maxRPM, 1.0f) : 0.0f;
@@ -391,12 +413,20 @@ void AnnotatedCameraWidget::drawSpeedometerF1LED(QPainter &p, const QString &spe
   QRect unitRect(panelX, speedY + 14, panelW, 40);
   p.drawText(unitRect, Qt::AlignCenter, speed_unit);
 
+  edit_manager_->updateBounds("speedometer", QRect(panelX, panelY, panelW, panelH).translated(ox, oy));
+
   p.restore();
 }
 
 // Style 2: Gran Turismo 7 Style
 void AnnotatedCameraWidget::drawSpeedometerGT7(QPainter &p, const QString &speed_str, const QString &speed_unit, float rpm, int gear) {
   p.save();
+
+  float ox = edit_manager_->getOffsetX("speedometer");
+  float oy = edit_manager_->getOffsetY("speedometer");
+  float sc = edit_manager_->getScale("speedometer");
+  p.translate(ox, oy);
+  if (sc != 1.0f) p.scale(sc, sc);
 
   const float maxRPM = 8000.0f;
   const float rpmRatio = (rpm > 0) ? std::min(rpm / maxRPM, 1.0f) : 0.0f;
@@ -508,12 +538,20 @@ void AnnotatedCameraWidget::drawSpeedometerGT7(QPainter &p, const QString &speed
   QRect unitRect(centerX - 80, centerY + 72, 160, 35);
   p.drawText(unitRect, Qt::AlignCenter, speed_unit);
 
+  edit_manager_->updateBounds("speedometer", QRect(centerX - radius - 20, centerY - radius - 20, radius * 2 + 40, radius * 2 + 40).translated(ox, oy));
+
   p.restore();
 }
 
 // Style 3: Forza Horizon Style
 void AnnotatedCameraWidget::drawSpeedometerForza(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float rpm, int gear) {
   p.save();
+
+  float ox = edit_manager_->getOffsetX("speedometer");
+  float oy = edit_manager_->getOffsetY("speedometer");
+  float sc = edit_manager_->getScale("speedometer");
+  p.translate(ox, oy);
+  if (sc != 1.0f) p.scale(sc, sc);
 
   const float maxRPM = 8000.0f;
   const float rpmRatio = (rpm > 0) ? std::min(rpm / maxRPM, 1.0f) : 0.0f;
@@ -579,12 +617,20 @@ void AnnotatedCameraWidget::drawSpeedometerForza(QPainter &p, const QString &spe
   QRect unitRect(panelX + 140, panelY + 115, 240, 35);
   p.drawText(unitRect, Qt::AlignCenter, speed_unit);
 
+  edit_manager_->updateBounds("speedometer", QRect(panelX, panelY, panelW, panelH).translated(ox, oy));
+
   p.restore();
 }
 
 // Style 4: NFS Neon Style
 void AnnotatedCameraWidget::drawSpeedometerNFS(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float rpm, int gear) {
   p.save();
+
+  float ox = edit_manager_->getOffsetX("speedometer");
+  float oy = edit_manager_->getOffsetY("speedometer");
+  float sc = edit_manager_->getScale("speedometer");
+  p.translate(ox, oy);
+  if (sc != 1.0f) p.scale(sc, sc);
 
   const float maxRPM = 8000.0f;
   const float rpmRatio = (rpm > 0) ? std::min(rpm / maxRPM, 1.0f) : 0.0f;
@@ -673,12 +719,20 @@ void AnnotatedCameraWidget::drawSpeedometerNFS(QPainter &p, const QString &speed
   p.setPen(QColor(0, 136, 136));
   p.drawText(panelX + 130, panelY + 118, 230, 20, Qt::AlignCenter, speed_unit);
 
+  edit_manager_->updateBounds("speedometer", QRect(panelX, panelY, panelW, panelH).translated(ox, oy));
+
   p.restore();
 }
 
 // Style 5: SimHub Telemetry Style
 void AnnotatedCameraWidget::drawSpeedometerSimHub(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float rpm, int gear, const QJsonObject &frogpilot_toggles) {
   p.save();
+
+  float ox = edit_manager_->getOffsetX("speedometer");
+  float oy = edit_manager_->getOffsetY("speedometer");
+  float sc = edit_manager_->getScale("speedometer");
+  p.translate(ox, oy);
+  if (sc != 1.0f) p.scale(sc, sc);
 
   const float maxRPM = 8000.0f;
   const float rpmRatio = (rpm > 0) ? std::min(rpm / maxRPM, 1.0f) : 0.0f;
@@ -784,6 +838,8 @@ void AnnotatedCameraWidget::drawSpeedometerSimHub(QPainter &p, const QString &sp
   p.setFont(InterFont(18));
   p.setPen(QColor(120, 120, 120));
   p.drawText(bbrX, bbrY - 2, 50, 14, Qt::AlignLeft, "BRK");
+
+  edit_manager_->updateBounds("speedometer", QRect(panelX, panelY, panelW, panelH).translated(ox, oy));
 
   p.restore();
 }
@@ -1125,6 +1181,9 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   if (s->scene.world_objects_visible) {
     frogpilot_nvg->paintFrogPilotWidgets(painter, *s, *fs, sm, fpsm, frogpilot_toggles);
   }
+
+  // UI Edit Mode overlay
+  edit_manager_->paintOverlay(painter, rect().width(), rect().height());
 }
 
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
@@ -1132,4 +1191,28 @@ void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
 
   ui_update_params(uiState());
   prev_draw_t = millis_since_boot();
+}
+
+void AnnotatedCameraWidget::mousePressEvent(QMouseEvent *e) {
+  if (edit_manager_->handleMousePress(e->pos())) {
+    e->accept();
+  } else {
+    QWidget::mousePressEvent(e);
+  }
+}
+
+void AnnotatedCameraWidget::mouseMoveEvent(QMouseEvent *e) {
+  if (edit_manager_->handleMouseMove(e->pos())) {
+    e->accept();
+  } else {
+    QWidget::mouseMoveEvent(e);
+  }
+}
+
+void AnnotatedCameraWidget::mouseReleaseEvent(QMouseEvent *e) {
+  if (edit_manager_->handleMouseRelease()) {
+    e->accept();
+  } else {
+    QWidget::mouseReleaseEvent(e);
+  }
 }

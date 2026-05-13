@@ -491,6 +491,7 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("TuningLevel", "0", 0, "0"),
   ("TuningLevelConfirmed", "0", 0, "0"),
   ("TurnDesires", "0", 2, "0"),
+  ("UIElementPositions", "{}", 0, "{}"),
   ("UnlimitedLength", "1", 2, "0"),
   ("UnlockDoors", "1", 0, "0"),
   ("UpdatedToggles", "1", 0, "0"),

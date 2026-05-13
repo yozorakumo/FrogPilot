@@ -6,6 +6,8 @@
 #include "selfdrive/ui/qt/onroad/buttons.h"
 #include "selfdrive/ui/qt/widgets/cameraview.h"
 
+class UIEditModeManager;
+
 const int widget_size = img_size + (UI_BORDER_SIZE / 2);
 
 class FrogPilotAnnotatedCameraWidget : public QWidget {
@@ -21,6 +23,10 @@ public:
   void paintPathEdges(QPainter &p, const cereal::NavInstruction::Reader &navInstruction, const UIScene &scene, const FrogPilotUIScene &frogpilot_scene, SubMaster &sm);
   void paintRainbowPath(QPainter &p, QLinearGradient &bg, float lin_grad_point, SubMaster &sm);
   void updateState(const FrogPilotUIState &fs, const QJsonObject &frogpilot_toggles);
+
+  // UI Edit Mode
+  void setEditModeManager(UIEditModeManager *manager);
+  UIEditModeManager *edit_mode_manager_ = nullptr;
 
   bool bigMapOpen;
   bool hideBottomIcons;
