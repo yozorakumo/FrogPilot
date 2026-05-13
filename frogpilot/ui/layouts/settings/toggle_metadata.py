@@ -2319,13 +2319,14 @@ VEHICLE_SETTINGS_TOGGLES = (
     title=("Speedometer Style"),
     param="SpeedometerStyle",
     button_labels=["SELECT"],
-    button_options=["Default", "Minimal", "Circle", "Arc", "Bar"],
+    button_options=["Default", "F1 LED", "GT7", "Forza", "NFS Neon", "SimHub"],
     description=("<b>Select the speedometer display style.</b><br><br>"
                  "<b>Default</b>: Large digital display.<br>"
-                 "<b>Minimal</b>: Small speed number only.<br>"
-                 "<b>Circle</b>: Speed inside a circle.<br>"
-                 "<b>Arc</b>: Analog arc gauge.<br>"
-                 "<b>Bar</b>: Horizontal bar gauge."),
+                 "<b>F1 LED</b>: F1-style LED bar.<br>"
+                 "<b>GT7</b>: Gran Turismo-style gauge.<br>"
+                 "<b>Forza</b>: Forza-style speedometer.<br>"
+                 "<b>NFS Neon</b>: Neon-style gauge.<br>"
+                 "<b>SimHub</b>: SimHub-style display."),
     parent_param="MazdaToggles",
     toggle_type=ToggleType.BUTTON_PARAM,
     tuning_level=0,

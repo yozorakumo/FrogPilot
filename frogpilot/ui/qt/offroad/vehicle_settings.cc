@@ -195,7 +195,6 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
     {"MazdaBrakeUI", tr("Brake Indicator"), tr("Show the brake pedal status indicator on the driving screen."), ""},
     {"MazdaClutchUI", tr("Clutch Indicator"), tr("Show the clutch pedal status indicator on the driving screen."), ""},
     {"MazdaPBUI", tr("Parking Brake Indicator"), tr("Show the parking brake status indicator on the driving screen."), ""},
-    {"MazdaRPMeter", tr("GT-Style RPM Meter"), tr("Display a Gran Turismo-style tachometer on the driving screen showing engine RPM with color-coded arc (green → yellow → red) and digital RPM readout."), ""},
     {"MazdaMTMode", tr("MT Mode"), tr("<b>Enable MT mode for Mazda vehicles.</b>"), ""},
     {"MazdaAutoLock", tr("Automatic Door Lock"), tr("<b>Automatically lock doors.</b>"), ""},
     {"MazdaLockSpeed", tr("Lock Speed"), tr("<b>The speed at which the doors will automatically lock.</b>"), ""},
@@ -203,10 +202,11 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
     {"MazdaUnlockSpeed", tr("Unlock Speed"), tr("<b>The speed at which the doors will automatically unlock.</b>"), ""},
     {"SpeedometerStyle", tr("Speedometer Style"), tr("<b>Select the speedometer display style.</b><br><br>"
                                                      "<b>Default</b>: Large digital display.<br>"
-                                                     "<b>Minimal</b>: Small speed number only.<br>"
-                                                     "<b>Circle</b>: Speed inside a circle.<br>"
-                                                     "<b>Arc</b>: Analog arc gauge.<br>"
-                                                     "<b>Bar</b>: Horizontal bar gauge."), ""},
+                                                     "<b>F1 LED</b>: F1-style LED bar.<br>"
+                                                     "<b>GT7</b>: Gran Turismo-style gauge.<br>"
+                                                     "<b>Forza</b>: Forza-style speedometer.<br>"
+                                                     "<b>NFS Neon</b>: Neon-style gauge.<br>"
+                                                     "<b>SimHub</b>: SimHub-style display."), ""},
 
     {"ToyotaToggles", tr("Toyota/Lexus Settings"), tr("<b>FrogPilot features for Lexus and Toyota vehicles.</b>"), ""},
     {"ToyotaDoors", tr("Automatically Lock/Unlock Doors"), tr("<b>Automatically lock/unlock doors</b> when shifting in and out of drive."), ""},
@@ -282,7 +282,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
     } else if (param == "MazdaUnlockSpeed") {
       vehicleToggle = new FrogPilotParamValueControl(param, title, desc, icon, 1, 50, tr(" kph"));
     } else if (param == "SpeedometerStyle") {
-      std::vector<QString> speedometerOptions{tr("Default"), tr("Minimal"), tr("Circle"), tr("Arc"), tr("Bar")};
+      std::vector<QString> speedometerOptions{tr("Default"), tr("F1 LED"), tr("GT7"), tr("Forza"), tr("NFS Neon"), tr("SimHub")};
       ButtonParamControl *speedometerSelection = new ButtonParamControl(param, title, desc, icon, speedometerOptions);
       vehicleToggle = speedometerSelection;
 

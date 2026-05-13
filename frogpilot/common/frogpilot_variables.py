@@ -334,7 +334,6 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("MazdaUnlockSpeed", "5", 0, "5"),
   ("MazdaMTMode", "0", 0, "0"),
   ("MazdaPBUI", "1", 0, "0"),
-  ("MazdaRPMeter", "0", 0, "0"),
   ("MazdaToggles", "1", 0, "0"),
   ("MazdaMTUI", "0", 0, "0"),
   ("MaxDesiredAcceleration", "4.0", 2, "2.0"),
@@ -1073,7 +1072,6 @@ class FrogPilotVariables:
     toggle.mazda_brake_ui = mazda_toggles and (params.get_bool("MazdaBrakeUI") if toggle.tuning_level >= level["MazdaBrakeUI"] else default.get_bool("MazdaBrakeUI"))
     toggle.mazda_clutch_ui = mazda_toggles and (params.get_bool("MazdaClutchUI") if toggle.tuning_level >= level["MazdaClutchUI"] else default.get_bool("MazdaClutchUI"))
     toggle.mazda_pb_ui = mazda_toggles and (params.get_bool("MazdaPBUI") if toggle.tuning_level >= level["MazdaPBUI"] else default.get_bool("MazdaPBUI"))
-    toggle.mazda_rp_meter = mazda_toggles and (params.get_bool("MazdaRPMeter") if toggle.tuning_level >= level["MazdaRPMeter"] else default.get_bool("MazdaRPMeter"))
 
     toyota_doors = toggle.car_make == "toyota" and (params.get_bool("ToyotaDoors") if toggle.tuning_level >= level["ToyotaDoors"] else default.get_bool("ToyotaDoors"))
     toggle.lock_doors = toyota_doors and (params.get_bool("LockDoors") if toggle.tuning_level >= level["LockDoors"] else default.get_bool("LockDoors"))
