@@ -2,6 +2,7 @@
 
 #include <QFontDatabase>
 
+#include "common/swaglog.h"
 #include "system/hardware/hw.h"
 
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
@@ -91,9 +92,16 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
   bool ignore = false;
   switch (event->type()) {
     case QEvent::TouchBegin:
+      LOGW("MainWindow eventFilter: TouchBegin, awake=%d, driver_cam=%d", device()->isAwake(), frogpilot_scene.driver_camera_timer >= UI_FREQ / 2);
+      // fallthrough
     case QEvent::TouchUpdate:
     case QEvent::TouchEnd:
     case QEvent::MouseButtonPress:
+      if (event->type() == QEvent::MouseButtonPress) {
+        QMouseEvent *me = static_cast<QMouseEvent*>(event);
+        LOGW("MainWindow eventFilter: MouseButtonPress at (%d, %d), awake=%d", me->pos().x(), me->pos().y(), device()->isAwake());
+      }
+      // fallthrough
     case QEvent::MouseMove: {
       // ignore events when device is awakened by resetInteractiveTimeout
       ignore = !device()->isAwake() || frogpilot_scene.driver_camera_timer >= UI_FREQ / 2;

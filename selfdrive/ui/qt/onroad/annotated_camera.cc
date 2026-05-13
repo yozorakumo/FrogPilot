@@ -1195,6 +1195,7 @@ void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
 }
 
 void AnnotatedCameraWidget::mousePressEvent(QMouseEvent *e) {
+  LOGW("AnnotatedCameraWidget::mousePressEvent at (%d, %d)", e->pos().x(), e->pos().y());
   if (edit_manager_->handleMousePress(e->pos())) {
     e->accept();
   } else {
@@ -1211,6 +1212,7 @@ void AnnotatedCameraWidget::mouseMoveEvent(QMouseEvent *e) {
 }
 
 void AnnotatedCameraWidget::mouseReleaseEvent(QMouseEvent *e) {
+  LOGW("AnnotatedCameraWidget::mouseReleaseEvent at (%d, %d)", e->pos().x(), e->pos().y());
   if (edit_manager_->handleMouseRelease()) {
     e->accept();
   } else {
