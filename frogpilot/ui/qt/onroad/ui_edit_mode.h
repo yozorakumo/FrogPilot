@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMap>
+#include <QPainter>
 #include <QPoint>
 #include <QRect>
 #include <QTimer>
