@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QTouchEvent>
 #include <QVBoxLayout>
 #include <memory>
 
@@ -84,6 +85,7 @@ protected:
   void mousePressEvent(QMouseEvent *e) override;
   void mouseMoveEvent(QMouseEvent *e) override;
   void mouseReleaseEvent(QMouseEvent *e) override;
+  bool event(QEvent *e) override;
 
   double prev_draw_t = 0;
   FirstOrderFilter fps_filter;

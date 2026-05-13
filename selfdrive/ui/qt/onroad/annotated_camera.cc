@@ -3,6 +3,7 @@
 
 #include <QDateTime>
 #include <QPainter>
+#include <QTouchEvent>
 #include <algorithm>
 #include <cmath>
 
@@ -32,6 +33,8 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
 
   distance_btn = new DistanceButton(this);
   screen_recorder = new ScreenRecorder(this);
+
+  setAttribute(Qt::WA_AcceptTouchEvents);
 
   edit_manager_ = new UIEditModeManager(this);
   frogpilot_nvg->setEditModeManager(edit_manager_);
@@ -1215,4 +1218,30 @@ void AnnotatedCameraWidget::mouseReleaseEvent(QMouseEvent *e) {
   } else {
     QWidget::mouseReleaseEvent(e);
   }
+}
+
+bool AnnotatedCameraWidget::event(QEvent *e) {
+  if (e->type() == QEvent::TouchBegin || e->type() == QEvent::TouchUpdate || e->type() == QEvent::TouchEnd) {
+    QTouchEvent *touchEvent = static_cast<QTouchEvent*>(e);
+    if (touchEvent->touchPoints().count() > 0) {
+      QPointF pos = touchEvent->touchPoints().first().pos();
+      QPoint intPos(static_cast<int>(pos.x()), static_cast<int>(pos.y()));
+      switch (e->type()) {
+        case QEvent::TouchBegin:
+          edit_manager_->handleMousePress(intPos);
+          break;
+        case QEvent::TouchUpdate:
+          edit_manager_->handleMouseMove(intPos);
+          break;
+        case QEvent::TouchEnd:
+          edit_manager_->handleMouseRelease();
+          break;
+        default:
+          break;
+      }
+      e->accept();
+      return true;
+    }
+  }
+  return QWidget::event(e);
 }

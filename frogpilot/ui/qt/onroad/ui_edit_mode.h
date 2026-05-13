@@ -63,7 +63,7 @@ private:
   QTimer *long_press_timer_;
   QPoint press_pos_;
   bool press_pending_ = false;
-  static constexpr int LONG_PRESS_MS = 3000;
+  static constexpr int LONG_PRESS_MS = 2000;
   static constexpr int MOVE_THRESHOLD = 20;
 
   // 要素設定
