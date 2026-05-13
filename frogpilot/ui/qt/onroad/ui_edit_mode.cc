@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QDateTime>
 #include <QMouseEvent>
+#include <QWidget>
 #include "common/swaglog.h"
 
 UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
