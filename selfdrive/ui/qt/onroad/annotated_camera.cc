@@ -33,11 +33,16 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   distance_btn = new DistanceButton(this);
   screen_recorder = new ScreenRecorder(this);
 
-  edit_manager_ = new UIEditModeManager(this);
-  edit_manager_->installOnWidget(this);
-  frogpilot_nvg->setEditModeManager(edit_manager_);
+  // edit_manager_ は OnroadWindow から setEditModeManager() で設定される
 
   distance_btn->setVisible(false);
+}
+
+void AnnotatedCameraWidget::setEditModeManager(UIEditModeManager *manager) {
+  edit_manager_ = manager;
+  if (frogpilot_nvg) {
+    frogpilot_nvg->setEditModeManager(manager);
+  }
 }
 
 void AnnotatedCameraWidget::resizeEvent(QResizeEvent *event) {
@@ -1192,30 +1197,4 @@ void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
 
   ui_update_params(uiState());
   prev_draw_t = millis_since_boot();
-}
-
-void AnnotatedCameraWidget::mousePressEvent(QMouseEvent *e) {
-  LOGW("AnnotatedCameraWidget::mousePressEvent at (%d, %d)", e->pos().x(), e->pos().y());
-  if (edit_manager_->handleMousePress(e->pos())) {
-    e->accept();
-  } else {
-    QWidget::mousePressEvent(e);
-  }
-}
-
-void AnnotatedCameraWidget::mouseMoveEvent(QMouseEvent *e) {
-  if (edit_manager_->handleMouseMove(e->pos())) {
-    e->accept();
-  } else {
-    QWidget::mouseMoveEvent(e);
-  }
-}
-
-void AnnotatedCameraWidget::mouseReleaseEvent(QMouseEvent *e) {
-  LOGW("AnnotatedCameraWidget::mouseReleaseEvent at (%d, %d)", e->pos().x(), e->pos().y());
-  if (edit_manager_->handleMouseRelease()) {
-    e->accept();
-  } else {
-    QWidget::mouseReleaseEvent(e);
-  }
 }

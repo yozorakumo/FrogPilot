@@ -4,6 +4,7 @@
 #include "selfdrive/ui/qt/onroad/annotated_camera.h"
 
 #include "frogpilot/ui/qt/onroad/frogpilot_onroad.h"
+#include "frogpilot/ui/qt/onroad/ui_edit_mode.h"
 
 class OnroadWindow : public QWidget {
   Q_OBJECT
@@ -30,6 +31,9 @@ private:
   void resizeEvent(QResizeEvent *event);
 
   FrogPilotOnroadWindow *frogpilot_onroad;
+
+  // UI Edit Mode - イベントはOnroadWindowレベルで処理
+  UIEditModeManager *edit_manager_;
 
 private slots:
   void offroadTransition(bool offroad);

@@ -4,17 +4,19 @@
 #include <QDateTime>
 #include <QMouseEvent>
 #include <QWidget>
-#include "common/swaglog.h"
+#include <cstdio>
 
 UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
   // 長押しタイマー
   long_press_timer_ = new QTimer(this);
   long_press_timer_->setSingleShot(true);
   connect(long_press_timer_, &QTimer::timeout, this, [this]() {
-    LOGW("UI Edit: Long press timer fired, press_pending=%d", press_pending_);
+    fprintf(stderr, "UI Edit: Long press timer fired, press_pending=%d\n", press_pending_);
+    fflush(stderr);
     if (press_pending_) {
       edit_mode_ = !edit_mode_;
-      LOGW("UI Edit: Edit mode toggled to %d", edit_mode_);
+      fprintf(stderr, "UI Edit: Edit mode toggled to %d\n", edit_mode_);
+      fflush(stderr);
       press_pending_ = false;
       if (!edit_mode_) {
         saveSettings();  // 編集モード終了時に保存
@@ -40,16 +42,37 @@ void UIEditModeManager::installOnWidget(QWidget *widget) {
 bool UIEditModeManager::eventFilter(QObject *obj, QEvent *e) {
   if (e->type() == QEvent::MouseButtonPress) {
     QMouseEvent *me = static_cast<QMouseEvent*>(e);
-    LOGW("UI Edit eventFilter: MouseButtonPress at (%d, %d)", me->pos().x(), me->pos().y());
-    handleMousePress(me->pos());
+    // OnroadWindow座標からAnnotatedCameraWidget座標にマッピング
+    QPoint mappedPos = me->pos();
+    QWidget *source = qobject_cast<QWidget*>(obj);
+    if (source && target_widget_) {
+      mappedPos = target_widget_->mapFromGlobal(source->mapToGlobal(me->pos()));
+    }
+    fprintf(stderr, "UI Edit eventFilter: MouseButtonPress at (%d, %d) -> mapped (%d, %d)\n",
+            me->pos().x(), me->pos().y(), mappedPos.x(), mappedPos.y());
+    fflush(stderr);
+    if (handleMousePress(mappedPos)) {
+      return true;  // 編集モード中はイベントを消費
+    }
   } else if (e->type() == QEvent::MouseMove) {
     QMouseEvent *me = static_cast<QMouseEvent*>(e);
-    handleMouseMove(me->pos());
+    QPoint mappedPos = me->pos();
+    QWidget *source = qobject_cast<QWidget*>(obj);
+    if (source && target_widget_) {
+      mappedPos = target_widget_->mapFromGlobal(source->mapToGlobal(me->pos()));
+    }
+    if (handleMouseMove(mappedPos)) {
+      return true;  // ドラッグ中はイベントを消費
+    }
   } else if (e->type() == QEvent::MouseButtonRelease) {
-    LOGW("UI Edit eventFilter: MouseButtonRelease");
-    handleMouseRelease();
+    fprintf(stderr, "UI Edit eventFilter: MouseButtonRelease\n");
+    fflush(stderr);
+    if (handleMouseRelease()) {
+      return true;  // 編集モード中はイベントを消費
+    }
   } else if (e->type() == QEvent::TouchBegin) {
-    LOGW("UI Edit eventFilter: TouchBegin (touch event received)");
+    fprintf(stderr, "UI Edit eventFilter: TouchBegin (touch event received)\n");
+    fflush(stderr);
   }
   // イベントを消費しない - 親に伝播させる
   return QObject::eventFilter(obj, e);
@@ -77,7 +100,8 @@ void UIEditModeManager::updateBounds(const QString &name, const QRect &bounds) {
 }
 
 bool UIEditModeManager::handleMousePress(const QPoint &pos) {
-  LOGW("UI Edit: handleMousePress at (%d, %d), press_pending=%d, edit_mode=%d", pos.x(), pos.y(), press_pending_, edit_mode_);
+  fprintf(stderr, "UI Edit: handleMousePress at (%d, %d), press_pending=%d, edit_mode=%d\n", pos.x(), pos.y(), press_pending_, edit_mode_);
+  fflush(stderr);
   press_pos_ = pos;
   press_pending_ = true;
   long_press_timer_->start(LONG_PRESS_MS);
@@ -122,7 +146,8 @@ bool UIEditModeManager::handleMouseMove(const QPoint &pos) {
 }
 
 bool UIEditModeManager::handleMouseRelease() {
-  LOGW("UI Edit: handleMouseRelease, press_pending=%d, edit_mode=%d", press_pending_, edit_mode_);
+  fprintf(stderr, "UI Edit: handleMouseRelease, press_pending=%d, edit_mode=%d\n", press_pending_, edit_mode_);
+  fflush(stderr);
   long_press_timer_->stop();
   press_pending_ = false;
   is_dragging_ = false;
