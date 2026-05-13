@@ -89,6 +89,19 @@ void MainWindow::closeSettings() {
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
+  // ===== DEBUG: すべてのイベントをファイルに記録 =====
+  {
+    static int event_count = 0;
+    if (event_count < 500) {  // 最初の500イベントのみ記録（無限ログ防止）
+      FILE *f = fopen("/tmp/ui_edit_debug.log", "a");
+      if (f) {
+        fprintf(f, "event[%d] type=%d obj=%s\n", event_count, (int)event->type(), obj->metaObject()->className());
+        fclose(f);
+      }
+      event_count++;
+    }
+  }
+
   // ===== UI EDIT MODE: 長押し検出（一番最初に処理・イベントは消費しない） =====
   if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::TouchBegin) {
     QPoint pos;
@@ -112,22 +125,19 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
           edit_mode_ = !edit_mode_;
           edit_press_pending_ = false;
           Params().putBool("UIEditMode", edit_mode_);
-          fprintf(stderr, "UI EDIT MODE: toggled to %d\n", edit_mode_);
-          fflush(stderr);
+          { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: toggled to %d\n", edit_mode_); fclose(f); } }
         }
       });
     }
     edit_long_press_timer_->start(EDIT_LONG_PRESS_MS);
-    fprintf(stderr, "UI EDIT MODE: press detected at (%d, %d), timer started\n", pos.x(), pos.y());
-    fflush(stderr);
+    { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: press detected at (%d, %d), timer started\n", pos.x(), pos.y()); fclose(f); } }
   }
 
   if (event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {
     if (edit_press_pending_) {
       edit_press_pending_ = false;
       if (edit_long_press_timer_) edit_long_press_timer_->stop();
-      fprintf(stderr, "UI EDIT MODE: release detected\n");
-      fflush(stderr);
+      { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: release detected\n"); fclose(f); } }
     }
   }
 
@@ -146,8 +156,7 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
       if ((pos - edit_press_pos_).manhattanLength() > EDIT_MOVE_THRESHOLD) {
         edit_press_pending_ = false;
         if (edit_long_press_timer_) edit_long_press_timer_->stop();
-        fprintf(stderr, "UI EDIT MODE: moved, cancelled\n");
-        fflush(stderr);
+        { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: moved, cancelled\n"); fclose(f); } }
       }
     }
   }
