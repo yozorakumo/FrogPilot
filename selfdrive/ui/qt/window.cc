@@ -89,12 +89,7 @@ void MainWindow::closeSettings() {
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
-  FrogPilotUIState &fs = *frogpilotUIState();
-  FrogPilotUIScene &frogpilot_scene = fs.frogpilot_scene;
-  QJsonObject &frogpilot_toggles = fs.frogpilot_toggles;
-
-  // UI Edit Mode: Long press detection
-  // (サイドバー処理と並列して動作、イベントは消費しない)
+  // ===== UI EDIT MODE: 長押し検出（一番最初に処理・イベントは消費しない） =====
   if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::TouchBegin) {
     QPoint pos;
     if (event->type() == QEvent::TouchBegin) {
@@ -156,6 +151,11 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
       }
     }
   }
+
+  // ===== FrogPilot variables (after edit mode detection) =====
+  FrogPilotUIState &fs = *frogpilotUIState();
+  FrogPilotUIScene &frogpilot_scene = fs.frogpilot_scene;
+  QJsonObject &frogpilot_toggles = fs.frogpilot_toggles;
 
   bool ignore = false;
   switch (event->type()) {
