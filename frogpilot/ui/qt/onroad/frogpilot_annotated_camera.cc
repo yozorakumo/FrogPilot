@@ -258,8 +258,24 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
     paintWeather(p, frogpilotPlan, frogpilot_scene);
   }
 
-  if (fpsm["carParams"].getCarParams().getTransmissionType() == cereal::CarParams::TransmissionType::MANUAL || frogpilot_toggles.value("MazdaMTUI").toBool()) {
-    paintMTGear(p, carState, frogpilotCarState);
+  // スタイル0（デフォルト）の場合のみ既存のMTギア・RPMメーターを描画
+  // スタイル1-5はdrawSpeedometer系で統合表示するためスキップ
+  int speedometer_style = frogpilot_toggles.value("speedometer_style").toInt();
+  bool use_integrated_speedometer = (speedometer_style >= 1 && speedometer_style <= 5);
+
+  if (!use_integrated_speedometer) {
+    if (fpsm["carParams"].getCarParams().getTransmissionType() == cereal::CarParams::TransmissionType::MANUAL || frogpilot_toggles.value("MazdaMTUI").toBool()) {
+      paintMTGear(p, carState, frogpilotCarState);
+    }
+
+    if (frogpilot_toggles.value("mazda_rp_meter").toBool()) {
+      paintRPMeter(p, carState);
+    }
+  } else {
+    if (fpsm["carParams"].getCarParams().getTransmissionType() == cereal::CarParams::TransmissionType::MANUAL || frogpilot_toggles.value("MazdaMTUI").toBool()) {
+      // スタイル1-5では統合スピードメーターがギア表示を担当するため、
+      // MTギア単独表示はスキップ（ただしbrakePBClutchStatusは引き続き表示）
+    }
   }
 
   if (frogpilot_toggles.value("brake_pb_clutch_ui").toBool() ||
@@ -267,10 +283,6 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
       frogpilot_toggles.value("mazda_pb_ui").toBool() ||
       frogpilot_toggles.value("mazda_clutch_ui").toBool()) {
     paintBrakePBClutchStatus(p, carState, frogpilot_toggles);
-  }
-
-  if (frogpilot_toggles.value("mazda_rp_meter").toBool()) {
-    paintRPMeter(p, carState);
   }
 }
 

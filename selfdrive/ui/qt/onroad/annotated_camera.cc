@@ -1,6 +1,7 @@
 
 #include "selfdrive/ui/qt/onroad/annotated_camera.h"
 
+#include <QDateTime>
 #include <QPainter>
 #include <algorithm>
 #include <cmath>
@@ -244,7 +245,14 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::FrogPilotPlan::Re
 
   // current speed
   if (!frogpilot_nvg->bigMapOpen && frogpilot_nvg->standstillDuration == 0 && !frogpilot_toggles.value("hide_speed").toBool()) {
-    drawSpeedometer(p, speedStr, speedUnit, speed, frogpilot_toggles);
+    // RPM・ギアデータを取得
+    const SubMaster &fpsm = *(fs.sm);
+    const cereal::CarState::Reader &carState = fpsm["carState"].getCarState();
+    const cereal::FrogPilotCarState::Reader &frogpilotCarState = fpsm["frogpilotCarState"].getFrogpilotCarState();
+    float rpm_val = carState.getEngineRpm();
+    int gear_val = frogpilotCarState.getGearStep();
+    bool clutch_val = carState.getClutchPressed();
+    drawSpeedometer(p, speedStr, speedUnit, speed, rpm_val, gear_val, clutch_val, frogpilot_toggles);
   }
 
   p.restore();
@@ -274,15 +282,15 @@ void AnnotatedCameraWidget::drawText(QPainter &p, int x, int y, const QString &t
   p.drawText(real_rect.x(), real_rect.bottom(), text);
 }
 
-void AnnotatedCameraWidget::drawSpeedometer(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, const QJsonObject &frogpilot_toggles) {
+void AnnotatedCameraWidget::drawSpeedometer(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float rpm, int gear, bool clutch_pressed, const QJsonObject &frogpilot_toggles) {
   int style = frogpilot_toggles.value("speedometer_style").toInt();
-  float max_speed = is_metric ? 180.0f : 112.0f;
 
   switch (style) {
-    case 1: drawSpeedometerMinimal(p, speed_str, speed_unit); break;
-    case 2: drawSpeedometerCircle(p, speed_str, speed_unit); break;
-    case 3: drawSpeedometerArc(p, speed_str, speed_unit, current_speed, max_speed); break;
-    case 4: drawSpeedometerBar(p, speed_str, speed_unit, current_speed, max_speed); break;
+    case 1: drawSpeedometerF1LED(p, speed_str, speed_unit, current_speed, rpm, gear); break;
+    case 2: drawSpeedometerGT7(p, speed_str, speed_unit, rpm, gear); break;
+    case 3: drawSpeedometerForza(p, speed_str, speed_unit, current_speed, rpm, gear); break;
+    case 4: drawSpeedometerNFS(p, speed_str, speed_unit, current_speed, rpm, gear); break;
+    case 5: drawSpeedometerSimHub(p, speed_str, speed_unit, current_speed, rpm, gear, frogpilot_toggles); break;
     default: drawSpeedometerDefault(p, speed_str, speed_unit); break;
   }
 }
@@ -294,111 +302,490 @@ void AnnotatedCameraWidget::drawSpeedometerDefault(QPainter &p, const QString &s
   drawText(p, rect().center().x(), 290, speed_unit, 200);
 }
 
-void AnnotatedCameraWidget::drawSpeedometerMinimal(QPainter &p, const QString &speed_str, const QString &speed_unit) {
-  p.setFont(InterFont(120, QFont::Bold));
-  drawText(p, 120, 120, speed_str);
-}
+// Style 1: F1 LED Bar Style
+void AnnotatedCameraWidget::drawSpeedometerF1LED(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float rpm, int gear) {
+  p.save();
 
-void AnnotatedCameraWidget::drawSpeedometerCircle(QPainter &p, const QString &speed_str, const QString &speed_unit) {
-  int centerX = rect().center().x();
-  int centerY = 200;
-  int radius = 100;
+  const float maxRPM = 8000.0f;
+  const float rpmRatio = (rpm > 0) ? std::min(rpm / maxRPM, 1.0f) : 0.0f;
+  const bool blink_state = (QDateTime::currentMSecsSinceEpoch() % 400) < 200;
+  const bool rev_limit = rpmRatio >= 0.98f;
 
-  // Draw circle outline
-  p.setPen(QPen(whiteColor(200), 4));
-  p.setBrush(Qt::NoBrush);
-  p.drawEllipse(QPoint(centerX, centerY), radius, radius);
+  // LED定数
+  const int numLeds = 15;
+  const int ledW = 14;
+  const int ledH = 14;
+  const int ledGap = 4;
+  const int totalLedWidth = numLeds * ledW + (numLeds - 1) * ledGap;
 
-  // Draw speed text
-  p.setFont(InterFont(96, QFont::Bold));
-  drawText(p, centerX, centerY - 5, speed_str);
+  // パネル中央位置
+  const int panelW = totalLedWidth + 60;
+  const int panelH = 220;
+  const int panelX = (width() - panelW) / 2;
+  const int panelY = height() - 280;
 
-  // Draw unit below speed
-  p.setFont(InterFont(30));
-  drawText(p, centerX, centerY + 45, speed_unit, 180);
-}
-
-void AnnotatedCameraWidget::drawSpeedometerArc(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float max_speed) {
-  int centerX = rect().center().x();
-  int centerY = 280;
-  int radius = 140;
-  int arcThickness = 14;
-
-  float speedRatio = std::min(current_speed / max_speed, 1.0f);
-
-  // Color: green -> yellow -> red
-  QColor speedColor;
-  if (speedRatio < 0.5f) {
-    float t = speedRatio / 0.5f;
-    speedColor = QColor(static_cast<int>(0 + t * 255), 255, static_cast<int>(100 * (1 - t)));
-  } else {
-    float t = (speedRatio - 0.5f) / 0.5f;
-    speedColor = QColor(255, static_cast<int>(255 * (1 - t)), 0);
-  }
-
-  // Background arc (dark grey)
-  QPen bgPen(QColor(40, 40, 40, 180));
-  bgPen.setWidth(arcThickness);
-  bgPen.setCapStyle(Qt::RoundCap);
-  p.setPen(bgPen);
-  p.drawArc(centerX - radius, centerY - radius, radius * 2, radius * 2, 210 * 16, -240 * 16);
-
-  // Speed arc
-  QPen speedPen(speedColor);
-  speedPen.setWidth(arcThickness);
-  speedPen.setCapStyle(Qt::RoundCap);
-  p.setPen(speedPen);
-  int spanAngle = static_cast<int>(-240 * 16 * speedRatio);
-  p.drawArc(centerX - radius, centerY - radius, radius * 2, radius * 2, 210 * 16, spanAngle);
-
-  // Speed text in center
-  p.setPen(whiteColor());
-  p.setFont(InterFont(96, QFont::Bold));
-  drawText(p, centerX, centerY - 15, speed_str);
-
-  // Unit label
-  p.setFont(InterFont(30));
-  drawText(p, centerX, centerY + 35, speed_unit, 180);
-}
-
-void AnnotatedCameraWidget::drawSpeedometerBar(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float max_speed) {
-  int barWidth = static_cast<int>(width() * 0.8);
-  int barHeight = 20;
-  int barX = (width() - barWidth) / 2;
-  int barY = height() - 100;
-
-  float speedRatio = std::min(current_speed / max_speed, 1.0f);
-
-  // Color: green -> yellow -> red
-  QColor speedColor;
-  if (speedRatio < 0.5f) {
-    float t = speedRatio / 0.5f;
-    speedColor = QColor(static_cast<int>(0 + t * 255), 255, static_cast<int>(100 * (1 - t)));
-  } else {
-    float t = (speedRatio - 0.5f) / 0.5f;
-    speedColor = QColor(255, static_cast<int>(255 * (1 - t)), 0);
-  }
-
-  // Background bar
+  // 半透明背景パネル
   p.setPen(Qt::NoPen);
-  p.setBrush(QColor(40, 40, 40, 180));
-  p.drawRoundedRect(barX, barY, barWidth, barHeight, barHeight / 2, barHeight / 2);
+  p.setBrush(QColor(0, 0, 0, 160));
+  p.drawRoundedRect(panelX, panelY, panelW, panelH, 16, 16);
 
-  // Speed fill bar
-  int fillWidth = static_cast<int>(barWidth * speedRatio);
-  if (fillWidth > 0) {
-    p.setBrush(speedColor);
-    p.drawRoundedRect(barX, barY, fillWidth, barHeight, barHeight / 2, barHeight / 2);
+  // LED描画
+  const int ledStartX = (width() - totalLedWidth) / 2;
+  const int ledStartY = panelY + 18;
+
+  int numLit = static_cast<int>(rpmRatio * numLeds);
+
+  for (int i = 0; i < numLeds; ++i) {
+    int ledX = ledStartX + i * (ledW + ledGap);
+    QColor ledColor;
+
+    if (rev_limit && blink_state) {
+      // レブリミット: 全LED白点滅
+      ledColor = QColor(255, 255, 255);
+    } else if (i < numLit) {
+      // 点灯: 緑→黄→赤
+      if (i < 8) {
+        ledColor = QColor(0, 255, 0);       // 緑
+      } else if (i < 12) {
+        ledColor = QColor(255, 255, 0);     // 黄
+      } else {
+        ledColor = QColor(255, 0, 0);       // 赤
+      }
+    } else {
+      ledColor = QColor(51, 51, 51);        // 消灯
+    }
+
+    p.setBrush(ledColor);
+    p.drawRoundedRect(ledX, ledStartY, ledW, ledH, 3, 3);
   }
 
-  // Speed text above bar
-  p.setPen(whiteColor());
-  p.setFont(InterFont(60, QFont::Bold));
-  drawText(p, rect().center().x(), barY - 30, speed_str);
+  // ギア表示
+  QString gearStr;
+  QColor gearColor = QColor(255, 255, 255);
+  if (gear == 0) {
+    gearStr = "N";
+    gearColor = QColor(0, 255, 136);   // 緑
+  } else if (gear == 15) {
+    gearStr = "R";
+    gearColor = QColor(255, 68, 68);   // 赤
+  } else {
+    gearStr = QString::number(gear);
+  }
 
-  // Unit label
+  const int gearY = ledStartY + ledH + 80;
+  p.setFont(InterFont(120, QFont::Bold));
+  p.setPen(gearColor);
+  QRect gearRect(panelX, gearY - 90, panelW, 110);
+  p.drawText(gearRect, Qt::AlignCenter, gearStr);
+
+  // 速度表示
+  const int speedY = gearY + 40;
+  p.setFont(InterFont(72, QFont::Bold));
+  p.setPen(QColor(255, 255, 255));
+  QRect speedRect(panelX, speedY - 60, panelW, 72);
+  p.drawText(speedRect, Qt::AlignCenter, speed_str);
+
+  // 単位
+  p.setFont(InterFont(36));
+  p.setPen(QColor(180, 180, 180));
+  QRect unitRect(panelX, speedY + 14, panelW, 40);
+  p.drawText(unitRect, Qt::AlignCenter, speed_unit);
+
+  p.restore();
+}
+
+// Style 2: Gran Turismo 7 Style
+void AnnotatedCameraWidget::drawSpeedometerGT7(QPainter &p, const QString &speed_str, const QString &speed_unit, float rpm, int gear) {
+  p.save();
+
+  const float maxRPM = 8000.0f;
+  const float rpmRatio = (rpm > 0) ? std::min(rpm / maxRPM, 1.0f) : 0.0f;
+
+  const int centerX = width() - 180;
+  const int centerY = height() - 200;
+  const int radius = 140;
+  const int arcThickness = 8;
+
+  // 背景パネル
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(0, 0, 0, 180));
+  p.drawEllipse(QPoint(centerX, centerY), radius + 20, radius + 20);
+
+  // シフトインジケーター (上部の小LEDドット ×7個)
+  const int numShiftLeds = 7;
+  const int shiftLedR = 8;
+  const int shiftLedSpacing = 24;
+  const int shiftStartX = centerX - (numShiftLeds - 1) * shiftLedSpacing / 2;
+  const int shiftY = centerY - radius - 10;
+
+  int numShiftLit = 0;
+  if (rpmRatio >= 0.80f) {
+    numShiftLit = static_cast<int>((rpmRatio - 0.80f) / 0.20f * numShiftLeds);
+    numShiftLit = std::min(numShiftLit, numShiftLeds);
+  }
+  if (rpmRatio >= 0.90f) {
+    numShiftLit = numShiftLeds;
+  }
+
+  for (int i = 0; i < numShiftLeds; ++i) {
+    int sx = shiftStartX + i * shiftLedSpacing;
+    QColor ledColor = (i < numShiftLit) ? QColor(255, 0, 0) : QColor(60, 60, 60);
+    p.setBrush(ledColor);
+    p.setPen(Qt::NoPen);
+    p.drawEllipse(QPoint(sx, shiftY), shiftLedR, shiftLedR);
+  }
+
+  // 未充填円弧 (ダークグレー)
+  QPen bgArcPen(QColor(68, 68, 68));
+  bgArcPen.setWidth(4);
+  bgArcPen.setCapStyle(Qt::RoundCap);
+  p.setPen(bgArcPen);
+  p.setBrush(Qt::NoBrush);
+  p.drawArc(centerX - radius, centerY - radius, radius * 2, radius * 2, 225 * 16, -270 * 16);
+
+  // RPM円弧（色分け）
+  if (rpmRatio > 0.0f) {
+    // 0-80%: 白
+    float whiteEnd = std::min(rpmRatio, 0.80f);
+    QPen whitePen(QColor(255, 255, 255));
+    whitePen.setWidth(arcThickness);
+    whitePen.setCapStyle(Qt::RoundCap);
+    p.setPen(whitePen);
+    int whiteSpan = static_cast<int>(-270 * 16 * whiteEnd);
+    p.drawArc(centerX - radius, centerY - radius, radius * 2, radius * 2, 225 * 16, whiteSpan);
+
+    // 80-90%: 黄
+    if (rpmRatio > 0.80f) {
+      float yellowEnd = std::min(rpmRatio, 0.90f);
+      QPen yellowPen(QColor(255, 204, 0));
+      yellowPen.setWidth(arcThickness);
+      yellowPen.setCapStyle(Qt::RoundCap);
+      p.setPen(yellowPen);
+      int yellowStart = static_cast<int>(225 * 16 + (-270 * 16 * 0.80f));
+      int yellowSpan = static_cast<int>(-270 * 16 * (yellowEnd - 0.80f));
+      p.drawArc(centerX - radius, centerY - radius, radius * 2, radius * 2, yellowStart, yellowSpan);
+    }
+
+    // 90-100%: 赤
+    if (rpmRatio > 0.90f) {
+      QPen redArcPen(QColor(255, 0, 0));
+      redArcPen.setWidth(arcThickness);
+      redArcPen.setCapStyle(Qt::RoundCap);
+      p.setPen(redArcPen);
+      int redStart = static_cast<int>(225 * 16 + (-270 * 16 * 0.90f));
+      int redSpan = static_cast<int>(-270 * 16 * (rpmRatio - 0.90f));
+      p.drawArc(centerX - radius, centerY - radius, radius * 2, radius * 2, redStart, redSpan);
+    }
+  }
+
+  // ギア表示
+  QString gearStr;
+  QColor gearColor = QColor(255, 255, 255);
+  if (gear == 0) {
+    gearStr = "N";
+    gearColor = QColor(0, 255, 136);
+  } else if (gear == 15) {
+    gearStr = "R";
+    gearColor = QColor(255, 68, 68);
+  } else {
+    gearStr = QString::number(gear);
+  }
+
+  p.setFont(InterFont(80, QFont::Bold));
+  p.setPen(gearColor);
+  QRect gearRect(centerX - 60, centerY - 60, 120, 80);
+  p.drawText(gearRect, Qt::AlignCenter, gearStr);
+
+  // 速度表示
+  p.setFont(InterFont(48, QFont::Bold));
+  p.setPen(QColor(255, 255, 255));
+  QRect speedRect(centerX - 80, centerY + 20, 160, 55);
+  p.drawText(speedRect, Qt::AlignCenter, speed_str);
+
+  // 単位
   p.setFont(InterFont(28));
-  drawText(p, rect().center().x(), barY - 70, speed_unit, 180);
+  p.setPen(QColor(180, 180, 180));
+  QRect unitRect(centerX - 80, centerY + 72, 160, 35);
+  p.drawText(unitRect, Qt::AlignCenter, speed_unit);
+
+  p.restore();
+}
+
+// Style 3: Forza Horizon Style
+void AnnotatedCameraWidget::drawSpeedometerForza(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float rpm, int gear) {
+  p.save();
+
+  const float maxRPM = 8000.0f;
+  const float rpmRatio = (rpm > 0) ? std::min(rpm / maxRPM, 1.0f) : 0.0f;
+
+  // パネル配置（右下）
+  const int panelW = 400;
+  const int panelH = 160;
+  const int panelX = width() - panelW - 20;
+  const int panelY = height() - panelH - 20;
+
+  // 背景パネル
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(0, 0, 0, 180));
+  p.drawRoundedRect(panelX, panelY, panelW, panelH, 12, 12);
+
+  // RPMバー背景
+  const int barX = panelX + 20;
+  const int barY = panelY + 16;
+  const int barW = 360;
+  const int barH = 16;
+
+  p.setBrush(QColor(26, 26, 26));
+  p.drawRoundedRect(barX, barY, barW, barH, 8, 8);
+
+  // RPMバー（グラデーション）
+  if (rpmRatio > 0.0f) {
+    int fillW = static_cast<int>(barW * rpmRatio);
+    QLinearGradient rpmGrad(barX, barY, barX + barW, barY);
+    rpmGrad.setColorAt(0.0, QColor(0, 255, 136));    // 緑
+    rpmGrad.setColorAt(0.75, QColor(255, 221, 0));   // 黄
+    rpmGrad.setColorAt(1.0, QColor(255, 51, 0));     // 赤
+    p.setBrush(rpmGrad);
+    p.drawRoundedRect(barX, barY, fillW, barH, 8, 8);
+  }
+
+  // ギア表示（左側）
+  QString gearStr;
+  QColor gearColor = QColor(255, 255, 255);
+  if (gear == 0) {
+    gearStr = "N";
+    gearColor = QColor(0, 255, 136);
+  } else if (gear == 15) {
+    gearStr = "R";
+    gearColor = QColor(255, 68, 68);
+  } else {
+    gearStr = QString::number(gear);
+  }
+
+  p.setFont(InterFont(80, QFont::Bold));
+  p.setPen(gearColor);
+  QRect gearRect(panelX + 10, panelY + 40, 120, 100);
+  p.drawText(gearRect, Qt::AlignCenter, gearStr);
+
+  // 速度表示（右側）
+  p.setFont(InterFont(60, QFont::Bold));
+  p.setPen(QColor(255, 255, 255));
+  QRect speedRect(panelX + 140, panelY + 45, 240, 70);
+  p.drawText(speedRect, Qt::AlignCenter, speed_str);
+
+  // 単位
+  p.setFont(InterFont(28));
+  p.setPen(QColor(150, 150, 150));
+  QRect unitRect(panelX + 140, panelY + 115, 240, 35);
+  p.drawText(unitRect, Qt::AlignCenter, speed_unit);
+
+  p.restore();
+}
+
+// Style 4: NFS Neon Style
+void AnnotatedCameraWidget::drawSpeedometerNFS(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float rpm, int gear) {
+  p.save();
+
+  const float maxRPM = 8000.0f;
+  const float rpmRatio = (rpm > 0) ? std::min(rpm / maxRPM, 1.0f) : 0.0f;
+
+  // パネル配置（左下）
+  const int panelW = 380;
+  const int panelH = 150;
+  const int panelX = 30;
+  const int panelY = height() - panelH - 30;
+
+  // 背景パネル
+  p.setPen(QPen(QColor(0, 255, 255, 180), 2));
+  p.setBrush(QColor(0, 0, 0, 200));
+  p.drawRoundedRect(panelX, panelY, panelW, panelH, 8, 8);
+
+  // RPMバー
+  const int barX = panelX + 10;
+  const int barY = panelY + 12;
+  const int barW = panelW - 20;
+  const int barH = 12;
+
+  // バー背景
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(20, 20, 20));
+  p.drawRoundedRect(barX, barY, barW, barH, 6, 6);
+
+  // RPMバー（ネオングリーン/マゼンタ）
+  if (rpmRatio > 0.0f) {
+    int fillW = static_cast<int>(barW * rpmRatio);
+    QColor barColor = (rpmRatio >= 0.90f) ? QColor(255, 0, 255) : QColor(57, 255, 20);
+
+    // グロー効果（アウター）
+    p.save();
+    QPen glowPen(QColor(barColor.red(), barColor.green(), barColor.blue(), 80), 8);
+    p.setPen(glowPen);
+    p.setBrush(Qt::NoBrush);
+    p.drawRoundedRect(barX, barY, fillW, barH, 6, 6);
+    p.restore();
+
+    // 実際のバー
+    p.setPen(Qt::NoPen);
+    p.setBrush(barColor);
+    p.drawRoundedRect(barX, barY, fillW, barH, 6, 6);
+  }
+
+  // ギア表示（左側）
+  QString gearStr;
+  QColor gearColor = QColor(0, 255, 255);  // シアン
+  if (gear == 0) {
+    gearStr = "N";
+    gearColor = QColor(255, 255, 255);     // 白グロー
+  } else if (gear == 15) {
+    gearStr = "R";
+    gearColor = QColor(255, 0, 0);         // 赤グロー
+  } else {
+    gearStr = QString::number(gear);
+  }
+
+  // ギアグロー効果
+  p.save();
+  p.setFont(InterFont(96, QFont::Bold));
+  QPen gearGlowPen(QColor(gearColor.red(), gearColor.green(), gearColor.blue(), 80), 4);
+  p.setPen(gearGlowPen);
+  QRect gearRect(panelX + 10, panelY + 30, 110, 100);
+  p.drawText(gearRect, Qt::AlignCenter, gearStr);
+  p.restore();
+
+  p.setFont(InterFont(96, QFont::Bold));
+  p.setPen(gearColor);
+  QRect gearRect2(panelX + 10, panelY + 30, 110, 100);
+  p.drawText(gearRect2, Qt::AlignCenter, gearStr);
+
+  // ラベル "GEAR"
+  p.setFont(InterFont(20));
+  p.setPen(QColor(0, 136, 136));
+  p.drawText(panelX + 10, panelY + 138, 110, 20, Qt::AlignCenter, "GEAR");
+
+  // 速度表示（右側）
+  p.setFont(InterFont(72, QFont::Bold));
+  p.setPen(QColor(255, 255, 255));
+  QRect speedRect(panelX + 130, panelY + 30, 230, 80);
+  p.drawText(speedRect, Qt::AlignCenter, speed_str);
+
+  // ラベル "km/h"
+  p.setFont(InterFont(20));
+  p.setPen(QColor(0, 136, 136));
+  p.drawText(panelX + 130, panelY + 118, 230, 20, Qt::AlignCenter, speed_unit);
+
+  p.restore();
+}
+
+// Style 5: SimHub Telemetry Style
+void AnnotatedCameraWidget::drawSpeedometerSimHub(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float rpm, int gear, const QJsonObject &frogpilot_toggles) {
+  p.save();
+
+  const float maxRPM = 8000.0f;
+  const float rpmRatio = (rpm > 0) ? std::min(rpm / maxRPM, 1.0f) : 0.0f;
+
+  // パネル配置（画面下部中央）
+  const int panelW = 800;
+  const int panelH = 130;
+  const int panelX = (width() - panelW) / 2;
+  const int panelY = height() - panelH - 10;
+
+  // 背景パネル
+  p.setPen(QPen(QColor(255, 255, 255, 180), 1));
+  p.setBrush(QColor(0, 0, 0, 210));
+  p.drawRoundedRect(panelX, panelY, panelW, panelH, 6, 6);
+
+  // RPMバー
+  const int barX = panelX + 50;
+  const int barY = panelY + 12;
+  const int barW = 700;
+  const int barH = 14;
+
+  // バー背景
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(30, 30, 30));
+  p.drawRoundedRect(barX, barY, barW, barH, 4, 4);
+
+  // RPMバー（白→赤）
+  if (rpmRatio > 0.0f) {
+    int fillW = static_cast<int>(barW * rpmRatio);
+    QColor barColor = (rpmRatio >= 0.90f) ? QColor(255, 0, 0) : QColor(255, 255, 255);
+    p.setBrush(barColor);
+    p.drawRoundedRect(barX, barY, fillW, barH, 4, 4);
+  }
+
+  // RPM数値（バー右側）
+  p.setFont(InterFont(24));
+  p.setPen(QColor(200, 200, 200));
+  QString rpmStr = QString::number(static_cast<int>(rpm)) + "/" + QString::number(static_cast<int>(maxRPM));
+  QRect rpmLabelRect(barX + barW - 120, barY - 2, 120, 20);
+  p.drawText(rpmLabelRect, Qt::AlignRight | Qt::AlignVCenter, rpmStr);
+
+  // 区切り線
+  p.setPen(QPen(QColor(255, 255, 255, 100), 1));
+  p.drawLine(panelX + 10, panelY + 36, panelX + panelW - 10, panelY + 36);
+
+  // ギア表示
+  QString gearStr;
+  QColor gearColor = QColor(255, 255, 255);
+  if (gear == 0) {
+    gearStr = "N";
+    gearColor = QColor(0, 255, 136);
+  } else if (gear == 15) {
+    gearStr = "R";
+    gearColor = QColor(255, 68, 68);
+  } else {
+    gearStr = QString::number(gear);
+  }
+
+  p.setFont(InterFont(36, QFont::Bold));
+  p.setPen(gearColor);
+  QRect gearRect(panelX + 20, panelY + 42, 160, 50);
+  p.drawText(gearRect, Qt::AlignLeft | Qt::AlignVCenter, QString("GEAR: ") + gearStr);
+
+  // 速度表示
+  p.setFont(InterFont(36, QFont::Bold));
+  p.setPen(QColor(255, 255, 255));
+  QRect speedRect(panelX + 200, panelY + 42, 360, 50);
+  p.drawText(speedRect, Qt::AlignLeft | Qt::AlignVCenter, QString("SPEED: ") + speed_str + " " + speed_unit);
+
+  // セット速度（MAX）
+  float set_spd = frogpilot_nvg ? frogpilot_nvg->setSpeed * (is_metric ? MS_TO_KPH : MS_TO_MPH) : 0.0f;
+  if (set_spd > 0) {
+    p.setFont(InterFont(28));
+    p.setPen(QColor(0, 204, 255));
+    QString maxStr = QString("MAX: ") + QString::number(static_cast<int>(std::nearbyint(set_spd)));
+    QRect maxRect(panelX + 580, panelY + 48, 200, 40);
+    p.drawText(maxRect, Qt::AlignLeft | Qt::AlignVCenter, maxStr);
+  }
+
+  // スロットルバー（下段左）
+  const int tbrX = panelX + 20;
+  const int tbrY = panelY + 100;
+  const int tbrW = 200;
+  const int tbrH = 10;
+
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(30, 30, 30));
+  p.drawRoundedRect(tbrX, tbrY, tbrW, tbrH, 3, 3);
+  // (スロットルデータなし時は0表示)
+  p.setFont(InterFont(18));
+  p.setPen(QColor(120, 120, 120));
+  p.drawText(tbrX, tbrY - 2, 50, 14, Qt::AlignLeft, "THR");
+
+  // ブレーキバー（下段右）
+  const int bbrX = panelX + 240;
+  const int bbrY = panelY + 100;
+  const int bbrW = 200;
+  const int bbrH = 10;
+
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(30, 30, 30));
+  p.drawRoundedRect(bbrX, bbrY, bbrW, bbrH, 3, 3);
+  p.setFont(InterFont(18));
+  p.setPen(QColor(120, 120, 120));
+  p.drawText(bbrX, bbrY - 2, 50, 14, Qt::AlignLeft, "BRK");
+
+  p.restore();
 }
 
 void AnnotatedCameraWidget::initializeGL() {
