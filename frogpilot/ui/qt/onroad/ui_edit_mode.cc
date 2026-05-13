@@ -2,6 +2,7 @@
 
 #include <QPainter>
 #include <QDateTime>
+#include <QMouseEvent>
 
 UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
   // 長押しタイマー
@@ -26,6 +27,24 @@ UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
   elements_["speed_limit"] = UIElementConfig{"Speed Limit"};
 
   loadSettings();
+}
+
+void UIEditModeManager::installOnWidget(QWidget *widget) {
+  widget->installEventFilter(this);
+}
+
+bool UIEditModeManager::eventFilter(QObject *obj, QEvent *e) {
+  if (e->type() == QEvent::MouseButtonPress) {
+    QMouseEvent *me = static_cast<QMouseEvent*>(e);
+    handleMousePress(me->pos());
+  } else if (e->type() == QEvent::MouseMove) {
+    QMouseEvent *me = static_cast<QMouseEvent*>(e);
+    handleMouseMove(me->pos());
+  } else if (e->type() == QEvent::MouseButtonRelease) {
+    handleMouseRelease();
+  }
+  // イベントを消費しない - 親に伝播させる
+  return QObject::eventFilter(obj, e);
 }
 
 float UIEditModeManager::getOffsetX(const QString &name) const {

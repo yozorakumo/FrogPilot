@@ -25,6 +25,14 @@ class UIEditModeManager : public QObject {
 public:
   explicit UIEditModeManager(QObject *parent = nullptr);
 
+  // イベントフィルターをウィジェットにインストール
+  void installOnWidget(QWidget *widget);
+
+protected:
+  bool eventFilter(QObject *obj, QEvent *e) override;
+
+public:
+
   // 編集モード状態
   bool isEditMode() const { return edit_mode_; }
 
