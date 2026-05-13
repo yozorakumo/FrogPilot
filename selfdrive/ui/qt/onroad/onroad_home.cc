@@ -53,11 +53,9 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   frogpilot_onroad = new FrogPilotOnroadWindow(this);
   frogpilot_onroad->setAttribute(Qt::WA_TransparentForMouseEvents, true);
 
-  // UI Edit Mode - OnroadWindowにイベントフィルターをインストール
-  // (QOpenGLWidgetにはタッチイベントが配信されないため)
+  // UI Edit Mode - 長押し検出はMainWindow::eventFilter()に統合済み
+  // UIEditModeManagerはオフセット管理のみに使用
   edit_manager_ = new UIEditModeManager(this);
-  edit_manager_->setTargetWidget(nvg);
-  edit_manager_->installOnWidget(this);
   nvg->setEditModeManager(edit_manager_);
 }
 

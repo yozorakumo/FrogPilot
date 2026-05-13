@@ -26,15 +26,6 @@ class UIEditModeManager : public QObject {
 public:
   explicit UIEditModeManager(QObject *parent = nullptr);
 
-  // イベントフィルターをウィジェットにインストール
-  void installOnWidget(QWidget *widget);
-
-  // 座標マッピング用ターゲットウィジェット（AnnotatedCameraWidget）
-  void setTargetWidget(QWidget *widget) { target_widget_ = widget; }
-
-protected:
-  bool eventFilter(QObject *obj, QEvent *e) override;
-
 public:
 
   // 編集モード状態
@@ -80,10 +71,6 @@ private:
 
   // 要素設定
   QMap<QString, UIElementConfig> elements_;
-
-  // 座標マッピング用: イベントを受け取るウィジェットから
-  // AnnotatedCameraWidget の座標系にマッピングする
-  QWidget *target_widget_ = nullptr;
 
   // 設定をParamsに保存
   void saveToParams();

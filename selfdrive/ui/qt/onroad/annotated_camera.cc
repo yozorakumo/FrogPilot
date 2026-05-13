@@ -1188,8 +1188,14 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     frogpilot_nvg->paintFrogPilotWidgets(painter, *s, *fs, sm, fpsm, frogpilot_toggles);
   }
 
-  // UI Edit Mode overlay
-  edit_manager_->paintOverlay(painter, rect().width(), rect().height());
+  // UI Edit Mode overlay (read state from Params, toggled by MainWindow::eventFilter)
+  bool ui_edit_mode = Params().getBool("UIEditMode");
+  if (ui_edit_mode) {
+    painter.fillRect(0, 0, rect().width(), rect().height(), QColor(0, 0, 0, 40));
+    painter.setFont(QFont("Inter", 24, QFont::Bold));
+    painter.setPen(QColor(255, 255, 255));
+    painter.drawText(QRect(0, 50, rect().width(), 40), Qt::AlignCenter, "UI EDIT MODE - Long press to exit");
+  }
 }
 
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {

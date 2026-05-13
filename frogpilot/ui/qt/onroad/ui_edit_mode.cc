@@ -35,49 +35,6 @@ UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
   loadSettings();
 }
 
-void UIEditModeManager::installOnWidget(QWidget *widget) {
-  widget->installEventFilter(this);
-}
-
-bool UIEditModeManager::eventFilter(QObject *obj, QEvent *e) {
-  if (e->type() == QEvent::MouseButtonPress) {
-    QMouseEvent *me = static_cast<QMouseEvent*>(e);
-    // OnroadWindow座標からAnnotatedCameraWidget座標にマッピング
-    QPoint mappedPos = me->pos();
-    QWidget *source = qobject_cast<QWidget*>(obj);
-    if (source && target_widget_) {
-      mappedPos = target_widget_->mapFromGlobal(source->mapToGlobal(me->pos()));
-    }
-    fprintf(stderr, "UI Edit eventFilter: MouseButtonPress at (%d, %d) -> mapped (%d, %d)\n",
-            me->pos().x(), me->pos().y(), mappedPos.x(), mappedPos.y());
-    fflush(stderr);
-    if (handleMousePress(mappedPos)) {
-      return true;  // 編集モード中はイベントを消費
-    }
-  } else if (e->type() == QEvent::MouseMove) {
-    QMouseEvent *me = static_cast<QMouseEvent*>(e);
-    QPoint mappedPos = me->pos();
-    QWidget *source = qobject_cast<QWidget*>(obj);
-    if (source && target_widget_) {
-      mappedPos = target_widget_->mapFromGlobal(source->mapToGlobal(me->pos()));
-    }
-    if (handleMouseMove(mappedPos)) {
-      return true;  // ドラッグ中はイベントを消費
-    }
-  } else if (e->type() == QEvent::MouseButtonRelease) {
-    fprintf(stderr, "UI Edit eventFilter: MouseButtonRelease\n");
-    fflush(stderr);
-    if (handleMouseRelease()) {
-      return true;  // 編集モード中はイベントを消費
-    }
-  } else if (e->type() == QEvent::TouchBegin) {
-    fprintf(stderr, "UI Edit eventFilter: TouchBegin (touch event received)\n");
-    fflush(stderr);
-  }
-  // イベントを消費しない - 親に伝播させる
-  return QObject::eventFilter(obj, e);
-}
-
 float UIEditModeManager::getOffsetX(const QString &name) const {
   auto it = elements_.find(name);
   return it != elements_.end() ? it->offset_x : 0.0f;

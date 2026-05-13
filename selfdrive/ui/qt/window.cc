@@ -1,7 +1,11 @@
 #include "selfdrive/ui/qt/window.h"
 
 #include <QFontDatabase>
+#include <QMouseEvent>
+#include <QTouchEvent>
+#include <QTimer>
 
+#include "common/params.h"
 #include "common/swaglog.h"
 #include "system/hardware/hw.h"
 
@@ -88,6 +92,70 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
   FrogPilotUIState &fs = *frogpilotUIState();
   FrogPilotUIScene &frogpilot_scene = fs.frogpilot_scene;
   QJsonObject &frogpilot_toggles = fs.frogpilot_toggles;
+
+  // UI Edit Mode: Long press detection
+  // (サイドバー処理と並列して動作、イベントは消費しない)
+  if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::TouchBegin) {
+    QPoint pos;
+    if (event->type() == QEvent::TouchBegin) {
+      QTouchEvent *te = static_cast<QTouchEvent*>(event);
+      if (te->touchPoints().count() > 0) {
+        pos = te->touchPoints().first().pos().toPoint();
+      }
+    } else {
+      QMouseEvent *me = static_cast<QMouseEvent*>(event);
+      pos = me->pos();
+    }
+
+    edit_press_pending_ = true;
+    edit_press_pos_ = pos;
+    if (!edit_long_press_timer_) {
+      edit_long_press_timer_ = new QTimer(this);
+      edit_long_press_timer_->setSingleShot(true);
+      connect(edit_long_press_timer_, &QTimer::timeout, this, [this]() {
+        if (edit_press_pending_) {
+          edit_mode_ = !edit_mode_;
+          edit_press_pending_ = false;
+          Params().putBool("UIEditMode", edit_mode_);
+          fprintf(stderr, "UI EDIT MODE: toggled to %d\n", edit_mode_);
+          fflush(stderr);
+        }
+      });
+    }
+    edit_long_press_timer_->start(EDIT_LONG_PRESS_MS);
+    fprintf(stderr, "UI EDIT MODE: press detected at (%d, %d), timer started\n", pos.x(), pos.y());
+    fflush(stderr);
+  }
+
+  if (event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {
+    if (edit_press_pending_) {
+      edit_press_pending_ = false;
+      if (edit_long_press_timer_) edit_long_press_timer_->stop();
+      fprintf(stderr, "UI EDIT MODE: release detected\n");
+      fflush(stderr);
+    }
+  }
+
+  if (event->type() == QEvent::MouseMove || event->type() == QEvent::TouchUpdate) {
+    if (edit_press_pending_) {
+      QPoint pos;
+      if (event->type() == QEvent::TouchUpdate) {
+        QTouchEvent *te = static_cast<QTouchEvent*>(event);
+        if (te->touchPoints().count() > 0) {
+          pos = te->touchPoints().first().pos().toPoint();
+        }
+      } else {
+        QMouseEvent *me = static_cast<QMouseEvent*>(event);
+        pos = me->pos();
+      }
+      if ((pos - edit_press_pos_).manhattanLength() > EDIT_MOVE_THRESHOLD) {
+        edit_press_pending_ = false;
+        if (edit_long_press_timer_) edit_long_press_timer_->stop();
+        fprintf(stderr, "UI EDIT MODE: moved, cancelled\n");
+        fflush(stderr);
+      }
+    }
+  }
 
   bool ignore = false;
   switch (event->type()) {
