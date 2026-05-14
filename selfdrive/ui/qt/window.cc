@@ -119,6 +119,7 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
     edit_press_pending_ = true;
     edit_press_pos_ = pos;
     edit_press_time_ = QDateTime::currentMSecsSinceEpoch();
+    Params().put("UIEditPressTime", std::to_string(edit_press_time_));
     { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: press detected at (%d, %d), time=%lld\n", pos.x(), pos.y(), edit_press_time_); fclose(f); } }
   }
 
@@ -127,6 +128,7 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
     if (edit_press_pending_) {
       qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - edit_press_time_;
       edit_press_pending_ = false;
+      Params().put("UIEditPressTime", "0");
       { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: release detected, elapsed=%lldms\n", elapsed); fclose(f); } }
     }
   }
@@ -146,21 +148,14 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
       }
       if ((pos - edit_press_pos_).manhattanLength() > EDIT_MOVE_THRESHOLD) {
         edit_press_pending_ = false;
+        Params().put("UIEditPressTime", "0");
         { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: moved, cancelled\n"); fclose(f); } }
       }
     }
   }
 
-  // 長押しチェック（すべてのイベントでチェック）
-  if (edit_press_pending_ && !edit_mode_) {
-    qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - edit_press_time_;
-    if (elapsed >= EDIT_LONG_PRESS_MS) {
-      edit_mode_ = !edit_mode_;
-      edit_press_pending_ = false;
-      Params().putBool("UIEditMode", edit_mode_);
-      { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: LONG PRESS COMPLETED! toggled to %d, elapsed=%lldms\n", edit_mode_, elapsed); fclose(f); } }
-    }
-  }
+  // NOTE: 長押しチェックは AnnotatedCameraWidget::paintEvent() で行う（~20Hz）
+  // Waylandでは指静止中にイベントが来ないため、描画サイクルでチェックする
 
   // ===== FrogPilot variables (after edit mode detection) =====
   FrogPilotUIState &fs = *frogpilotUIState();

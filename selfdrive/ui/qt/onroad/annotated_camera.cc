@@ -1188,7 +1188,35 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     frogpilot_nvg->paintFrogPilotWidgets(painter, *s, *fs, sm, fpsm, frogpilot_toggles);
   }
 
-  // UI Edit Mode overlay (read state from Params, toggled by MainWindow::eventFilter)
+  // UI Edit Mode: 描画サイクルで長押しチェック（~20Hz）
+  {
+    static qint64 edit_press_time_cached = 0;
+    static bool edit_press_pending = false;
+
+    Params params;
+    QString press_time_str = QString::fromStdString(params.get("UIEditPressTime"));
+    if (!press_time_str.isEmpty()) {
+      qint64 pt = press_time_str.toLongLong();
+      if (pt != edit_press_time_cached) {
+        edit_press_time_cached = pt;
+        edit_press_pending = (pt != 0);
+      }
+    }
+
+    if (edit_press_pending) {
+      qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - edit_press_time_cached;
+      if (elapsed >= 2000) {
+        edit_press_pending = false;
+        bool current = params.getBool("UIEditMode");
+        params.putBool("UIEditMode", !current);
+        params.put("UIEditPressTime", "0");
+        FILE *f = fopen("/tmp/ui_edit_debug.log", "a");
+        if (f) { fprintf(f, "UI EDIT MODE: LONG PRESS COMPLETED in paintEvent! toggled to %d, elapsed=%lld\n", !current, elapsed); fclose(f); }
+      }
+    }
+  }
+
+  // UI Edit Mode overlay (read state from Params, toggled by paint cycle long press check)
   bool ui_edit_mode = Params().getBool("UIEditMode");
   if (ui_edit_mode) {
     painter.fillRect(0, 0, rect().width(), rect().height(), QColor(0, 0, 0, 40));
