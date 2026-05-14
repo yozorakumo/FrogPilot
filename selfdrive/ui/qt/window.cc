@@ -1,8 +1,6 @@
 #include "selfdrive/ui/qt/window.h"
 
-#include <QDateTime>
 #include <QFontDatabase>
-#include <QMouseEvent>
 #include <QTouchEvent>
 
 #include "common/params.h"
@@ -89,53 +87,7 @@ void MainWindow::closeSettings() {
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
-  // ===== DEBUG: すべてのイベントをファイルに記録 =====
-  {
-    static int event_count = 0;
-    if (event_count < 500) {  // 最初の500イベントのみ記録（無限ログ防止）
-      FILE *f = fopen("/tmp/ui_edit_debug.log", "a");
-      if (f) {
-        fprintf(f, "event[%d] type=%d obj=%s\n", event_count, (int)event->type(), obj->metaObject()->className());
-        fclose(f);
-      }
-      event_count++;
-    }
-  }
-
-  // ===== UI EDIT MODE: 長押し検出（タイムスタンプベース・QTimer不使用） =====
-
-  // Press検出
-  if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::TouchBegin) {
-    QPoint pos;
-    if (event->type() == QEvent::TouchBegin) {
-      QTouchEvent *te = static_cast<QTouchEvent*>(event);
-      if (te->touchPoints().count() > 0) {
-        pos = te->touchPoints().first().pos().toPoint();
-      }
-    } else {
-      QMouseEvent *me = static_cast<QMouseEvent*>(event);
-      pos = me->pos();
-    }
-    edit_press_pending_ = true;
-    edit_press_time_ = QDateTime::currentMSecsSinceEpoch();
-    Params().put("UIEditPressTime", std::to_string(edit_press_time_));
-    { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: press detected at (%d, %d), time=%lld\n", pos.x(), pos.y(), edit_press_time_); fclose(f); } }
-  }
-
-  // Release検出
-  if (event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {
-    if (edit_press_pending_) {
-      qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - edit_press_time_;
-      edit_press_pending_ = false;
-      Params().put("UIEditPressTime", "0");
-      { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: release detected, elapsed=%lldms\n", elapsed); fclose(f); } }
-    }
-  }
-
-  // NOTE: 長押しチェックは AnnotatedCameraWidget::paintEvent() で行う（~20Hz）
-  // Waylandでは指静止中にイベントが来ないため、描画サイクルでチェックする
-
-  // ===== FrogPilot variables (after edit mode detection) =====
+  // FrogPilot variables
   FrogPilotUIState &fs = *frogpilotUIState();
   FrogPilotUIScene &frogpilot_scene = fs.frogpilot_scene;
   QJsonObject &frogpilot_toggles = fs.frogpilot_toggles;
@@ -143,16 +95,9 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
   bool ignore = false;
   switch (event->type()) {
     case QEvent::TouchBegin:
-      LOGW("MainWindow eventFilter: TouchBegin, awake=%d, driver_cam=%d", device()->isAwake(), frogpilot_scene.driver_camera_timer >= UI_FREQ / 2);
-      // fallthrough
     case QEvent::TouchUpdate:
     case QEvent::TouchEnd:
     case QEvent::MouseButtonPress:
-      if (event->type() == QEvent::MouseButtonPress) {
-        QMouseEvent *me = static_cast<QMouseEvent*>(event);
-        LOGW("MainWindow eventFilter: MouseButtonPress at (%d, %d), awake=%d", me->pos().x(), me->pos().y(), device()->isAwake());
-      }
-      // fallthrough
     case QEvent::MouseMove: {
       // ignore events when device is awakened by resetInteractiveTimeout
       ignore = !device()->isAwake() || frogpilot_scene.driver_camera_timer >= UI_FREQ / 2;

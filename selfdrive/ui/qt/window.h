@@ -1,7 +1,5 @@
 #pragma once
 
-#include <QDateTime>
-#include <QPoint>
 #include <QStackedLayout>
 #include <QWidget>
 
@@ -27,10 +25,4 @@ private:
 
   // FrogPilot variables
   Params params;
-
-  // UI Edit Mode (long press detection in MainWindow::eventFilter)
-  qint64 edit_press_time_ = 0;
-  bool edit_mode_ = false;
-  bool edit_press_pending_ = false;
-  static constexpr int EDIT_LONG_PRESS_MS = 2000;
 };

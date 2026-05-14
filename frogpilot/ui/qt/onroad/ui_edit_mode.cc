@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QMouseEvent>
 #include <QWidget>
+#include <cmath>
 #include <cstdio>
 
 UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
@@ -11,12 +12,8 @@ UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
   long_press_timer_ = new QTimer(this);
   long_press_timer_->setSingleShot(true);
   connect(long_press_timer_, &QTimer::timeout, this, [this]() {
-    fprintf(stderr, "UI Edit: Long press timer fired, press_pending=%d\n", press_pending_);
-    fflush(stderr);
     if (press_pending_) {
       edit_mode_ = !edit_mode_;
-      fprintf(stderr, "UI Edit: Edit mode toggled to %d\n", edit_mode_);
-      fflush(stderr);
       press_pending_ = false;
       if (!edit_mode_) {
         saveSettings();  // 編集モード終了時に保存
@@ -57,14 +54,34 @@ void UIEditModeManager::updateBounds(const QString &name, const QRect &bounds) {
 }
 
 bool UIEditModeManager::handleMousePress(const QPoint &pos) {
-  fprintf(stderr, "UI Edit: handleMousePress at (%d, %d), press_pending=%d, edit_mode=%d\n", pos.x(), pos.y(), press_pending_, edit_mode_);
-  fflush(stderr);
   press_pos_ = pos;
   press_pending_ = true;
   long_press_timer_->start(LONG_PRESS_MS);
 
   if (edit_mode_) {
-    // 既に編集モード: 要素選択
+    // オーバーレイボタンの判定
+    if (reset_btn_rect_.contains(pos)) {
+      long_press_timer_->stop();
+      press_pending_ = false;
+      resetAll();
+      return true;
+    }
+    if (save_btn_rect_.contains(pos)) {
+      long_press_timer_->stop();
+      press_pending_ = false;
+      saveSettings();
+      return true;
+    }
+    if (exit_btn_rect_.contains(pos)) {
+      long_press_timer_->stop();
+      press_pending_ = false;
+      edit_mode_ = false;
+      saveSettings();
+      selected_element_.clear();
+      return true;
+    }
+
+    // 要素選択
     selected_element_.clear();
     for (auto it = elements_.begin(); it != elements_.end(); ++it) {
       QRect expanded = it->bounds.adjusted(-30, -30, 30, 30);
@@ -95,20 +112,77 @@ bool UIEditModeManager::handleMouseMove(const QPoint &pos) {
 
   if (edit_mode_ && is_dragging_ && !selected_element_.isEmpty()) {
     QPoint delta = pos - drag_start_pos_;
-    elements_[selected_element_].offset_x = drag_start_offset_x_ + delta.x();
-    elements_[selected_element_].offset_y = drag_start_offset_y_ + delta.y();
+    float new_x = drag_start_offset_x_ + delta.x();
+    float new_y = drag_start_offset_y_ + delta.y();
+
+    // 境界外ガード
+    auto &elem = elements_[selected_element_];
+    if (!elem.bounds.isEmpty()) {
+      QRect moved_bounds = elem.bounds.translated(new_x, new_y);
+      // 簡易的な画面内制約（boundsが大きく画面外に出ないように）
+      new_x = std::clamp(new_x, -500.0f, 500.0f);
+      new_y = std::clamp(new_y, -500.0f, 500.0f);
+    }
+
+    elem.offset_x = new_x;
+    elem.offset_y = new_y;
     return true;
   }
   return false;
 }
 
 bool UIEditModeManager::handleMouseRelease() {
-  fprintf(stderr, "UI Edit: handleMouseRelease, press_pending=%d, edit_mode=%d\n", press_pending_, edit_mode_);
-  fflush(stderr);
   long_press_timer_->stop();
   press_pending_ = false;
   is_dragging_ = false;
   return edit_mode_;
+}
+
+bool UIEditModeManager::handleDoubleClick(const QPoint &pos) {
+  if (!edit_mode_) return false;
+
+  // ヒットテスト
+  for (auto it = elements_.begin(); it != elements_.end(); ++it) {
+    QRect expanded = it->bounds.adjusted(-30, -30, 30, 30);
+    if (expanded.contains(pos)) {
+      selected_element_ = it.key();
+      // スケールサイクル: 0.75 → 1.0 → 1.25 → 1.5 → 0.75...
+      float current = it->scale;
+      if (current < 0.875f) {
+        it->scale = 1.0f;
+      } else if (current < 1.125f) {
+        it->scale = 1.25f;
+      } else if (current < 1.375f) {
+        it->scale = 1.5f;
+      } else {
+        it->scale = 0.75f;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+bool UIEditModeManager::handlePinchZoom(const QPoint &center, float scale_delta) {
+  if (!edit_mode_) return false;
+
+  // ピンチ中心点にある要素を選択
+  if (selected_element_.isEmpty()) {
+    for (auto it = elements_.begin(); it != elements_.end(); ++it) {
+      QRect expanded = it->bounds.adjusted(-30, -30, 30, 30);
+      if (expanded.contains(center)) {
+        selected_element_ = it.key();
+        break;
+      }
+    }
+  }
+
+  if (!selected_element_.isEmpty()) {
+    auto &elem = elements_[selected_element_];
+    elem.scale = std::clamp(elem.scale * scale_delta, SCALE_MIN, SCALE_MAX);
+    return true;
+  }
+  return false;
 }
 
 void UIEditModeManager::paintOverlay(QPainter &p, int width, int height) {
@@ -138,7 +212,8 @@ void UIEditModeManager::paintOverlay(QPainter &p, int width, int height) {
   // 操作説明テキスト
   p.setFont(QFont("Inter", 18, QFont::Bold));
   p.setPen(QColor(255, 255, 255));
-  p.drawText(QRect(0, 50, width, 40), Qt::AlignCenter, "UI EDIT MODE - Drag to move, long press to exit");
+  p.drawText(QRect(0, 50, width, 40), Qt::AlignCenter,
+    "UI EDIT MODE - Drag/pinch to move & resize, long press to exit");
 
   if (!selected_element_.isEmpty()) {
     auto &elem = elements_[selected_element_];
@@ -150,6 +225,38 @@ void UIEditModeManager::paintOverlay(QPainter &p, int width, int height) {
         .arg(QString::number(elem.offset_y, 'f', 0))
         .arg(QString::number(elem.scale, 'f', 2)));
   }
+
+  // オーバーレイボタン（画面下部）
+  int btn_y = height - BTN_HEIGHT - BTN_MARGIN;
+  int total_btn_width = BTN_WIDTH * 3 + BTN_MARGIN * 2;
+  int btn_start_x = (width - total_btn_width) / 2;
+
+  // RESET ボタン
+  reset_btn_rect_ = QRect(btn_start_x, btn_y, BTN_WIDTH, BTN_HEIGHT);
+  p.setBrush(QColor(0, 0, 0, 180));
+  p.setPen(QPen(QColor(255, 165, 0), 2));
+  p.drawRoundedRect(reset_btn_rect_, 24, 24);
+  p.setFont(QFont("Inter", 22, QFont::Bold));
+  p.setPen(QColor(255, 165, 0));
+  p.drawText(reset_btn_rect_, Qt::AlignCenter, "RESET");
+
+  // SAVE ボタン
+  save_btn_rect_ = QRect(btn_start_x + BTN_WIDTH + BTN_MARGIN, btn_y, BTN_WIDTH, BTN_HEIGHT);
+  p.setBrush(QColor(0, 0, 0, 180));
+  p.setPen(QPen(QColor(0, 200, 100), 2));
+  p.drawRoundedRect(save_btn_rect_, 24, 24);
+  p.setFont(QFont("Inter", 22, QFont::Bold));
+  p.setPen(QColor(0, 200, 100));
+  p.drawText(save_btn_rect_, Qt::AlignCenter, "SAVE");
+
+  // EXIT ボタン
+  exit_btn_rect_ = QRect(btn_start_x + (BTN_WIDTH + BTN_MARGIN) * 2, btn_y, BTN_WIDTH, BTN_HEIGHT);
+  p.setBrush(QColor(0, 0, 0, 180));
+  p.setPen(QPen(QColor(255, 80, 80), 2));
+  p.drawRoundedRect(exit_btn_rect_, 24, 24);
+  p.setFont(QFont("Inter", 22, QFont::Bold));
+  p.setPen(QColor(255, 80, 80));
+  p.drawText(exit_btn_rect_, Qt::AlignCenter, "EXIT");
 }
 
 void UIEditModeManager::loadSettings() {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QVBoxLayout>
+#include <QTouchEvent>
 #include <memory>
 
 #include "selfdrive/ui/qt/onroad/buttons.h"
@@ -68,13 +69,21 @@ private:
   DistanceButton *distance_btn;
 
   // UI Edit Mode
-  UIEditModeManager *edit_manager_;
+  UIEditModeManager *edit_manager_ = nullptr;
+  float last_pinch_distance_ = 0.0f;
 
 protected:
   void paintGL() override;
   void initializeGL() override;
   void showEvent(QShowEvent *event) override;
   void updateFrameMat() override;
+
+  // UI Edit Mode - マウス/タッチイベント
+  void mousePressEvent(QMouseEvent *event) override;
+  void mouseMoveEvent(QMouseEvent *event) override;
+  void mouseReleaseEvent(QMouseEvent *event) override;
+  void mouseDoubleClickEvent(QMouseEvent *event) override;
+  void touchEvent(QTouchEvent *event) override;
   void drawLaneLines(QPainter &painter, const UIState *s, const FrogPilotUIState *fs);
   void drawLead(QPainter &painter, const cereal::RadarState::LeadData::Reader &lead_data, const cereal::FrogPilotPlan::Reader &frogpilotPlan, const QPointF &vd, const QColor &marker_color, const FrogPilotUIState *fs, bool adjacent = false);
   void drawHud(QPainter &p, const cereal::FrogPilotPlan::Reader &frogpilotPlan, const FrogPilotUIState &fs, const QJsonObject &frogpilot_toggles);

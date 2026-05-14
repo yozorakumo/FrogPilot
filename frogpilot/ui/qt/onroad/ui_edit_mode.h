@@ -39,10 +39,12 @@ public:
   // 要素の境界矩形を更新（各描画関数から呼ぶ）
   void updateBounds(const QString &name, const QRect &bounds);
 
-  // マウスイベント処理
+  // マウス/タッチイベント処理
   bool handleMousePress(const QPoint &pos);
   bool handleMouseMove(const QPoint &pos);
   bool handleMouseRelease();
+  bool handleDoubleClick(const QPoint &pos);
+  bool handlePinchZoom(const QPoint &center, float scale_delta);
 
   // 編集モードオーバーレイ描画
   void paintOverlay(QPainter &p, int width, int height);
@@ -69,8 +71,24 @@ private:
   static constexpr int LONG_PRESS_MS = 2000;
   static constexpr int MOVE_THRESHOLD = 20;
 
+  // ピンチズーム状態
+  float pinch_start_scale_ = 1.0f;
+  float last_pinch_distance_ = 0.0f;
+
   // 要素設定
   QMap<QString, UIElementConfig> elements_;
+
+  // オーバーレイボタン
+  QRect reset_btn_rect_;
+  QRect save_btn_rect_;
+  QRect exit_btn_rect_;
+  static constexpr int BTN_WIDTH = 180;
+  static constexpr int BTN_HEIGHT = 60;
+  static constexpr int BTN_MARGIN = 20;
+
+  // スケール制限
+  static constexpr float SCALE_MIN = 0.5f;
+  static constexpr float SCALE_MAX = 2.0f;
 
   // 設定をParamsに保存
   void saveToParams();

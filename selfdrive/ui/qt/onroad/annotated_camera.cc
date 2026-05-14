@@ -34,6 +34,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   screen_recorder = new ScreenRecorder(this);
 
   // edit_manager_ は OnroadWindow から setEditModeManager() で設定される
+  setAttribute(Qt::WA_AcceptTouchEvents);
 
   distance_btn->setVisible(false);
 }
@@ -1188,41 +1189,69 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     frogpilot_nvg->paintFrogPilotWidgets(painter, *s, *fs, sm, fpsm, frogpilot_toggles);
   }
 
-  // UI Edit Mode: 描画サイクルで長押しチェック（~20Hz）
-  {
-    static qint64 edit_press_time_cached = 0;
-    static bool edit_press_pending = false;
-
-    Params params;
-    QString press_time_str = QString::fromStdString(params.get("UIEditPressTime"));
-    if (!press_time_str.isEmpty()) {
-      qint64 pt = press_time_str.toLongLong();
-      if (pt != edit_press_time_cached) {
-        edit_press_time_cached = pt;
-        edit_press_pending = (pt != 0);
-      }
-    }
-
-    if (edit_press_pending) {
-      qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - edit_press_time_cached;
-      if (elapsed >= 2000) {
-        edit_press_pending = false;
-        bool current = params.getBool("UIEditMode");
-        params.putBool("UIEditMode", !current);
-        params.put("UIEditPressTime", "0");
-        FILE *f = fopen("/tmp/ui_edit_debug.log", "a");
-        if (f) { fprintf(f, "UI EDIT MODE: LONG PRESS COMPLETED in paintEvent! toggled to %d, elapsed=%lld\n", !current, elapsed); fclose(f); }
-      }
-    }
+  // UI Edit Mode: オーバーレイ描画（UIEditModeManagerに委譲）
+  if (edit_manager_ && edit_manager_->isEditMode()) {
+    edit_manager_->paintOverlay(painter, rect().width(), rect().height());
   }
+}
 
-  // UI Edit Mode overlay (read state from Params, toggled by paint cycle long press check)
-  bool ui_edit_mode = Params().getBool("UIEditMode");
-  if (ui_edit_mode) {
-    painter.fillRect(0, 0, rect().width(), rect().height(), QColor(0, 0, 0, 40));
-    painter.setFont(QFont("Inter", 24, QFont::Bold));
-    painter.setPen(QColor(255, 255, 255));
-    painter.drawText(QRect(0, 50, rect().width(), 40), Qt::AlignCenter, "UI EDIT MODE - Long press to exit");
+void AnnotatedCameraWidget::mousePressEvent(QMouseEvent *event) {
+  if (edit_manager_ && edit_manager_->handleMousePress(event->pos())) {
+    event->accept();
+  } else {
+    CameraWidget::mousePressEvent(event);
+  }
+}
+
+void AnnotatedCameraWidget::mouseMoveEvent(QMouseEvent *event) {
+  if (edit_manager_ && edit_manager_->handleMouseMove(event->pos())) {
+    event->accept();
+  } else {
+    CameraWidget::mouseMoveEvent(event);
+  }
+}
+
+void AnnotatedCameraWidget::mouseReleaseEvent(QMouseEvent *event) {
+  if (edit_manager_ && edit_manager_->handleMouseRelease()) {
+    event->accept();
+  } else {
+    CameraWidget::mouseReleaseEvent(event);
+  }
+}
+
+void AnnotatedCameraWidget::mouseDoubleClickEvent(QMouseEvent *event) {
+  if (edit_manager_ && edit_manager_->handleDoubleClick(event->pos())) {
+    event->accept();
+  } else {
+    CameraWidget::mouseDoubleClickEvent(event);
+  }
+}
+
+void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
+  if (edit_manager_ && edit_manager_->isEditMode()) {
+    QList<QTouchEvent::TouchPoint> points = event->touchPoints();
+    if (points.size() == 2) {
+      // ピンチズーム: 2点間の距離変化を計算
+      QTouchEvent::TouchPoint p1 = points[0];
+      QTouchEvent::TouchPoint p2 = points[1];
+      float dx = p2.pos().x() - p1.pos().x();
+      float dy = p2.pos().y() - p1.pos().y();
+      float distance = std::sqrt(dx * dx + dy * dy);
+
+      if (last_pinch_distance_ > 0.0f && distance > 0.0f) {
+        float scale_delta = distance / last_pinch_distance_;
+        QPoint center(((p1.pos().x() + p2.pos().x()) / 2).toPoint(),
+                      ((p1.pos().y() + p2.pos().y()) / 2).toPoint());
+        edit_manager_->handlePinchZoom(center, scale_delta);
+      }
+      last_pinch_distance_ = distance;
+      event->accept();
+    } else {
+      last_pinch_distance_ = 0.0f;
+    }
+  } else {
+    last_pinch_distance_ = 0.0f;
+    CameraWidget::touchEvent(event);
   }
 }
 
