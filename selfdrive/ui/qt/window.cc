@@ -1,5 +1,6 @@
 #include "selfdrive/ui/qt/window.h"
 
+#include <QDateTime>
 #include <QFontDatabase>
 #include <QTouchEvent>
 
@@ -95,9 +96,21 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
   bool ignore = false;
   switch (event->type()) {
     case QEvent::TouchBegin:
-    case QEvent::TouchUpdate:
+    case QEvent::MouseButtonPress: {
+      // ignore events when device is awakened by resetInteractiveTimeout
+      ignore = !device()->isAwake() || frogpilot_scene.driver_camera_timer >= UI_FREQ / 2;
+      device()->resetInteractiveTimeout(frogpilot_toggles.value("screen_timeout").toInt(), frogpilot_toggles.value("screen_timeout_onroad").toInt());
+      // Long press detection: record press time (Wayland-safe via eventFilter)
+      params.put("UIEditPressTime", std::to_string(QDateTime::currentMSecsSinceEpoch()));
+      break;
+    }
     case QEvent::TouchEnd:
-    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonRelease: {
+      // Long press detection: reset press time
+      params.put("UIEditPressTime", "0");
+      break;
+    }
+    case QEvent::TouchUpdate:
     case QEvent::MouseMove: {
       // ignore events when device is awakened by resetInteractiveTimeout
       ignore = !device()->isAwake() || frogpilot_scene.driver_camera_timer >= UI_FREQ / 2;

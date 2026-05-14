@@ -30,6 +30,7 @@ public:
 
   // 編集モード状態
   bool isEditMode() const { return edit_mode_; }
+  void toggleEditMode();
 
   // UI要素の設定取得
   float getOffsetX(const QString &name) const;

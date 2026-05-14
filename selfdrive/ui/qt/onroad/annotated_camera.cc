@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "common/params.h"
 #include "common/swaglog.h"
 #include "selfdrive/ui/qt/onroad/buttons.h"
 #include "selfdrive/ui/qt/util.h"
@@ -1187,6 +1188,20 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   // FrogPilot variables
   if (s->scene.world_objects_visible) {
     frogpilot_nvg->paintFrogPilotWidgets(painter, *s, *fs, sm, fpsm, frogpilot_toggles);
+  }
+
+  // UI Edit Mode: Long press detection via Params polling (Wayland-safe)
+  if (edit_manager_) {
+    Params params;
+    std::string press_time_str = params.get("UIEditPressTime");
+    if (!press_time_str.empty() && press_time_str != "0") {
+      qint64 press_time = QString::fromStdString(press_time_str).toLongLong();
+      qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - press_time;
+      if (elapsed >= 2000) {
+        edit_manager_->toggleEditMode();
+        params.put("UIEditPressTime", "0");
+      }
+    }
   }
 
   // UI Edit Mode: オーバーレイ描画（UIEditModeManagerに委譲）

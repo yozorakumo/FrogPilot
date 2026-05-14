@@ -32,6 +32,14 @@ UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
   loadSettings();
 }
 
+void UIEditModeManager::toggleEditMode() {
+  edit_mode_ = !edit_mode_;
+  if (!edit_mode_) {
+    saveSettings();
+    selected_element_.clear();
+  }
+}
+
 float UIEditModeManager::getOffsetX(const QString &name) const {
   auto it = elements_.find(name);
   return it != elements_.end() ? it->offset_x : 0.0f;
