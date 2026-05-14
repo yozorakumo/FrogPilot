@@ -117,7 +117,6 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
       pos = me->pos();
     }
     edit_press_pending_ = true;
-    edit_press_pos_ = pos;
     edit_press_time_ = QDateTime::currentMSecsSinceEpoch();
     Params().put("UIEditPressTime", std::to_string(edit_press_time_));
     { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: press detected at (%d, %d), time=%lld\n", pos.x(), pos.y(), edit_press_time_); fclose(f); } }
@@ -130,27 +129,6 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
       edit_press_pending_ = false;
       Params().put("UIEditPressTime", "0");
       { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: release detected, elapsed=%lldms\n", elapsed); fclose(f); } }
-    }
-  }
-
-  // Move検出（キャンセル）
-  if (event->type() == QEvent::MouseMove || event->type() == QEvent::TouchUpdate) {
-    if (edit_press_pending_) {
-      QPoint pos;
-      if (event->type() == QEvent::TouchUpdate) {
-        QTouchEvent *te = static_cast<QTouchEvent*>(event);
-        if (te->touchPoints().count() > 0) {
-          pos = te->touchPoints().first().pos().toPoint();
-        }
-      } else {
-        QMouseEvent *me = static_cast<QMouseEvent*>(event);
-        pos = me->pos();
-      }
-      if ((pos - edit_press_pos_).manhattanLength() > EDIT_MOVE_THRESHOLD) {
-        edit_press_pending_ = false;
-        Params().put("UIEditPressTime", "0");
-        { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: moved, cancelled\n"); fclose(f); } }
-      }
     }
   }
 

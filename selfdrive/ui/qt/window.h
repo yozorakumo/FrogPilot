@@ -31,8 +31,6 @@ private:
   // UI Edit Mode (long press detection in MainWindow::eventFilter)
   qint64 edit_press_time_ = 0;
   bool edit_mode_ = false;
-  QPoint edit_press_pos_;
   bool edit_press_pending_ = false;
   static constexpr int EDIT_LONG_PRESS_MS = 2000;
-  static constexpr int EDIT_MOVE_THRESHOLD = 50;
 };
