@@ -1,9 +1,9 @@
 #include "selfdrive/ui/qt/window.h"
 
+#include <QDateTime>
 #include <QFontDatabase>
 #include <QMouseEvent>
 #include <QTouchEvent>
-#include <QTimer>
 
 #include "common/params.h"
 #include "common/swaglog.h"
@@ -102,7 +102,9 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
     }
   }
 
-  // ===== UI EDIT MODE: 長押し検出（一番最初に処理・イベントは消費しない） =====
+  // ===== UI EDIT MODE: 長押し検出（タイムスタンプベース・QTimer不使用） =====
+
+  // Press検出
   if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::TouchBegin) {
     QPoint pos;
     if (event->type() == QEvent::TouchBegin) {
@@ -114,33 +116,22 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
       QMouseEvent *me = static_cast<QMouseEvent*>(event);
       pos = me->pos();
     }
-
     edit_press_pending_ = true;
     edit_press_pos_ = pos;
-    if (!edit_long_press_timer_) {
-      edit_long_press_timer_ = new QTimer(this);
-      edit_long_press_timer_->setSingleShot(true);
-      connect(edit_long_press_timer_, &QTimer::timeout, this, [this]() {
-        if (edit_press_pending_) {
-          edit_mode_ = !edit_mode_;
-          edit_press_pending_ = false;
-          Params().putBool("UIEditMode", edit_mode_);
-          { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: toggled to %d\n", edit_mode_); fclose(f); } }
-        }
-      });
-    }
-    edit_long_press_timer_->start(EDIT_LONG_PRESS_MS);
-    { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: press detected at (%d, %d), timer started\n", pos.x(), pos.y()); fclose(f); } }
+    edit_press_time_ = QDateTime::currentMSecsSinceEpoch();
+    { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: press detected at (%d, %d), time=%lld\n", pos.x(), pos.y(), edit_press_time_); fclose(f); } }
   }
 
+  // Release検出
   if (event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {
     if (edit_press_pending_) {
+      qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - edit_press_time_;
       edit_press_pending_ = false;
-      if (edit_long_press_timer_) edit_long_press_timer_->stop();
-      { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: release detected\n"); fclose(f); } }
+      { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: release detected, elapsed=%lldms\n", elapsed); fclose(f); } }
     }
   }
 
+  // Move検出（キャンセル）
   if (event->type() == QEvent::MouseMove || event->type() == QEvent::TouchUpdate) {
     if (edit_press_pending_) {
       QPoint pos;
@@ -155,9 +146,19 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
       }
       if ((pos - edit_press_pos_).manhattanLength() > EDIT_MOVE_THRESHOLD) {
         edit_press_pending_ = false;
-        if (edit_long_press_timer_) edit_long_press_timer_->stop();
         { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: moved, cancelled\n"); fclose(f); } }
       }
+    }
+  }
+
+  // 長押しチェック（すべてのイベントでチェック）
+  if (edit_press_pending_ && !edit_mode_) {
+    qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - edit_press_time_;
+    if (elapsed >= EDIT_LONG_PRESS_MS) {
+      edit_mode_ = !edit_mode_;
+      edit_press_pending_ = false;
+      Params().putBool("UIEditMode", edit_mode_);
+      { FILE *f = fopen("/tmp/ui_edit_debug.log", "a"); if(f) { fprintf(f, "UI EDIT MODE: LONG PRESS COMPLETED! toggled to %d, elapsed=%lldms\n", edit_mode_, elapsed); fclose(f); } }
     }
   }
 
