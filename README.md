@@ -486,3 +486,37 @@ Star History
 ------
 
 [![Star History Chart](https://api.star-history.com/svg?repos=FrogAi/FrogPilot&type=Date)](https://www.star-history.com/#FrogAi/FrogPilot&Date)
+
+---
+
+## CI/CD ワークフロー
+
+### ブランチ構成
+
+| ブランチ | 内容 | 用途 |
+|---|---|---|
+| `test-mazda2-dj-mt-frog` | **ソースコード** | 開発者がpushする先 |
+| `test-mazda2-dj-mt-frog-built` | **コンパイル済みバイナリ** | C3デバイスで実行する用 |
+
+### ビルドフロー
+
+1. 開発者が `test-mazda2-dj-mt-frog` にpush
+2. C3デバイスのCIランナー（self-hosted）が自動的にビルドを実行
+3. ビルド成果物を `test-mazda2-dj-mt-frog-built` にforce push
+
+### C3デバイスでビルド済みバイナリを使用する
+
+CIビルド完了後、以下のコマンドでビルド済みバイナリを取得:
+
+```bash
+cd /data/openpilot
+git fetch origin test-mazda2-dj-mt-frog-built
+git checkout test-mazda2-dj-mt-frog-built
+# openpilotを再起動
+```
+
+### 注意事項
+
+- CIランナーは常に `test-mazda2-dj-mt-frog` をcheckoutしておく必要があります（`get_branch` がローカルブランチ名を取得するため）
+- ビルド完了後、C3デバイスで実行する時だけ `test-mazda2-dj-mt-frog-built` に切り替えます
+- ソースとバイナリを分離することで、`git pull --rebase` 時のコンフリクトや `Unpacking objects` の問題を回避しています
