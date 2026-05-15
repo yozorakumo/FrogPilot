@@ -1255,8 +1255,8 @@ void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
 
       if (last_pinch_distance_ > 0.0f && distance > 0.0f) {
         float scale_delta = distance / last_pinch_distance_;
-        QPoint center(((p1.pos().x() + p2.pos().x()) / 2).toPoint(),
-                      ((p1.pos().y() + p2.pos().y()) / 2).toPoint());
+        QPoint center(qRound((p1.pos().x() + p2.pos().x()) / 2.0),
+                      qRound((p1.pos().y() + p2.pos().y()) / 2.0));
         edit_manager_->handlePinchZoom(center, scale_delta);
       }
       last_pinch_distance_ = distance;
@@ -1266,7 +1266,7 @@ void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
     }
   } else {
     last_pinch_distance_ = 0.0f;
-    CameraWidget::touchEvent(event);
+    event->ignore();
   }
 }
 
