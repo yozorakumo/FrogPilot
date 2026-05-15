@@ -148,6 +148,10 @@ void AnnotatedCameraWidget::updateState(const UIState &s, const FrogPilotUIState
   experimental_btn->setVisible(!frogpilot_nvg->bigMapOpen);
   screen_recorder->setVisible(frogpilot_nvg->standstillDuration == 0 && !fs.frogpilot_scene.map_open && !(frogpilot_nvg->signalStyle == "static" && car_state.getRightBlinker()) && frogpilot_toggles.value("screen_recorder").toBool());
 
+  // Track intended visibility for edit mode scaling (before hide() in paintEvent)
+  sw_intended_visible_ = experimental_btn->isVisible();
+  rec_intended_visible_ = screen_recorder->isVisible();
+
   frogpilot_nvg->updateState(fs, frogpilot_toggles);
 }
 
@@ -182,7 +186,13 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::FrogPilotPlan::Re
 
   float max_speed_ox = edit_manager_->getOffsetX("max_speed");
   float max_speed_oy = edit_manager_->getOffsetY("max_speed");
-  QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2 + max_speed_ox, 45 + max_speed_oy), set_speed_size);
+  float max_speed_sc = edit_manager_->getScale("max_speed");
+  QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2, 45), set_speed_size);
+
+  p.save();
+  p.translate(max_speed_ox, max_speed_oy);
+  if (max_speed_sc != 1.0f) p.scale(max_speed_sc, max_speed_sc);
+
   if (!frogpilot_toggles.value("hide_max_speed").toBool()) {
     if (fs.frogpilot_scene.traffic_mode_enabled) {
       p.setPen(QPen(redColor(), 10));
@@ -270,8 +280,10 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::FrogPilotPlan::Re
     p.restore();
   }
 
-  edit_manager_->updateBounds("max_speed", set_speed_rect);
-  edit_manager_->updateBounds("speed_limit", sign_rect);
+  edit_manager_->updateBounds("max_speed", set_speed_rect.translated(max_speed_ox, max_speed_oy));
+  edit_manager_->updateBounds("speed_limit", sign_rect.translated(max_speed_ox, max_speed_oy));
+
+  p.restore();
 
   // current speed
   if (!frogpilot_nvg->bigMapOpen && frogpilot_nvg->standstillDuration == 0 && !frogpilot_toggles.value("hide_speed").toBool()) {
@@ -287,8 +299,20 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::FrogPilotPlan::Re
 
   p.restore();
 
-  // FrogPilot variables
-  frogpilot_nvg->defaultSize = default_size;
+  // FrogPilot variables - compute effective screen rects for downstream use
+  QRect screen_set_speed_rect(
+    qRound(set_speed_rect.x() * max_speed_sc + max_speed_ox),
+    qRound(set_speed_rect.y() * max_speed_sc + max_speed_oy),
+    qRound(set_speed_rect.width() * max_speed_sc),
+    qRound(set_speed_rect.height() * max_speed_sc));
+  QRect screen_sign_rect(
+    qRound(sign_rect.x() * max_speed_sc + max_speed_ox),
+    qRound(sign_rect.y() * max_speed_sc + max_speed_oy),
+    qRound(sign_rect.width() * max_speed_sc),
+    qRound(sign_rect.height() * max_speed_sc));
+  QSize screen_default_size(qRound(default_size.width() * max_speed_sc), qRound(default_size.height() * max_speed_sc));
+
+  frogpilot_nvg->defaultSize = screen_default_size;
   frogpilot_nvg->experimentalButtonPosition = QPoint(experimental_btn->x(), experimental_btn->y());
   frogpilot_nvg->hideBottomIcons = hideBottomIcons;
   frogpilot_nvg->isCruiseSet = is_cruise_set;
@@ -296,10 +320,10 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::FrogPilotPlan::Re
   frogpilot_nvg->mutcdSpeedLimit = has_us_speed_limit;
   frogpilot_nvg->rightHandDM = rightHandDM;
   frogpilot_nvg->setSpeed = setSpeed / (is_metric ? MS_TO_KPH : MS_TO_MPH);
-  frogpilot_nvg->setSpeedRect = set_speed_rect;
-  frogpilot_nvg->signMargin = sign_margin;
+  frogpilot_nvg->setSpeedRect = screen_set_speed_rect;
+  frogpilot_nvg->signMargin = qRound(sign_margin * max_speed_sc);
   frogpilot_nvg->speed = speed;
-  frogpilot_nvg->speedLimitRect = sign_rect;
+  frogpilot_nvg->speedLimitRect = screen_sign_rect;
   frogpilot_nvg->speedUnit = speedUnit;
   frogpilot_nvg->viennaSpeedLimit = has_eu_speed_limit;
 }
@@ -1243,34 +1267,55 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     experimental_btn->setEnabled(!is_edit);
     screen_recorder->setEnabled(!is_edit);
 
-    // Fix 2: Apply scale to QWidget sizes
+    // Apply scale via grab() + drawPixmap for QWidget elements
     float sw_scale = edit_manager_->getScale("steering_wheel");
-    int sw_size = qRound(btn_size * sw_scale);
-    experimental_btn->setFixedSize(sw_size, sw_size);
-
     float rec_scale = edit_manager_->getScale("recording");
-    int rec_size = qRound(btn_size * rec_scale);
-    screen_recorder->setFixedSize(rec_size, rec_size);
 
-    // Apply position offsets
-    if (experimental_btn->isVisible() && steering_wheel_base_pos_.x() >= 0) {
-      experimental_btn->move(
+    // Steering wheel
+    bool sw_visible = sw_intended_visible_ && steering_wheel_base_pos_.x() >= 0;
+    if (sw_scale != 1.0f && sw_visible) {
+      experimental_btn->setFixedSize(btn_size, btn_size);
+      experimental_btn->show();
+      QPixmap sw_pix = experimental_btn->grab();
+      experimental_btn->hide();
+      QPoint sw_pos(
         steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
         steering_wheel_base_pos_.y() + edit_manager_->getOffsetY("steering_wheel"));
+      painter.drawPixmap(QRect(sw_pos, sw_pix.size() * sw_scale), sw_pix, sw_pix.rect());
+      edit_manager_->updateBounds("steering_wheel", QRect(sw_pos, QSize(btn_size, btn_size) * sw_scale));
+    } else {
+      experimental_btn->setFixedSize(btn_size, btn_size);
+      if (sw_visible) {
+        experimental_btn->move(
+          steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
+          steering_wheel_base_pos_.y() + edit_manager_->getOffsetY("steering_wheel"));
+      }
+      edit_manager_->updateBounds("steering_wheel",
+        sw_visible ? experimental_btn->geometry() : QRect());
     }
-    if (screen_recorder->isVisible() && recording_base_pos_.x() >= 0) {
-      screen_recorder->move(
+
+    // Recording
+    bool rec_visible = rec_intended_visible_ && recording_base_pos_.x() >= 0;
+    if (rec_scale != 1.0f && rec_visible) {
+      screen_recorder->setFixedSize(btn_size, btn_size);
+      screen_recorder->show();
+      QPixmap rec_pix = screen_recorder->grab();
+      screen_recorder->hide();
+      QPoint rec_pos(
         recording_base_pos_.x() + edit_manager_->getOffsetX("recording"),
         recording_base_pos_.y() + edit_manager_->getOffsetY("recording"));
+      painter.drawPixmap(QRect(rec_pos, rec_pix.size() * rec_scale), rec_pix, rec_pix.rect());
+      edit_manager_->updateBounds("recording", QRect(rec_pos, QSize(btn_size, btn_size) * rec_scale));
+    } else {
+      screen_recorder->setFixedSize(btn_size, btn_size);
+      if (rec_visible) {
+        screen_recorder->move(
+          recording_base_pos_.x() + edit_manager_->getOffsetX("recording"),
+          recording_base_pos_.y() + edit_manager_->getOffsetY("recording"));
+      }
+      edit_manager_->updateBounds("recording",
+        rec_visible ? screen_recorder->geometry() : QRect());
     }
-  }
-
-  // UI Edit Mode: 追加ウィジェットのbounds更新
-  if (edit_manager_) {
-    edit_manager_->updateBounds("steering_wheel",
-      experimental_btn->isVisible() ? experimental_btn->geometry() : QRect());
-    edit_manager_->updateBounds("recording",
-      screen_recorder->isVisible() ? screen_recorder->geometry() : QRect());
   }
 
   // UI Edit Mode: オーバーレイ描画（UIEditModeManagerに委譲）

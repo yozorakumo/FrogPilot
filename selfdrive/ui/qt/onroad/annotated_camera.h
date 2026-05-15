@@ -73,6 +73,8 @@ private:
   float last_pinch_distance_ = 0.0f;
   QPoint steering_wheel_base_pos_ = QPoint(-1, -1);
   QPoint recording_base_pos_ = QPoint(-1, -1);
+  bool sw_intended_visible_ = false;
+  bool rec_intended_visible_ = false;
 
 protected:
   void paintGL() override;
