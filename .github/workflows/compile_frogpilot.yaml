@@ -67,6 +67,11 @@ jobs:
       branch: ${{ steps.get_branch.outputs.branch }}
       python_version: ${{ steps.get_python_version.outputs.python_version }}
     steps:
+      - name: Clean runner diag files
+        run: |
+          sudo rm -rf /data/actions-runner/_diag/pages/*.log || true
+          sudo rm -rf /data/actions-runner/_diag/*.log || true
+
       - name: Get Current Branch
         id: get_branch
         run: |
@@ -159,6 +164,11 @@ jobs:
       run:
         working-directory: ${{ env.BUILD_DIR }}
     steps:
+      - name: Clean runner diag files
+        run: |
+          sudo rm -rf /data/actions-runner/_diag/pages/*.log || true
+          sudo rm -rf /data/actions-runner/_diag/*.log || true
+
       - name: Configure Git
         run: |
           git config http.postBuffer 104857600
