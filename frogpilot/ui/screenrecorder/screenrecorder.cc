@@ -130,6 +130,13 @@ void ScreenRecorder::paintEvent(QPaintEvent *event) {
   QPainter p(this);
   p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
+  const int widget_size = qMin(width(), height());
+  const float scale = (float)widget_size / btn_size;
+  const int fontSize = qMax(1, qRound(25 * scale));
+  const int penWidth = qMax(1, qRound(8 * scale));
+  const int centeringOffset = qMax(1, qRound(10 * scale));
+  const int cornerRadius = qMax(1, qRound(24 * scale));
+
   if (recording) {
     qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - startedTime;
 
@@ -139,29 +146,28 @@ void ScreenRecorder::paintEvent(QPaintEvent *event) {
     QColor glowColor = redColor();
     glowColor.setAlphaF(0.3 + 0.7 * alphaFactor);
 
-    int glowWidth = 8 + static_cast<int>(2 * alphaFactor);
+    int glowWidth = qMax(1, qRound(8 * scale + 2 * alphaFactor * scale));
 
     p.setBrush(blackColor(166));
-    p.setFont(InterFont(25, QFont::Bold));
+    p.setFont(InterFont(fontSize, QFont::Bold));
     p.setPen(QPen(glowColor, glowWidth));
   } else {
     p.setBrush(blackColor(166));
-    p.setFont(InterFont(25, QFont::DemiBold));
-    p.setPen(QPen(redColor(), 8));
+    p.setFont(InterFont(fontSize, QFont::DemiBold));
+    p.setPen(QPen(redColor(), penWidth));
   }
 
-  int centeringOffset = 10;
-
-  QRect buttonRect(centeringOffset, btn_size / 3, btn_size - centeringOffset * 2, btn_size / 3);
-  p.drawRoundedRect(buttonRect, 24, 24);
+  QRect buttonRect(centeringOffset, widget_size / 3, widget_size - centeringOffset * 2, widget_size / 3);
+  p.drawRoundedRect(buttonRect, cornerRadius, cornerRadius);
 
   QRect textRect = buttonRect.adjusted(centeringOffset, 0, -centeringOffset, 0);
-  p.setPen(QPen(whiteColor(), 6));
+  p.setPen(QPen(whiteColor(), qMax(1, qRound(6 * scale))));
   p.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, recording ? tr("RECORDING") : tr("RECORD"));
 
   if (!recording) {
     p.setBrush(redColor(166));
     p.setPen(Qt::NoPen);
-    p.drawEllipse(QPoint(buttonRect.right() - btn_size / 10 - centeringOffset, buttonRect.center().y()), btn_size / 10, btn_size / 10);
+    int dotRadius = qMax(1, widget_size / 10);
+    p.drawEllipse(QPoint(buttonRect.right() - dotRadius - centeringOffset, buttonRect.center().y()), dotRadius, dotRadius);
   }
 }

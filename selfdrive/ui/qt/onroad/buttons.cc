@@ -5,12 +5,12 @@
 
 #include "selfdrive/ui/qt/util.h"
 
-void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, const QBrush &bg, float opacity, const int &angle) {
+void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, const QBrush &bg, float opacity, const int &angle, const int &icon_size) {
   p.setRenderHint(QPainter::Antialiasing);
   p.setOpacity(1.0);  // bg dictates opacity of ellipse
   p.setPen(Qt::NoPen);
   p.setBrush(bg);
-  p.drawEllipse(center, btn_size / 2, btn_size / 2);
+  p.drawEllipse(center, icon_size / 2, icon_size / 2);
   p.save();
   p.translate(center);
   p.rotate(angle);
@@ -121,20 +121,27 @@ void ExperimentalButton::updateBackgroundColor() {
 void ExperimentalButton::paintEvent(QPaintEvent *event) {
   updateBackgroundColor();
 
+  const int current_size = qMin(width(), height());
+  const int center = current_size / 2;
+  const float scale_factor = (float)current_size / btn_size;
+  const int scaled_img_size = qMax(1, qRound(img_size * scale_factor));
+
   QPainter p(this);
   p.setRenderHint(QPainter::Antialiasing);
 
   QPainterPath clip_path;
-  clip_path.addEllipse(QPoint(btn_size / 2, btn_size / 2), btn_size / 2, btn_size / 2);
+  clip_path.addEllipse(QPoint(center, center), center, center);
   p.setClipPath(clip_path);
 
   if (use_stock_wheel) {
-    QPixmap img = experimental_mode ? experimental_img : engage_img;
-    drawIcon(p, QPoint(btn_size / 2, btn_size / 2), img, background_color, (isDown() || !engageable) ? 0.6 : 1.0, steering_angle);
+    QPixmap img = (experimental_mode ? experimental_img : engage_img).scaled(scaled_img_size, scaled_img_size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    drawIcon(p, QPoint(center, center), img, background_color, (isDown() || !engageable) ? 0.6 : 1.0, steering_angle, current_size);
   } else if (wheel_gif) {
-    drawIcon(p, QPoint(btn_size / 2, btn_size / 2), wheel_gif->currentPixmap(), background_color, (isDown() || !engageable) ? 0.6 : 1.0, steering_angle);
+    QPixmap gif_img = wheel_gif->currentPixmap().scaled(scaled_img_size, scaled_img_size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    drawIcon(p, QPoint(center, center), gif_img, background_color, (isDown() || !engageable) ? 0.6 : 1.0, steering_angle, current_size);
   } else if (!wheel_img.isNull()) {
-    drawIcon(p, QPoint(btn_size / 2, btn_size / 2), wheel_img, background_color, (isDown() || !engageable) ? 0.6 : 1.0, steering_angle);
+    QPixmap scaled_wheel = wheel_img.scaled(scaled_img_size, scaled_img_size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    drawIcon(p, QPoint(center, center), scaled_wheel, background_color, (isDown() || !engageable) ? 0.6 : 1.0, steering_angle, current_size);
   }
 
   p.setClipping(false);

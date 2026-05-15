@@ -58,4 +58,4 @@ private:
   QPixmap settings_img;
 };
 
-void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, const QBrush &bg, float opacity, const int &angle = 0);
+void drawIcon(QPainter &p, const QPoint &center, const QPixmap &img, const QBrush &bg, float opacity, const int &angle = 0, const int &icon_size = btn_size);

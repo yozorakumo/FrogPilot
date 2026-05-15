@@ -1262,10 +1262,10 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 
   // UI Edit Mode: Apply offsets, scale, and state to QWidget-based elements
   if (edit_manager_) {
-    // Fix 1: Disable button clicks during edit mode
+    // Fix 1: Make buttons transparent to mouse events during edit mode
     bool is_edit = edit_manager_->isEditMode();
-    experimental_btn->setEnabled(!is_edit);
-    screen_recorder->setEnabled(!is_edit);
+    experimental_btn->setAttribute(Qt::WA_TransparentForMouseEvents, is_edit);
+    screen_recorder->setAttribute(Qt::WA_TransparentForMouseEvents, is_edit);
 
     // Apply scale via setFixedSize for QWidget elements (grab()-free, Wayland/eglfs safe)
     float sw_scale = edit_manager_->getScale("steering_wheel");
