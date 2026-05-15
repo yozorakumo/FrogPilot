@@ -324,9 +324,14 @@ jobs:
 
       - name: Commit and Push Build
         run: |
+          BRANCH="${{ needs.get_branch.outputs.branch }}"
+          BUILT_BRANCH="${BRANCH}-built"
+
           git add -f .
           git diff-index --quiet HEAD || git commit -m "Compile FrogPilot [skip ci]"
-          git push --force origin HEAD
+
+          # ビルド成果物を専用ブランチにpush（ソースブランチは変更しない）
+          git push --force origin "HEAD:${BUILT_BRANCH}"
 
           if [ "${{ inputs.publish_frogpilot }}" = "true" ]; then
             git push --force origin HEAD:FrogPilot
