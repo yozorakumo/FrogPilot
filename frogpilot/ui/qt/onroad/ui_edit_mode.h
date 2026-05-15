@@ -83,9 +83,13 @@ private:
   QRect reset_btn_rect_;
   QRect save_btn_rect_;
   QRect exit_btn_rect_;
+  QRect zoom_in_btn_rect_;
+  QRect zoom_out_btn_rect_;
   static constexpr int BTN_WIDTH = 180;
   static constexpr int BTN_HEIGHT = 60;
   static constexpr int BTN_MARGIN = 20;
+  static constexpr int ZOOM_BTN_SIZE = 60;
+  static constexpr int ZOOM_BTN_GAP = 20;
 
   // スケール制限
   static constexpr float SCALE_MIN = 0.5f;

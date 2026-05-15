@@ -1167,6 +1167,13 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   if (!hideBottomIcons && (sm.rcv_frame("driverStateV2") > s->scene.started_frame)) {
     update_dmonitoring(s, sm["driverStateV2"].getDriverStateV2(), dm_fade_state, rightHandDM);
     drawDriverState(painter, s, frogpilot_toggles);
+    if (edit_manager_) {
+      int dm_sz = img_size + 5;
+      QPoint dm_pos = frogpilot_nvg->dmIconPosition;
+      edit_manager_->updateBounds("driver_face", QRect(dm_pos.x() - dm_sz / 2, dm_pos.y() - dm_sz / 2, dm_sz, dm_sz));
+    }
+  } else if (edit_manager_) {
+    edit_manager_->updateBounds("driver_face", QRect());
   }
 
   drawHud(painter, frogpilotPlan, *fs, frogpilot_toggles);
@@ -1202,6 +1209,14 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
         params.put("UIEditPressTime", "0");
       }
     }
+  }
+
+  // UI Edit Mode: 追加ウィジェットのbounds更新
+  if (edit_manager_) {
+    edit_manager_->updateBounds("steering_wheel",
+      experimental_btn->isVisible() ? experimental_btn->geometry() : QRect());
+    edit_manager_->updateBounds("recording",
+      screen_recorder->isVisible() ? screen_recorder->geometry() : QRect());
   }
 
   // UI Edit Mode: オーバーレイ描画（UIEditModeManagerに委譲）

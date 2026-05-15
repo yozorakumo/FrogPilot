@@ -28,6 +28,9 @@ UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
   elements_["compass"] = UIElementConfig{"Compass"};
   elements_["gear"] = UIElementConfig{"Gear"};
   elements_["speed_limit"] = UIElementConfig{"Speed Limit"};
+  elements_["steering_wheel"] = UIElementConfig{"Steering Wheel"};
+  elements_["recording"] = UIElementConfig{"Recording"};
+  elements_["driver_face"] = UIElementConfig{"Driver Face"};
 
   loadSettings();
 }
@@ -89,6 +92,24 @@ bool UIEditModeManager::handleMousePress(const QPoint &pos) {
       return true;
     }
 
+    // ズームボタン判定（選択中要素がある場合）
+    if (!selected_element_.isEmpty()) {
+      if (zoom_out_btn_rect_.contains(pos)) {
+        long_press_timer_->stop();
+        press_pending_ = false;
+        auto &sel_elem = elements_[selected_element_];
+        sel_elem.scale = std::clamp(sel_elem.scale - 0.1f, SCALE_MIN, SCALE_MAX);
+        return true;
+      }
+      if (zoom_in_btn_rect_.contains(pos)) {
+        long_press_timer_->stop();
+        press_pending_ = false;
+        auto &sel_elem = elements_[selected_element_];
+        sel_elem.scale = std::clamp(sel_elem.scale + 0.1f, SCALE_MIN, SCALE_MAX);
+        return true;
+      }
+    }
+
     // 要素選択
     selected_element_.clear();
     for (auto it = elements_.begin(); it != elements_.end(); ++it) {
@@ -123,13 +144,7 @@ bool UIEditModeManager::handleMouseMove(const QPoint &pos) {
     float new_x = drag_start_offset_x_ + delta.x();
     float new_y = drag_start_offset_y_ + delta.y();
 
-    // 境界外ガード
     auto &elem = elements_[selected_element_];
-    if (!elem.bounds.isEmpty()) {
-      // 簡易的な画面内制約（boundsが大きく画面外に出ないように）
-      new_x = std::clamp(new_x, -500.0f, 500.0f);
-      new_y = std::clamp(new_y, -500.0f, 500.0f);
-    }
 
     elem.offset_x = new_x;
     elem.offset_y = new_y;
@@ -220,7 +235,7 @@ void UIEditModeManager::paintOverlay(QPainter &p, int width, int height) {
   p.setFont(QFont("Inter", 18, QFont::Bold));
   p.setPen(QColor(255, 255, 255));
   p.drawText(QRect(0, 50, width, 40), Qt::AlignCenter,
-    "UI EDIT MODE - Drag/pinch to move & resize, long press to exit");
+    "UI EDIT MODE - Drag to move, +/- to resize, long press to exit");
 
   if (!selected_element_.isEmpty()) {
     auto &elem = elements_[selected_element_];
@@ -231,6 +246,34 @@ void UIEditModeManager::paintOverlay(QPainter &p, int width, int height) {
         .arg(QString::number(elem.offset_x, 'f', 0))
         .arg(QString::number(elem.offset_y, 'f', 0))
         .arg(QString::number(elem.scale, 'f', 2)));
+
+    // ズームボタン（選択要素の下に描画）
+    if (!elem.bounds.isEmpty()) {
+      int zoom_y = elem.bounds.bottom() + 15;
+      int zoom_x = elem.bounds.center().x() - ZOOM_BTN_SIZE - ZOOM_BTN_GAP / 2;
+
+      zoom_out_btn_rect_ = QRect(zoom_x, zoom_y, ZOOM_BTN_SIZE, ZOOM_BTN_SIZE);
+      zoom_in_btn_rect_ = QRect(zoom_x + ZOOM_BTN_SIZE + ZOOM_BTN_GAP, zoom_y, ZOOM_BTN_SIZE, ZOOM_BTN_SIZE);
+
+      // "-" ボタン
+      p.setBrush(QColor(0, 0, 0, 180));
+      p.setPen(QPen(QColor(255, 165, 0), 2));
+      p.drawRoundedRect(zoom_out_btn_rect_, 12, 12);
+      p.setFont(QFont("Inter", 28, QFont::Bold));
+      p.setPen(QColor(255, 165, 0));
+      p.drawText(zoom_out_btn_rect_, Qt::AlignCenter, QString::fromUtf8("−"));
+
+      // "+" ボタン
+      p.setBrush(QColor(0, 0, 0, 180));
+      p.setPen(QPen(QColor(0, 200, 100), 2));
+      p.drawRoundedRect(zoom_in_btn_rect_, 12, 12);
+      p.setFont(QFont("Inter", 28, QFont::Bold));
+      p.setPen(QColor(0, 200, 100));
+      p.drawText(zoom_in_btn_rect_, Qt::AlignCenter, "+");
+    }
+  } else {
+    zoom_in_btn_rect_ = QRect();
+    zoom_out_btn_rect_ = QRect();
   }
 
   // オーバーレイボタン（画面下部）
