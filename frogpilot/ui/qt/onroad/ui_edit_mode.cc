@@ -126,7 +126,6 @@ bool UIEditModeManager::handleMouseMove(const QPoint &pos) {
     // 境界外ガード
     auto &elem = elements_[selected_element_];
     if (!elem.bounds.isEmpty()) {
-      QRect moved_bounds = elem.bounds.translated(new_x, new_y);
       // 簡易的な画面内制約（boundsが大きく画面外に出ないように）
       new_x = std::clamp(new_x, -500.0f, 500.0f);
       new_y = std::clamp(new_y, -500.0f, 500.0f);
