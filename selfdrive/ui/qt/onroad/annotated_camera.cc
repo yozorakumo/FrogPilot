@@ -1217,6 +1217,8 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 
   // FrogPilot variables
   if (s->scene.world_objects_visible) {
+    // Fix 3: Sync frogpilot_nvg geometry so width() accounts for sidebar
+    frogpilot_nvg->setGeometry(rect());
     frogpilot_nvg->paintFrogPilotWidgets(painter, *s, *fs, sm, fpsm, frogpilot_toggles);
   }
 
@@ -1234,8 +1236,23 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     }
   }
 
-  // UI Edit Mode: Apply offsets to QWidget-based elements
+  // UI Edit Mode: Apply offsets, scale, and state to QWidget-based elements
   if (edit_manager_) {
+    // Fix 1: Disable button clicks during edit mode
+    bool is_edit = edit_manager_->isEditMode();
+    experimental_btn->setEnabled(!is_edit);
+    screen_recorder->setEnabled(!is_edit);
+
+    // Fix 2: Apply scale to QWidget sizes
+    float sw_scale = edit_manager_->getScale("steering_wheel");
+    int sw_size = qRound(btn_size * sw_scale);
+    experimental_btn->setFixedSize(sw_size, sw_size);
+
+    float rec_scale = edit_manager_->getScale("recording");
+    int rec_size = qRound(btn_size * rec_scale);
+    screen_recorder->setFixedSize(rec_size, rec_size);
+
+    // Apply position offsets
     if (experimental_btn->isVisible() && steering_wheel_base_pos_.x() >= 0) {
       experimental_btn->move(
         steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
