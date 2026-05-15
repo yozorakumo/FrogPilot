@@ -52,8 +52,9 @@ void AnnotatedCameraWidget::resizeEvent(QResizeEvent *event) {
 
   frogpilot_nvg->setGeometry(rect());
 
-  // Store base positions (layout-determined, before edit offset)
-  steering_wheel_base_pos_ = experimental_btn->pos();
+  // Calculate base positions from widget dimensions (not layout-determined pos)
+  // This ensures correct positioning when sidebar visibility changes
+  steering_wheel_base_pos_ = QPoint(width() - UI_BORDER_SIZE - btn_size, UI_BORDER_SIZE);
   recording_base_pos_ = QPoint(steering_wheel_base_pos_.x() - UI_BORDER_SIZE - btn_size, steering_wheel_base_pos_.y());
 
   // Apply edit mode offsets to QWidget elements
@@ -281,7 +282,6 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::FrogPilotPlan::Re
   }
 
   edit_manager_->updateBounds("max_speed", set_speed_rect.translated(max_speed_ox, max_speed_oy));
-  edit_manager_->updateBounds("speed_limit", sign_rect.translated(max_speed_ox, max_speed_oy));
 
   p.restore();
 
@@ -1278,11 +1278,13 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
       experimental_btn->show();
       QPixmap sw_pix = experimental_btn->grab();
       experimental_btn->hide();
-      QPoint sw_pos(
-        steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
-        steering_wheel_base_pos_.y() + edit_manager_->getOffsetY("steering_wheel"));
-      painter.drawPixmap(QRect(sw_pos, sw_pix.size() * sw_scale), sw_pix, sw_pix.rect());
-      edit_manager_->updateBounds("steering_wheel", QRect(sw_pos, QSize(btn_size, btn_size) * sw_scale));
+      if (!sw_pix.isNull()) {
+        QPoint sw_pos(
+          steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
+          steering_wheel_base_pos_.y() + edit_manager_->getOffsetY("steering_wheel"));
+        painter.drawPixmap(QRect(sw_pos, sw_pix.size() * sw_scale), sw_pix, sw_pix.rect());
+        edit_manager_->updateBounds("steering_wheel", QRect(sw_pos, QSize(btn_size, btn_size) * sw_scale));
+      }
     } else {
       experimental_btn->setFixedSize(btn_size, btn_size);
       if (sw_visible) {
@@ -1301,11 +1303,13 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
       screen_recorder->show();
       QPixmap rec_pix = screen_recorder->grab();
       screen_recorder->hide();
-      QPoint rec_pos(
-        recording_base_pos_.x() + edit_manager_->getOffsetX("recording"),
-        recording_base_pos_.y() + edit_manager_->getOffsetY("recording"));
-      painter.drawPixmap(QRect(rec_pos, rec_pix.size() * rec_scale), rec_pix, rec_pix.rect());
-      edit_manager_->updateBounds("recording", QRect(rec_pos, QSize(btn_size, btn_size) * rec_scale));
+      if (!rec_pix.isNull()) {
+        QPoint rec_pos(
+          recording_base_pos_.x() + edit_manager_->getOffsetX("recording"),
+          recording_base_pos_.y() + edit_manager_->getOffsetY("recording"));
+        painter.drawPixmap(QRect(rec_pos, rec_pix.size() * rec_scale), rec_pix, rec_pix.rect());
+        edit_manager_->updateBounds("recording", QRect(rec_pos, QSize(btn_size, btn_size) * rec_scale));
+      }
     } else {
       screen_recorder->setFixedSize(btn_size, btn_size);
       if (rec_visible) {
