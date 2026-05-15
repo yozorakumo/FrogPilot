@@ -58,6 +58,30 @@ float UIEditModeManager::getScale(const QString &name) const {
   return it != elements_.end() ? it->scale : 1.0f;
 }
 
+QRect UIEditModeManager::getEffectiveBounds(const QString &name) const {
+  auto it = elements_.find(name);
+  if (it == elements_.end() || it->bounds.isEmpty()) return QRect();
+
+  float sc = it->scale;
+  if (sc == 1.0f) return it->bounds;
+
+  float ox = it->offset_x;
+  float oy = it->offset_y;
+
+  // Stored bounds = base_rect.translated(ox, oy)
+  // With p.translate(ox, oy); p.scale(sc, sc):
+  // Actual rendered position = base * scale + offset
+  float base_x = it->bounds.x() - ox;
+  float base_y = it->bounds.y() - oy;
+
+  return QRect(
+    qRound(base_x * sc + ox),
+    qRound(base_y * sc + oy),
+    qRound(it->bounds.width() * sc),
+    qRound(it->bounds.height() * sc)
+  );
+}
+
 void UIEditModeManager::updateBounds(const QString &name, const QRect &bounds) {
   if (elements_.contains(name)) {
     elements_[name].bounds = bounds;
@@ -113,7 +137,7 @@ bool UIEditModeManager::handleMousePress(const QPoint &pos) {
     // 要素選択
     selected_element_.clear();
     for (auto it = elements_.begin(); it != elements_.end(); ++it) {
-      QRect expanded = it->bounds.adjusted(-30, -30, 30, 30);
+      QRect expanded = getEffectiveBounds(it.key()).adjusted(-30, -30, 30, 30);
       if (expanded.contains(pos)) {
         selected_element_ = it.key();
         drag_start_pos_ = pos;
@@ -165,7 +189,7 @@ bool UIEditModeManager::handleDoubleClick(const QPoint &pos) {
 
   // ヒットテスト
   for (auto it = elements_.begin(); it != elements_.end(); ++it) {
-    QRect expanded = it->bounds.adjusted(-30, -30, 30, 30);
+    QRect expanded = getEffectiveBounds(it.key()).adjusted(-30, -30, 30, 30);
     if (expanded.contains(pos)) {
       selected_element_ = it.key();
       // スケールサイクル: 0.75 → 1.0 → 1.25 → 1.5 → 0.75...
@@ -191,7 +215,7 @@ bool UIEditModeManager::handlePinchZoom(const QPoint &center, float scale_delta)
   // ピンチ中心点にある要素を選択
   if (selected_element_.isEmpty()) {
     for (auto it = elements_.begin(); it != elements_.end(); ++it) {
-      QRect expanded = it->bounds.adjusted(-30, -30, 30, 30);
+      QRect expanded = getEffectiveBounds(it.key()).adjusted(-30, -30, 30, 30);
       if (expanded.contains(center)) {
         selected_element_ = it.key();
         break;
@@ -218,7 +242,7 @@ void UIEditModeManager::paintOverlay(QPainter &p, int width, int height) {
     if (it->bounds.isEmpty()) continue;
 
     bool selected = (it.key() == selected_element_);
-    QRect bounds = it->bounds.adjusted(-5, -5, 5, 5);
+    QRect bounds = getEffectiveBounds(it.key()).adjusted(-5, -5, 5, 5);
 
     // 境界矩形
     p.setPen(QPen(selected ? QColor(0, 255, 255) : QColor(255, 255, 255, 150), selected ? 3 : 1, Qt::DashLine));
@@ -248,9 +272,10 @@ void UIEditModeManager::paintOverlay(QPainter &p, int width, int height) {
         .arg(QString::number(elem.scale, 'f', 2)));
 
     // ズームボタン（選択要素の下に描画）
-    if (!elem.bounds.isEmpty()) {
-      int zoom_y = elem.bounds.bottom() + 15;
-      int zoom_x = elem.bounds.center().x() - ZOOM_BTN_SIZE - ZOOM_BTN_GAP / 2;
+    QRect eff_bounds = getEffectiveBounds(selected_element_);
+    if (!eff_bounds.isEmpty()) {
+      int zoom_y = eff_bounds.bottom() + 15;
+      int zoom_x = eff_bounds.center().x() - ZOOM_BTN_SIZE - ZOOM_BTN_GAP / 2;
 
       zoom_out_btn_rect_ = QRect(zoom_x, zoom_y, ZOOM_BTN_SIZE, ZOOM_BTN_SIZE);
       zoom_in_btn_rect_ = QRect(zoom_x + ZOOM_BTN_SIZE + ZOOM_BTN_GAP, zoom_y, ZOOM_BTN_SIZE, ZOOM_BTN_SIZE);

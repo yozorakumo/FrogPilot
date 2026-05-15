@@ -71,6 +71,8 @@ private:
   // UI Edit Mode
   UIEditModeManager *edit_manager_ = nullptr;
   float last_pinch_distance_ = 0.0f;
+  QPoint steering_wheel_base_pos_ = QPoint(-1, -1);
+  QPoint recording_base_pos_ = QPoint(-1, -1);
 
 protected:
   void paintGL() override;

@@ -40,6 +40,9 @@ public:
   // 要素の境界矩形を更新（各描画関数から呼ぶ）
   void updateBounds(const QString &name, const QRect &bounds);
 
+  // スケールを反映した有効な境界矩形を取得
+  QRect getEffectiveBounds(const QString &name) const;
+
   // マウス/タッチイベント処理
   bool handleMousePress(const QPoint &pos);
   bool handleMouseMove(const QPoint &pos);

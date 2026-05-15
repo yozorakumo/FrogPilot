@@ -52,7 +52,21 @@ void AnnotatedCameraWidget::resizeEvent(QResizeEvent *event) {
 
   frogpilot_nvg->setGeometry(rect());
 
-  screen_recorder->move(experimental_btn->x() - UI_BORDER_SIZE - btn_size, experimental_btn->y());
+  // Store base positions (layout-determined, before edit offset)
+  steering_wheel_base_pos_ = experimental_btn->pos();
+  recording_base_pos_ = QPoint(steering_wheel_base_pos_.x() - UI_BORDER_SIZE - btn_size, steering_wheel_base_pos_.y());
+
+  // Apply edit mode offsets to QWidget elements
+  if (edit_manager_) {
+    experimental_btn->move(
+      steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
+      steering_wheel_base_pos_.y() + edit_manager_->getOffsetY("steering_wheel"));
+    screen_recorder->move(
+      recording_base_pos_.x() + edit_manager_->getOffsetX("recording"),
+      recording_base_pos_.y() + edit_manager_->getOffsetY("recording"));
+  } else {
+    screen_recorder->move(recording_base_pos_);
+  }
 }
 
 void AnnotatedCameraWidget::updateState(const UIState &s, const FrogPilotUIState &fs) {
@@ -979,6 +993,13 @@ void AnnotatedCameraWidget::drawDriverState(QPainter &painter, const UIState *s,
 
   painter.save();
 
+  // Apply edit mode offset/scale for driver face
+  float df_ox = edit_manager_ ? edit_manager_->getOffsetX("driver_face") : 0.0f;
+  float df_oy = edit_manager_ ? edit_manager_->getOffsetY("driver_face") : 0.0f;
+  float df_sc = edit_manager_ ? edit_manager_->getScale("driver_face") : 1.0f;
+  painter.translate(df_ox, df_oy);
+  if (df_sc != 1.0f) painter.scale(df_sc, df_sc);
+
   // base icon
   int offset = UI_BORDER_SIZE + btn_size / 2;
   int x = rightHandDM ? width() - offset : offset;
@@ -1170,7 +1191,9 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     if (edit_manager_) {
       int dm_sz = img_size + 5;
       QPoint dm_pos = frogpilot_nvg->dmIconPosition;
-      edit_manager_->updateBounds("driver_face", QRect(dm_pos.x() - dm_sz / 2, dm_pos.y() - dm_sz / 2, dm_sz, dm_sz));
+      float df_ox = edit_manager_->getOffsetX("driver_face");
+      float df_oy = edit_manager_->getOffsetY("driver_face");
+      edit_manager_->updateBounds("driver_face", QRect(dm_pos.x() - dm_sz / 2 + df_ox, dm_pos.y() - dm_sz / 2 + df_oy, dm_sz, dm_sz));
     }
   } else if (edit_manager_) {
     edit_manager_->updateBounds("driver_face", QRect());
@@ -1208,6 +1231,20 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
         edit_manager_->toggleEditMode();
         params.put("UIEditPressTime", "0");
       }
+    }
+  }
+
+  // UI Edit Mode: Apply offsets to QWidget-based elements
+  if (edit_manager_) {
+    if (experimental_btn->isVisible() && steering_wheel_base_pos_.x() >= 0) {
+      experimental_btn->move(
+        steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
+        steering_wheel_base_pos_.y() + edit_manager_->getOffsetY("steering_wheel"));
+    }
+    if (screen_recorder->isVisible() && recording_base_pos_.x() >= 0) {
+      screen_recorder->move(
+        recording_base_pos_.x() + edit_manager_->getOffsetX("recording"),
+        recording_base_pos_.y() + edit_manager_->getOffsetY("recording"));
     }
   }
 
