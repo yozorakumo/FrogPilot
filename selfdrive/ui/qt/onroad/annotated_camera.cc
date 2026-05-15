@@ -1267,59 +1267,33 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     experimental_btn->setEnabled(!is_edit);
     screen_recorder->setEnabled(!is_edit);
 
-    // Apply scale via grab() + drawPixmap for QWidget elements
+    // Apply scale via setFixedSize for QWidget elements (grab()-free, Wayland/eglfs safe)
     float sw_scale = edit_manager_->getScale("steering_wheel");
     float rec_scale = edit_manager_->getScale("recording");
 
-    // Steering wheel
+    // Steering wheel - resize widget directly, no grab()
     bool sw_visible = sw_intended_visible_ && steering_wheel_base_pos_.x() >= 0;
-    if (sw_scale != 1.0f && sw_visible) {
-      experimental_btn->setFixedSize(btn_size, btn_size);
-      experimental_btn->show();
-      QPixmap sw_pix = experimental_btn->grab();
-      experimental_btn->hide();
-      if (!sw_pix.isNull()) {
-        QPoint sw_pos(
-          steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
-          steering_wheel_base_pos_.y() + edit_manager_->getOffsetY("steering_wheel"));
-        painter.drawPixmap(QRect(sw_pos, sw_pix.size() * sw_scale), sw_pix, sw_pix.rect());
-        edit_manager_->updateBounds("steering_wheel", QRect(sw_pos, QSize(btn_size, btn_size) * sw_scale));
-      }
-    } else {
-      experimental_btn->setFixedSize(btn_size, btn_size);
-      if (sw_visible) {
-        experimental_btn->move(
-          steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
-          steering_wheel_base_pos_.y() + edit_manager_->getOffsetY("steering_wheel"));
-      }
-      edit_manager_->updateBounds("steering_wheel",
-        sw_visible ? experimental_btn->geometry() : QRect());
+    int sw_size = qRound(btn_size * sw_scale);
+    experimental_btn->setFixedSize(sw_size, sw_size);
+    if (sw_visible) {
+      experimental_btn->move(
+        steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
+        steering_wheel_base_pos_.y() + edit_manager_->getOffsetY("steering_wheel"));
     }
+    edit_manager_->updateBounds("steering_wheel",
+      sw_visible ? experimental_btn->geometry() : QRect());
 
-    // Recording
+    // Recording - resize widget directly, no grab()
     bool rec_visible = rec_intended_visible_ && recording_base_pos_.x() >= 0;
-    if (rec_scale != 1.0f && rec_visible) {
-      screen_recorder->setFixedSize(btn_size, btn_size);
-      screen_recorder->show();
-      QPixmap rec_pix = screen_recorder->grab();
-      screen_recorder->hide();
-      if (!rec_pix.isNull()) {
-        QPoint rec_pos(
-          recording_base_pos_.x() + edit_manager_->getOffsetX("recording"),
-          recording_base_pos_.y() + edit_manager_->getOffsetY("recording"));
-        painter.drawPixmap(QRect(rec_pos, rec_pix.size() * rec_scale), rec_pix, rec_pix.rect());
-        edit_manager_->updateBounds("recording", QRect(rec_pos, QSize(btn_size, btn_size) * rec_scale));
-      }
-    } else {
-      screen_recorder->setFixedSize(btn_size, btn_size);
-      if (rec_visible) {
-        screen_recorder->move(
-          recording_base_pos_.x() + edit_manager_->getOffsetX("recording"),
-          recording_base_pos_.y() + edit_manager_->getOffsetY("recording"));
-      }
-      edit_manager_->updateBounds("recording",
-        rec_visible ? screen_recorder->geometry() : QRect());
+    int rec_size = qRound(btn_size * rec_scale);
+    screen_recorder->setFixedSize(rec_size, rec_size);
+    if (rec_visible) {
+      screen_recorder->move(
+        recording_base_pos_.x() + edit_manager_->getOffsetX("recording"),
+        recording_base_pos_.y() + edit_manager_->getOffsetY("recording"));
     }
+    edit_manager_->updateBounds("recording",
+      rec_visible ? screen_recorder->geometry() : QRect());
   }
 
   // UI Edit Mode: オーバーレイ描画（UIEditModeManagerに委譲）

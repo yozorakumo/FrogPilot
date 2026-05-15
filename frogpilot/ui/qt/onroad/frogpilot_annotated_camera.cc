@@ -434,7 +434,7 @@ void FrogPilotAnnotatedCameraWidget::paintCEMStatus(QPainter &p, const cereal::F
 void FrogPilotAnnotatedCameraWidget::paintCompass(QPainter &p, QJsonObject &frogpilot_toggles) {
   p.save();
 
-  compassPosition.rx() = rightHandDM ? UI_BORDER_SIZE + widget_size / 2 : width() - UI_BORDER_SIZE - btn_size;
+  compassPosition.rx() = rightHandDM ? UI_BORDER_SIZE + widget_size / 2 : parentWidget()->width() - UI_BORDER_SIZE - btn_size;
   if (mapButtonVisible) {
     if (rightHandDM) {
       compassPosition.rx() += btn_size - UI_BORDER_SIZE;
@@ -1200,7 +1200,7 @@ void FrogPilotAnnotatedCameraWidget::paintWeather(QPainter &p, const cereal::Fro
     weatherIconPosition = compassPosition;
     weatherIconPosition.rx() += (rightHandDM ? UI_BORDER_SIZE + widget_size + UI_BORDER_SIZE : -UI_BORDER_SIZE - widget_size - UI_BORDER_SIZE) / (frogpilot_scene.map_open ? 1.25 : 1);
   } else {
-    weatherIconPosition.rx() = rightHandDM ? UI_BORDER_SIZE + widget_size / 2 : width() - UI_BORDER_SIZE - btn_size;
+    weatherIconPosition.rx() = rightHandDM ? UI_BORDER_SIZE + widget_size / 2 : parentWidget()->width() - UI_BORDER_SIZE - btn_size;
     if (mapButtonVisible) {
       if (rightHandDM) {
         weatherIconPosition.rx() += btn_size - UI_BORDER_SIZE;
