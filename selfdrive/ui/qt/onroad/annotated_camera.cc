@@ -1272,28 +1272,37 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     float rec_scale = edit_manager_->getScale("recording");
 
     // Steering wheel - resize widget directly, no grab()
+    // Use scaled base_pos to match getEffectiveBounds() calculation:
+    //   getEffectiveBounds computes: base_x * scale + offset
+    //   Widget must be at: base_pos * scale + offset
     bool sw_visible = sw_intended_visible_ && steering_wheel_base_pos_.x() >= 0;
     int sw_size = qRound(btn_size * sw_scale);
+    float sw_ox = edit_manager_->getOffsetX("steering_wheel");
+    float sw_oy = edit_manager_->getOffsetY("steering_wheel");
     experimental_btn->setFixedSize(sw_size, sw_size);
     if (sw_visible) {
       experimental_btn->move(
-        steering_wheel_base_pos_.x() + edit_manager_->getOffsetX("steering_wheel"),
-        steering_wheel_base_pos_.y() + edit_manager_->getOffsetY("steering_wheel"));
+        qRound(steering_wheel_base_pos_.x() * sw_scale + sw_ox),
+        qRound(steering_wheel_base_pos_.y() * sw_scale + sw_oy));
     }
+    // Pass unscaled base_rect so getEffectiveBounds() can apply scale correctly
     edit_manager_->updateBounds("steering_wheel",
-      sw_visible ? experimental_btn->geometry() : QRect());
+      sw_visible ? QRect(steering_wheel_base_pos_.x() + sw_ox, steering_wheel_base_pos_.y() + sw_oy, btn_size, btn_size) : QRect());
 
     // Recording - resize widget directly, no grab()
     bool rec_visible = rec_intended_visible_ && recording_base_pos_.x() >= 0;
     int rec_size = qRound(btn_size * rec_scale);
+    float rec_ox = edit_manager_->getOffsetX("recording");
+    float rec_oy = edit_manager_->getOffsetY("recording");
     screen_recorder->setFixedSize(rec_size, rec_size);
     if (rec_visible) {
       screen_recorder->move(
-        recording_base_pos_.x() + edit_manager_->getOffsetX("recording"),
-        recording_base_pos_.y() + edit_manager_->getOffsetY("recording"));
+        qRound(recording_base_pos_.x() * rec_scale + rec_ox),
+        qRound(recording_base_pos_.y() * rec_scale + rec_oy));
     }
+    // Pass unscaled base_rect so getEffectiveBounds() can apply scale correctly
     edit_manager_->updateBounds("recording",
-      rec_visible ? screen_recorder->geometry() : QRect());
+      rec_visible ? QRect(recording_base_pos_.x() + rec_ox, recording_base_pos_.y() + rec_oy, btn_size, btn_size) : QRect());
   }
 
   // UI Edit Mode: オーバーレイ描画（UIEditModeManagerに委譲）

@@ -434,7 +434,11 @@ void FrogPilotAnnotatedCameraWidget::paintCEMStatus(QPainter &p, const cereal::F
 void FrogPilotAnnotatedCameraWidget::paintCompass(QPainter &p, QJsonObject &frogpilot_toggles) {
   p.save();
 
-  compassPosition.rx() = rightHandDM ? UI_BORDER_SIZE + widget_size / 2 : width() - UI_BORDER_SIZE - btn_size;
+  // Use parentWidget()->width() (= AnnotatedCameraWidget::width()) directly,
+  // which is always up-to-date after layout changes (sidebar toggle).
+  // frogpilot_nvg->width() depends on setGeometry(rect()) call timing and may be stale.
+  int w = parentWidget() ? parentWidget()->width() : width();
+  compassPosition.rx() = rightHandDM ? UI_BORDER_SIZE + widget_size / 2 : w - UI_BORDER_SIZE - btn_size;
   if (mapButtonVisible) {
     if (rightHandDM) {
       compassPosition.rx() += btn_size - UI_BORDER_SIZE;
