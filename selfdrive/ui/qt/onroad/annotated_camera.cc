@@ -1253,10 +1253,14 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     if (!press_time_str.empty() && press_time_str != "0") {
       qint64 press_time = QString::fromStdString(press_time_str).toLongLong();
       qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - press_time;
-      if (elapsed >= 2000) {
+      // Only trigger if elapsed is between 2-30 seconds.
+      // Upper bound prevents stale timestamps (e.g. from previous UI session
+      // or failed params.put due to full storage) from causing repeated toggles.
+      if (elapsed >= 2000 && elapsed < 30000) {
         edit_manager_->toggleEditMode();
-        params.put("UIEditPressTime", "0");
       }
+      // Always attempt to clear, even if we didn't toggle (prevents stale re-triggers)
+      params.put("UIEditPressTime", "0");
     }
   }
 
