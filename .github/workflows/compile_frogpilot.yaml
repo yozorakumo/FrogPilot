@@ -238,6 +238,12 @@ jobs:
           echo "=== Disk space after cleanup ==="
           df -h
 
+      - name: Pre-build params_pyx.so
+        run: |
+          cd /data/openpilot
+          source .venv/bin/activate
+          scons -j$(nproc) common/params_pyx.so
+
       - name: Build FrogPilot
         run: |
           # pyenv経由でインストールされたpoetryを絶対パスで実行
