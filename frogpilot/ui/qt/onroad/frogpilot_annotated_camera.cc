@@ -193,7 +193,10 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
     float compass_ox = edit_mode_manager_ ? edit_mode_manager_->getOffsetX("compass") : 0.0f;
     float compass_oy = edit_mode_manager_ ? edit_mode_manager_->getOffsetY("compass") : 0.0f;
     float compass_sc = edit_mode_manager_ ? edit_mode_manager_->getScale("compass") : 1.0f;
-    p.translate(compass_ox, compass_oy);
+    int compass_sidebar_offset = edit_mode_manager_ ? edit_mode_manager_->getSidebarOffsetX("compass",
+        frogpilot_scene.sidebar_visible, frogpilot_scene.developer_sidebar_visible,
+        parentWidget() ? parentWidget()->width() : width()) : 0;
+    p.translate(compass_ox + compass_sidebar_offset, compass_oy);
     if (compass_sc != 1.0f) p.scale(compass_sc, compass_sc);
     paintCompass(p, frogpilot_toggles);
     if (edit_mode_manager_) {
@@ -284,7 +287,10 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
       float gear_ox = edit_mode_manager_ ? edit_mode_manager_->getOffsetX("gear") : 0.0f;
       float gear_oy = edit_mode_manager_ ? edit_mode_manager_->getOffsetY("gear") : 0.0f;
       float gear_sc = edit_mode_manager_ ? edit_mode_manager_->getScale("gear") : 1.0f;
-      p.translate(gear_ox, gear_oy);
+      int gear_sidebar_offset = edit_mode_manager_ ? edit_mode_manager_->getSidebarOffsetX("gear",
+          frogpilot_scene.sidebar_visible, frogpilot_scene.developer_sidebar_visible,
+          parentWidget() ? parentWidget()->width() : width()) : 0;
+      p.translate(gear_ox + gear_sidebar_offset, gear_oy);
       if (gear_sc != 1.0f) p.scale(gear_sc, gear_sc);
       paintMTGear(p, carState, frogpilotCarState);
       if (edit_mode_manager_) {

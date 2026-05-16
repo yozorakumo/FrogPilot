@@ -24,6 +24,8 @@ struct FrogPilotUIScene {
   bool parked;
   bool reverse;
   bool sidebars_open;
+  bool sidebar_visible;
+  bool developer_sidebar_visible;
   bool standstill;
   bool traffic_mode_enabled;
   bool use_stock_colors;

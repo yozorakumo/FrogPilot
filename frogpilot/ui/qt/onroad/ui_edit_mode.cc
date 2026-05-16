@@ -87,6 +87,25 @@ void UIEditModeManager::updateBounds(const QString &name, const QRect &bounds) {
   }
 }
 
+int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int widget_width) const {
+  if (!sidebar_left && !sidebar_right) return 0;
+
+  QRect bounds = getEffectiveBounds(name);
+  if (bounds.isEmpty()) return 0;
+
+  int center_x = bounds.center().x();
+
+  if (center_x < widget_width / 2) {
+    // Element is in the left half
+    if (sidebar_left) return SIDEBAR_WIDTH;
+  } else {
+    // Element is in the right half
+    if (sidebar_right) return -SIDEBAR_WIDTH;
+  }
+
+  return 0;
+}
+
 bool UIEditModeManager::handleMousePress(const QPoint &pos) {
   press_pos_ = pos;
 

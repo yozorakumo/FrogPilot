@@ -43,6 +43,10 @@ public:
   // スケールを反映した有効な境界矩形を取得
   QRect getEffectiveBounds(const QString &name) const;
 
+  // サイドバー表示時のオフセットを計算
+  static constexpr int SIDEBAR_WIDTH = 300;
+  int getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int widget_width) const;
+
   // マウス/タッチイベント処理
   bool handleMousePress(const QPoint &pos);
   bool handleMouseMove(const QPoint &pos);
