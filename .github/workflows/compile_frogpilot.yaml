@@ -242,7 +242,9 @@ jobs:
         run: |
           cd /data/openpilot
           source .venv/bin/activate
-          scons -j$(nproc) common/params_pyx.so
+          scons -j$(nproc) --cache-disable common/params_pyx.so
+          cp -f common/params_pyx.so openpilot/common/params_pyx.so
+          python3 -c "from openpilot.common.params import Params; print('params_pyx.so OK')"
 
       - name: Build FrogPilot
         run: |
@@ -268,7 +270,7 @@ jobs:
 
           # Ensure we are in the correct directory for scons
           cd "$BUILD_DIR"
-          "$POETRY_BIN" run scons --random -j$(nproc)
+          "$POETRY_BIN" run scons -j$(nproc)
 
       - name: Take Ownership of Build Directory
         run: |
