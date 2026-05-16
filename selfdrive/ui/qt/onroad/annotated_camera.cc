@@ -188,12 +188,10 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::FrogPilotPlan::Re
   float max_speed_ox = edit_manager_ ? edit_manager_->getOffsetX("max_speed") : 0.0f;
   float max_speed_oy = edit_manager_ ? edit_manager_->getOffsetY("max_speed") : 0.0f;
   float max_speed_sc = edit_manager_ ? edit_manager_->getScale("max_speed") : 1.0f;
-  int max_speed_sidebar_offset = edit_manager_ ? edit_manager_->getSidebarOffsetX("max_speed",
-      fs.frogpilot_scene.sidebar_visible, fs.frogpilot_scene.developer_sidebar_visible, width()) : 0;
   QRect set_speed_rect(QPoint(60 + (default_size.width() - set_speed_size.width()) / 2, 45), set_speed_size);
 
   p.save();
-  p.translate(max_speed_ox + max_speed_sidebar_offset, max_speed_oy);
+  p.translate(max_speed_ox, max_speed_oy);
   if (max_speed_sc != 1.0f) p.scale(max_speed_sc, max_speed_sc);
 
   if (!frogpilot_toggles.value("hide_max_speed").toBool()) {
@@ -355,11 +353,8 @@ void AnnotatedCameraWidget::drawSpeedometerDefault(QPainter &p, const QString &s
   float ox = edit_manager_ ? edit_manager_->getOffsetX("speedometer") : 0.0f;
   float oy = edit_manager_ ? edit_manager_->getOffsetY("speedometer") : 0.0f;
   float sc = edit_manager_ ? edit_manager_->getScale("speedometer") : 1.0f;
-  FrogPilotUIState *fs_spd = frogpilotUIState();
-  int speedometer_sidebar_offset = edit_manager_ ? edit_manager_->getSidebarOffsetX("speedometer",
-      fs_spd->frogpilot_scene.sidebar_visible, fs_spd->frogpilot_scene.developer_sidebar_visible, width()) : 0;
   p.save();
-  p.translate(ox + speedometer_sidebar_offset, oy);
+  p.translate(ox, oy);
   if (sc != 1.0f) p.scale(sc, sc);
   p.setFont(InterFont(176, QFont::Bold));
   drawText(p, rect().center().x(), 210, speed_str);
@@ -376,10 +371,7 @@ void AnnotatedCameraWidget::drawSpeedometerF1LED(QPainter &p, const QString &spe
   float ox = edit_manager_ ? edit_manager_->getOffsetX("speedometer") : 0.0f;
   float oy = edit_manager_ ? edit_manager_->getOffsetY("speedometer") : 0.0f;
   float sc = edit_manager_ ? edit_manager_->getScale("speedometer") : 1.0f;
-  FrogPilotUIState *fs_spd = frogpilotUIState();
-  int speedometer_sidebar_offset = edit_manager_ ? edit_manager_->getSidebarOffsetX("speedometer",
-      fs_spd->frogpilot_scene.sidebar_visible, fs_spd->frogpilot_scene.developer_sidebar_visible, width()) : 0;
-  p.translate(ox + speedometer_sidebar_offset, oy);
+  p.translate(ox, oy);
   if (sc != 1.0f) p.scale(sc, sc);
 
   const float maxRPM = 8000.0f;
@@ -479,10 +471,7 @@ void AnnotatedCameraWidget::drawSpeedometerGT7(QPainter &p, const QString &speed
   float ox = edit_manager_ ? edit_manager_->getOffsetX("speedometer") : 0.0f;
   float oy = edit_manager_ ? edit_manager_->getOffsetY("speedometer") : 0.0f;
   float sc = edit_manager_ ? edit_manager_->getScale("speedometer") : 1.0f;
-  FrogPilotUIState *fs_spd = frogpilotUIState();
-  int speedometer_sidebar_offset = edit_manager_ ? edit_manager_->getSidebarOffsetX("speedometer",
-      fs_spd->frogpilot_scene.sidebar_visible, fs_spd->frogpilot_scene.developer_sidebar_visible, width()) : 0;
-  p.translate(ox + speedometer_sidebar_offset, oy);
+  p.translate(ox, oy);
   if (sc != 1.0f) p.scale(sc, sc);
 
   const float maxRPM = 8000.0f;
@@ -607,10 +596,7 @@ void AnnotatedCameraWidget::drawSpeedometerForza(QPainter &p, const QString &spe
   float ox = edit_manager_ ? edit_manager_->getOffsetX("speedometer") : 0.0f;
   float oy = edit_manager_ ? edit_manager_->getOffsetY("speedometer") : 0.0f;
   float sc = edit_manager_ ? edit_manager_->getScale("speedometer") : 1.0f;
-  FrogPilotUIState *fs_spd = frogpilotUIState();
-  int speedometer_sidebar_offset = edit_manager_ ? edit_manager_->getSidebarOffsetX("speedometer",
-      fs_spd->frogpilot_scene.sidebar_visible, fs_spd->frogpilot_scene.developer_sidebar_visible, width()) : 0;
-  p.translate(ox + speedometer_sidebar_offset, oy);
+  p.translate(ox, oy);
   if (sc != 1.0f) p.scale(sc, sc);
 
   const float maxRPM = 8000.0f;
@@ -689,10 +675,7 @@ void AnnotatedCameraWidget::drawSpeedometerNFS(QPainter &p, const QString &speed
   float ox = edit_manager_ ? edit_manager_->getOffsetX("speedometer") : 0.0f;
   float oy = edit_manager_ ? edit_manager_->getOffsetY("speedometer") : 0.0f;
   float sc = edit_manager_ ? edit_manager_->getScale("speedometer") : 1.0f;
-  FrogPilotUIState *fs_spd = frogpilotUIState();
-  int speedometer_sidebar_offset = edit_manager_ ? edit_manager_->getSidebarOffsetX("speedometer",
-      fs_spd->frogpilot_scene.sidebar_visible, fs_spd->frogpilot_scene.developer_sidebar_visible, width()) : 0;
-  p.translate(ox + speedometer_sidebar_offset, oy);
+  p.translate(ox, oy);
   if (sc != 1.0f) p.scale(sc, sc);
 
   const float maxRPM = 8000.0f;
@@ -794,10 +777,7 @@ void AnnotatedCameraWidget::drawSpeedometerSimHub(QPainter &p, const QString &sp
   float ox = edit_manager_ ? edit_manager_->getOffsetX("speedometer") : 0.0f;
   float oy = edit_manager_ ? edit_manager_->getOffsetY("speedometer") : 0.0f;
   float sc = edit_manager_ ? edit_manager_->getScale("speedometer") : 1.0f;
-  FrogPilotUIState *fs_spd = frogpilotUIState();
-  int speedometer_sidebar_offset = edit_manager_ ? edit_manager_->getSidebarOffsetX("speedometer",
-      fs_spd->frogpilot_scene.sidebar_visible, fs_spd->frogpilot_scene.developer_sidebar_visible, width()) : 0;
-  p.translate(ox + speedometer_sidebar_offset, oy);
+  p.translate(ox, oy);
   if (sc != 1.0f) p.scale(sc, sc);
 
   const float maxRPM = 8000.0f;
@@ -1041,9 +1021,7 @@ void AnnotatedCameraWidget::drawDriverState(QPainter &painter, const UIState *s,
   float df_ox = edit_manager_ ? edit_manager_->getOffsetX("driver_face") : 0.0f;
   float df_oy = edit_manager_ ? edit_manager_->getOffsetY("driver_face") : 0.0f;
   float df_sc = edit_manager_ ? edit_manager_->getScale("driver_face") : 1.0f;
-  int df_sidebar_offset = edit_manager_ ? edit_manager_->getSidebarOffsetX("driver_face",
-      frogpilotUIState()->frogpilot_scene.sidebar_visible, frogpilotUIState()->frogpilot_scene.developer_sidebar_visible, width()) : 0;
-  painter.translate(df_ox + df_sidebar_offset, df_oy);
+  painter.translate(df_ox, df_oy);
   if (df_sc != 1.0f) painter.scale(df_sc, df_sc);
 
   // base icon
@@ -1301,12 +1279,10 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     int sw_size = qRound(btn_size * sw_scale);
     float sw_ox = edit_manager_->getOffsetX("steering_wheel");
     float sw_oy = edit_manager_->getOffsetY("steering_wheel");
-    int sw_sidebar_offset = edit_manager_->getSidebarOffsetX("steering_wheel",
-        fs->frogpilot_scene.sidebar_visible, fs->frogpilot_scene.developer_sidebar_visible, width());
     experimental_btn->setFixedSize(sw_size, sw_size);
     if (sw_visible) {
       experimental_btn->move(
-        qRound(steering_wheel_base_pos_.x() * sw_scale + sw_ox + sw_sidebar_offset),
+        qRound(steering_wheel_base_pos_.x() * sw_scale + sw_ox),
         qRound(steering_wheel_base_pos_.y() * sw_scale + sw_oy));
     }
     // Pass unscaled base_rect so getEffectiveBounds() can apply scale correctly
@@ -1318,12 +1294,10 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     int rec_size = qRound(btn_size * rec_scale);
     float rec_ox = edit_manager_->getOffsetX("recording");
     float rec_oy = edit_manager_->getOffsetY("recording");
-    int rec_sidebar_offset = edit_manager_->getSidebarOffsetX("recording",
-        fs->frogpilot_scene.sidebar_visible, fs->frogpilot_scene.developer_sidebar_visible, width());
     screen_recorder->setFixedSize(rec_size, rec_size);
     if (rec_visible) {
       screen_recorder->move(
-        qRound(recording_base_pos_.x() * rec_scale + rec_ox + rec_sidebar_offset),
+        qRound(recording_base_pos_.x() * rec_scale + rec_ox),
         qRound(recording_base_pos_.y() * rec_scale + rec_oy));
     }
     // Pass unscaled base_rect so getEffectiveBounds() can apply scale correctly
