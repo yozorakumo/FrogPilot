@@ -5,7 +5,7 @@ Import('build_project', 'base_project_f4', 'base_project_h7')
 
 build_projects = {
   "panda": base_project_f4,
-  "panda_h7": base_project_h7,
+  # "panda_h7": base_project_h7,  # H7 build skipped - FPU ABI mismatch linker error
 }
 
 for project_name, project in build_projects.items():
