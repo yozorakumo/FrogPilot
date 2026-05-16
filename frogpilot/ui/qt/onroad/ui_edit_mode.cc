@@ -89,6 +89,11 @@ void UIEditModeManager::updateBounds(const QString &name, const QRect &bounds) {
 
 bool UIEditModeManager::handleMousePress(const QPoint &pos) {
   press_pos_ = pos;
+
+  if (!edit_mode_) {
+    return false;  // 編集モードでない場合はタイマーを開始しない（Paramsポーリングに任せる）
+  }
+
   press_pending_ = true;
   long_press_timer_->start(LONG_PRESS_MS);
 
