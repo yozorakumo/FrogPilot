@@ -90,17 +90,23 @@ void UIEditModeManager::updateBounds(const QString &name, const QRect &bounds) {
 int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int widget_width) const {
   if (!sidebar_left && !sidebar_right) return 0;
 
+  // 要素が見つからない場合はオフセットなし
+  auto it = elements_.find(name);
+  if (it == elements_.end()) return 0;
+
   QRect bounds = getEffectiveBounds(name);
   if (bounds.isEmpty()) return 0;
 
   int center_x = bounds.center().x();
+  int half_width = widget_width / 2;
 
-  if (center_x < widget_width / 2) {
-    // Element is in the left half
-    if (sidebar_left) return SIDEBAR_WIDTH;
-  } else {
-    // Element is in the right half
-    if (sidebar_right) return -SIDEBAR_WIDTH;
+  // 左半分にある要素 → 左サイドバー表示時に右にオフセット
+  if (center_x < half_width && sidebar_left) {
+    return SIDEBAR_WIDTH;
+  }
+  // 右半分にある要素 → 右開発者サイドバー表示時に左にオフセット
+  if (center_x >= half_width && sidebar_right) {
+    return -SIDEBAR_WIDTH;
   }
 
   return 0;
