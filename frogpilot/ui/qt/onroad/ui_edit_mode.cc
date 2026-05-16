@@ -94,18 +94,19 @@ int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left,
   auto it = elements_.find(name);
   if (it == elements_.end()) return 0;
 
-  QRect bounds = getEffectiveBounds(name);
-  if (bounds.isEmpty()) return 0;
+  if (it->bounds.isEmpty()) return 0;
 
-  int center_x = bounds.center().x();
+  // デフォルト位置（ユーザーオフセットなし）で左右判定する
+  // bounds = default_pos + user_offset, so default_center = bounds.center - offset
+  int default_center_x = qRound(it->bounds.center().x() - it->offset_x);
   int half_width = widget_width / 2;
 
   // 左半分にある要素 → 左サイドバー表示時に右にオフセット
-  if (center_x < half_width && sidebar_left) {
+  if (default_center_x < half_width && sidebar_left) {
     return SIDEBAR_WIDTH;
   }
   // 右半分にある要素 → 右開発者サイドバー表示時に左にオフセット
-  if (center_x >= half_width && sidebar_right) {
+  if (default_center_x >= half_width && sidebar_right) {
     return -SIDEBAR_WIDTH;
   }
 
