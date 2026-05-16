@@ -243,7 +243,6 @@ jobs:
           cd /data/openpilot
           source .venv/bin/activate
           scons -j$(nproc) --cache-disable common/params_pyx.so
-          cp -f common/params_pyx.so openpilot/common/params_pyx.so
           python3 -c "from openpilot.common.params import Params; print('params_pyx.so OK')"
 
       - name: Build FrogPilot
