@@ -1258,9 +1258,11 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
       // or failed params.put due to full storage) from causing repeated toggles.
       if (elapsed >= 2000 && elapsed < 30000) {
         edit_manager_->toggleEditMode();
+        params.put("UIEditPressTime", "0");  // Clear after toggle
+      } else if (elapsed >= 30000) {
+        params.put("UIEditPressTime", "0");  // Clear stale timestamps
       }
-      // Always attempt to clear, even if we didn't toggle (prevents stale re-triggers)
-      params.put("UIEditPressTime", "0");
+      // elapsed < 2000: don't clear (waiting for long press to complete)
     }
   }
 
