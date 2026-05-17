@@ -315,7 +315,21 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
       frogpilot_toggles.value("mazda_brake_ui").toBool() ||
       frogpilot_toggles.value("mazda_pb_ui").toBool() ||
       frogpilot_toggles.value("mazda_clutch_ui").toBool()) {
+    p.save();
+    float bpc_ox = edit_mode_manager_ ? edit_mode_manager_->getOffsetX("brake_pb_clutch") : 0.0f;
+    float bpc_oy = edit_mode_manager_ ? edit_mode_manager_->getOffsetY("brake_pb_clutch") : 0.0f;
+    float bpc_sc = edit_mode_manager_ ? edit_mode_manager_->getScale("brake_pb_clutch") : 1.0f;
+    int bpc_sidebar = 0;
+    if (edit_mode_manager_) {
+      bpc_sidebar = edit_mode_manager_->getSidebarOffsetX("brake_pb_clutch", frogpilot_scene.sidebar_visible, frogpilot_scene.developer_sidebar_visible, width());
+    }
+    p.translate(bpc_ox + bpc_sidebar, bpc_oy);
+    if (bpc_sc != 1.0f) p.scale(bpc_sc, bpc_sc);
     paintBrakePBClutchStatus(p, carState, frogpilot_toggles);
+    if (edit_mode_manager_) {
+      edit_mode_manager_->updateBounds("brake_pb_clutch", QRect(width() / 2 - 120, 560, 260, 60).translated(bpc_ox, bpc_oy));
+    }
+    p.restore();
   }
 }
 

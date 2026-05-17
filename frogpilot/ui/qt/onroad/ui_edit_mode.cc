@@ -27,6 +27,7 @@ UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
   elements_["max_speed"] = UIElementConfig{"Max Speed"};
   elements_["compass"] = UIElementConfig{"Compass"};
   elements_["gear"] = UIElementConfig{"Gear"};
+  elements_["brake_pb_clutch"] = UIElementConfig{"Brake/PB/Clutch"};
   elements_["steering_wheel"] = UIElementConfig{"Steering Wheel"};
   elements_["recording"] = UIElementConfig{"Recording"};
   elements_["driver_face"] = UIElementConfig{"Driver Face"};
