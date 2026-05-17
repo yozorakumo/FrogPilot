@@ -87,7 +87,7 @@ void UIEditModeManager::updateBounds(const QString &name, const QRect &bounds) {
   }
 }
 
-int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int widget_width) const {
+int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int screen_width) const {
   if (!sidebar_left && !sidebar_right) return 0;
 
   // 要素が見つからない場合はオフセットなし
@@ -96,18 +96,30 @@ int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left,
 
   if (it->bounds.isEmpty()) return 0;
 
-  // デフォルト位置（ユーザーオフセットなし）で左右判定する
-  // bounds = default_pos + user_offset, so default_center = bounds.center - offset
-  int default_center_x = qRound(it->bounds.center().x() - it->offset_x);
-  int half_width = widget_width / 2;
+  // デフォルト位置（ユーザーオフセットなし）を計算
+  // bounds = default_pos + user_offset, so default_bounds = bounds - offset
+  QRect default_bounds = it->bounds.translated(-qRound(it->offset_x), -qRound(it->offset_y));
 
-  // 左半分にある要素 → 左サイドバー表示時に右にオフセット
-  if (default_center_x < half_width && sidebar_left) {
-    return SIDEBAR_WIDTH;
+  // 映像表示領域（サイドバー除く）
+  int video_left = sidebar_left ? SIDEBAR_WIDTH : 0;
+  int video_right = sidebar_right ? (screen_width - SIDEBAR_WIDTH) : screen_width;
+  int video_center = (video_left + video_right) / 2;
+
+  int widget_center_x = default_bounds.center().x();
+
+  // 左サイドバー表示時: デフォルト位置が映像領域の左半分にあり、かつ左サイドバーと重なる場合
+  if (sidebar_left && widget_center_x < video_center) {
+    if (default_bounds.left() < SIDEBAR_WIDTH) {
+      return SIDEBAR_WIDTH;  // 右にオフセット
+    }
   }
-  // 右半分にある要素 → 右開発者サイドバー表示時に左にオフセット
-  if (default_center_x >= half_width && sidebar_right) {
-    return -SIDEBAR_WIDTH;
+
+  // 右開発者サイドバー表示時: デフォルト位置が映像領域の右半分にあり、かつ右サイドバーと重なる場合
+  if (sidebar_right && widget_center_x >= video_center) {
+    int right_sidebar_left = screen_width - SIDEBAR_WIDTH;
+    if (default_bounds.right() > right_sidebar_left) {
+      return -SIDEBAR_WIDTH;  // 左にオフセット
+    }
   }
 
   return 0;
