@@ -269,7 +269,7 @@ jobs:
 
           # Ensure we are in the correct directory for scons
           cd "$BUILD_DIR"
-          "$POETRY_BIN" run scons -j$(nproc)
+          "$POETRY_BIN" run scons -j$(nproc) --cache-disable
 
       - name: Take Ownership of Build Directory
         run: |
