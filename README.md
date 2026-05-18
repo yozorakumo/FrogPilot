@@ -520,3 +520,48 @@ git checkout test-mazda2-dj-mt-frog-built
 - CIランナーは常に `test-mazda2-dj-mt-frog` をcheckoutしておく必要があります（`get_branch` がローカルブランチ名を取得するため）
 - ビルド完了後、C3デバイスで実行する時だけ `test-mazda2-dj-mt-frog-built` に切り替えます
 - ソースとバイナリを分離することで、`git pull --rebase` 時のコンフリクトや `Unpacking objects` の問題を回避しています
+
+---
+
+## ログ記録メカニズム
+
+### fingerprint認識とログ記録
+
+fingerprintが認識されている場合でも未認識の場合でも、ログ記録の仕組みは同じです。イグニッションONで `loggerd` と `encoderd` が自動起動し、以下のデータが記録されます：
+
+| データ | サービス名 | 内容 |
+|--------|-----------|------|
+| CANデータ | `can` | バス上の全CANメッセージ（100Hz） |
+| CAN送信 | `sendcan` | openpilotから送信したCAN |
+| カメラ映像 | `fcamera.hevc` | 道路カメラ（20fps） |
+| ドライバー映像 | `dcamera.hevc` | ドライバーカメラ |
+| センサー | `gyroscope`, `accelerometer` | IMUデータ |
+| GPS | `gpsNMEA`, `gpsLocation` | 位置情報 |
+| 車両状態 | `carState` | 速度、ハンドル等（100Hz） |
+| 制御状態 | `controlsState` | openpilotの制御状態 |
+
+### ログが記録されない条件
+
+以下のいずれかの場合、ログ記録プロセス（loggerd, encoderd等）が停止します：
+
+1. **「Disable Logging」がON** → FrogPilot設定 → Device Management で確認
+2. **「Force Onroad」が有効** → 強制オンロード時は `no_logging = True` になる
+3. **`DisableLogging` パラメータが設定**（notCar/bodyボットのみ）
+
+### 3つの「録画」の違い
+
+| 機能 | 対象 | トリガー | フォーマット |
+|------|------|---------|-------------|
+| **loggerd** | CAN/rlog/全センサーデータ | イグニッションONで自動 | capnproto + bzip2 |
+| **encoderd** | カメラ映像（道路/広角/ドライバー） | イグニッションONで自動 | H.265/H.264 |
+| **ScreenRecorder** | UI画面の動画 | 手動でボタン押下 | H.264（OMX） |
+
+### デバッグモード
+
+デバッグモードはUI表示の開発者メトリクス（FPS、メモリ使用量、CPU/GPU使用率等）を強制表示する機能です。rlogやCANのログ記録量には影響しません。画面録画ボタンが自動表示されるようになります。
+
+### CANデータ等を確実に記録する手順
+
+1. FrogPilot設定 → Device Management → **「Disable Logging」をOFF**にする
+2. **「Force Onroad」を使用しない**（使用中は `no_logging = True` になる）
+3. イグニッションON → 自動的に全データが記録される
