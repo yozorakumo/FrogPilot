@@ -1285,27 +1285,12 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
     frogpilot_nvg->paintFrogPilotWidgets(painter, *s, *fs, sm, fpsm, frogpilot_toggles);
   }
 
-  // UI Edit Mode: Long press detection via Params polling (Wayland-safe)
-  if (edit_manager_) {
-    Params params;
-    std::string press_time_str = params.get("UIEditPressTime");
-    if (!press_time_str.empty() && press_time_str != "0") {
-      qint64 press_time = QString::fromStdString(press_time_str).toLongLong();
-      qint64 elapsed = QDateTime::currentMSecsSinceEpoch() - press_time;
-      // Only trigger if elapsed is between 2-30 seconds.
-      // Upper bound prevents stale timestamps (e.g. from previous UI session
-      // or failed params.put due to full storage) from causing repeated toggles.
-      if (elapsed >= 2000 && elapsed < 30000) {
-        edit_manager_->toggleEditMode();
-        params.put("UIEditPressTime", "0");  // Clear after toggle
-      } else if (elapsed >= 30000) {
-        params.put("UIEditPressTime", "0");  // Clear stale timestamps
-      }
-      // elapsed < 2000: don't clear (waiting for long press to complete)
-    }
-  }
-
   // UI Edit Mode: Apply offsets, scale, and state to QWidget-based elements
+  // NOTE: Long press detection is handled entirely by UIEditModeManager's
+  // internal QTimer (started in handleMousePress/touchEvent), not by Params polling.
+  // Previous Params-based polling caused:
+  // 1. UI crashes due to filesystem I/O every frame (~20Hz) blocking the UI thread
+  // 2. Edit mode toggle race condition (timer + polling both toggling)
   if (edit_manager_) {
     // Fix 1: Make buttons transparent to mouse events during edit mode
     bool is_edit = edit_manager_->isEditMode();
