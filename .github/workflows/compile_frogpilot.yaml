@@ -242,7 +242,7 @@ jobs:
         run: |
           echo "=== Memory before swap ==="
           free -h
-          sudo fallocate -l 8G /data/swapfile
+          sudo fallocate -l 4G /data/swapfile
           sudo chmod 600 /data/swapfile
           sudo mkswap /data/swapfile
           sudo swapon /data/swapfile
