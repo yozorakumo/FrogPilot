@@ -20,7 +20,7 @@ UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
         selected_element_.clear();
       }
       // 親ウィジェットに明示的な再描画を要求
-      if (auto *w = qobject_cast<QWidget *>(parent())) {
+      if (auto *w = qobject_cast<QWidget *>(this->parent())) {
         w->update();
       }
     }
