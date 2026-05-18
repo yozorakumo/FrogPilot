@@ -592,7 +592,7 @@ class FrogPilotVariables:
     small_distance_conversion = 1 if toggle.is_metric else CV.INCH_TO_CM
     speed_conversion = CV.KPH_TO_MS if toggle.is_metric else CV.MPH_TO_MS
 
-    msg_bytes = params.get("CarParams" if started else "CarParamsPersistent", block=started)
+    msg_bytes = params.get("CarParams" if started else "CarParamsPersistent", block=started and not toggle.force_onroad)
     if msg_bytes:
       with car.CarParams.from_bytes(msg_bytes) as cp_reader:
         CP = cp_reader.as_builder()
@@ -609,7 +609,7 @@ class FrogPilotVariables:
     if not is_torque_car:
       CarInterfaceBase.configure_torque_tune(MOCK.MOCK, CP.lateralTuning)
 
-    fpmsg_bytes = params.get("FrogPilotCarParams" if started else "FrogPilotCarParamsPersistent", block=started)
+    fpmsg_bytes = params.get("FrogPilotCarParams" if started else "FrogPilotCarParamsPersistent", block=started and not toggle.force_onroad)
     if fpmsg_bytes:
       with custom.FrogPilotCarParams.from_bytes(fpmsg_bytes) as fpcp_reader:
         FPCP = fpcp_reader.as_builder()
