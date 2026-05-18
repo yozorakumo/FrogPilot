@@ -127,6 +127,11 @@ int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left,
 }
 
 bool UIEditModeManager::handleMousePress(const QPoint &pos) {
+  // Already tracking a long press (e.g., from touch event), skip duplicate mouse event
+  if (press_pending_) {
+    return false;
+  }
+
   press_pos_ = pos;
 
   // 編集モードに関わらず長押しタイマーを開始

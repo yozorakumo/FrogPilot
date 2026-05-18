@@ -79,7 +79,7 @@ private:
   QPoint press_pos_;
   bool press_pending_ = false;
   static constexpr int LONG_PRESS_MS = 2000;
-  static constexpr int MOVE_THRESHOLD = 20;
+  static constexpr int MOVE_THRESHOLD = 50;
 
   // ピンチズーム状態
   float pinch_start_scale_ = 1.0f;
