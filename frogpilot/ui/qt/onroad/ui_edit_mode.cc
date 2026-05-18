@@ -129,10 +129,8 @@ int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left,
 bool UIEditModeManager::handleMousePress(const QPoint &pos) {
   press_pos_ = pos;
 
-  if (!edit_mode_) {
-    return false;  // 編集モードでない場合はタイマーを開始しない（Paramsポーリングに任せる）
-  }
-
+  // 編集モードに関わらず長押しタイマーを開始
+  // （Paramsポーリングだけではプラットフォーム依存で信頼性不足のため）
   press_pending_ = true;
   long_press_timer_->start(LONG_PRESS_MS);
 

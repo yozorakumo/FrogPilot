@@ -1391,9 +1391,10 @@ void AnnotatedCameraWidget::mouseDoubleClickEvent(QMouseEvent *event) {
 }
 
 void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
-  if (edit_manager_ && edit_manager_->isEditMode()) {
+  if (edit_manager_) {
     QList<QTouchEvent::TouchPoint> points = event->touchPoints();
-    if (points.size() == 2) {
+
+    if (edit_manager_->isEditMode() && points.size() == 2) {
       // ピンチズーム: 2点間の距離変化を計算
       QTouchEvent::TouchPoint p1 = points[0];
       QTouchEvent::TouchPoint p2 = points[1];
@@ -1409,8 +1410,33 @@ void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
       }
       last_pinch_distance_ = distance;
       event->accept();
+    } else if (points.size() >= 1) {
+      // シングルタッチ - 長押し検出用にedit_managerに転送
+      // （WA_AcceptTouchEvents環境では合成マウスイベントが生成されない場合があるため）
+      QTouchEvent::TouchPoint p = points[0];
+      bool handled = false;
+      switch (p.state()) {
+        case Qt::TouchPointPressed:
+          handled = edit_manager_->handleMousePress(p.pos().toPoint());
+          break;
+        case Qt::TouchPointMoved:
+          handled = edit_manager_->handleMouseMove(p.pos().toPoint());
+          break;
+        case Qt::TouchPointReleased:
+          handled = edit_manager_->handleMouseRelease();
+          break;
+        default:
+          break;
+      }
+      last_pinch_distance_ = 0.0f;
+      if (handled) {
+        event->accept();
+      } else {
+        event->ignore();
+      }
     } else {
       last_pinch_distance_ = 0.0f;
+      event->ignore();
     }
   } else {
     last_pinch_distance_ = 0.0f;
