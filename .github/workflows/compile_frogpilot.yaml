@@ -238,17 +238,6 @@ jobs:
           echo "=== Disk space after cleanup ==="
           df -h
 
-      - name: Allocate swap space
-        run: |
-          echo "=== Memory before swap ==="
-          free -h
-          sudo fallocate -l 4G /data/swapfile
-          sudo chmod 600 /data/swapfile
-          sudo mkswap /data/swapfile
-          sudo swapon /data/swapfile
-          echo "=== Memory after swap ==="
-          free -h
-
       - name: Pre-build params_pyx.so
         run: |
           cd /data/openpilot
