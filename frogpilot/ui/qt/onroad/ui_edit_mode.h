@@ -44,10 +44,8 @@ public:
   QRect getEffectiveBounds(const QString &name) const;
 
   // サイドバー表示時のオフセットを計算
-  // ウィジェットのデフォルト位置がサイドバーと重なる場合のみオフセットする
-  // screen_width: 画面全体の幅（サイドバー含む）
   static constexpr int SIDEBAR_WIDTH = 300;
-  int getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int screen_width) const;
+  int getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int widget_width) const;
 
   // マウス/タッチイベント処理
   bool handleMousePress(const QPoint &pos);
@@ -79,7 +77,7 @@ private:
   QPoint press_pos_;
   bool press_pending_ = false;
   static constexpr int LONG_PRESS_MS = 2000;
-  static constexpr int MOVE_THRESHOLD = 50;
+  static constexpr int MOVE_THRESHOLD = 20;
 
   // ピンチズーム状態
   float pinch_start_scale_ = 1.0f;
