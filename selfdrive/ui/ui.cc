@@ -266,8 +266,8 @@ static void update_state(UIState *s, FrogPilotUIState *fs) {
   if (scene.started) {
     fs->frogpilot_scene.started_timer += 1;
   }
-  scene.started |= fs->frogpilot_toggles.value("force_onroad").toBool();
-  scene.started &= !fs->frogpilot_toggles.value("force_offroad").toBool();
+  scene.started |= fs->params_memory.getBool("ForceOnroad");
+  scene.started &= !fs->params_memory.getBool("ForceOffroad");
 
   scene.world_objects_visible = scene.world_objects_visible ||
                                 (scene.started &&
