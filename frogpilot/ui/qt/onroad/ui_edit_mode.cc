@@ -17,13 +17,9 @@ UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
       press_pending_ = false;
       if (!edit_mode_) {
         saveSettings();  // 編集モード終了時に保存
-        selected_element_.clear();
+          selected_element_.clear();
+        }
       }
-      // 親ウィジェットに明示的な再描画を要求
-      if (auto *w = qobject_cast<QWidget *>(this->parent())) {
-        w->update();
-      }
-    }
   });
 
   // デフォルト要素を登録
