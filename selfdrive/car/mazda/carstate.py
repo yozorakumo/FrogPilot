@@ -82,18 +82,18 @@ class CarState(CarStateBase):
       gear_pos = cp.vl["PEDALS"]["GEAR_POS"]
       GEAR_VALUES = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1}
 
+      # Direct clutch pedal signal from CLUTCH_SWITCH (0x366)
+      ret.clutchPressed = cp.vl["CLUTCH_SWITCH"]["CLUTCH_PEDAL"] == 1
+
       if new_msg28_gear == 6:  # Reverse
         ret.gearShifter = car.CarState.GearShifter.reverse
         fp_ret.gearStep = 15  # R
-        ret.clutchPressed = False
       elif new_msg28_gear in [4, 5]:  # Forward
         ret.gearShifter = car.CarState.GearShifter.drive
         fp_ret.gearStep = GEAR_VALUES.get(gear_pos, 0)
-        ret.clutchPressed = gear_pos not in GEAR_VALUES
       else:  # Neutral
         ret.gearShifter = car.CarState.GearShifter.neutral
         fp_ret.gearStep = 0  # N
-        ret.clutchPressed = True
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
       ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
@@ -240,6 +240,7 @@ class CarState(CarStateBase):
       messages += [
         ("NEW_MSG_28", 50),
         ("MSG_11", 10),
+        ("CLUTCH_SWITCH", 50),
       ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)

@@ -57,6 +57,9 @@ BO_ 357 PEDALS: 8 XXX
  SG_ NO_BRAKE_2 : 15|1@0+ (1,0) [0|7] "" XXX
  SG_ GEAR_POS : 55|8@0+ (1,0) [0|255] "" XXX
 
+BO_ 870 CLUTCH_SWITCH: 8 XXX
+ SG_ CLUTCH_PEDAL : 12|1@0+ (1,0) [0|1] "" XXX
+
 BO_ 358 NEW_MSG_28: 8 XXX
  SG_ GEAR_POS : 23|4@0+ (1,0) [0|15] "" XXX
 
@@ -305,6 +308,7 @@ CM_ SG_ 540 DISTANCE_SETTING "Radar distance 0: disabled, 1: 4 bars, 2: 3 bars, 
 CM_ SG_ 1143 REAR_CT_ALERT "Rear Cross Traffic Alert";
 CM_ SG_ 579 STEERING_ANGLE "steering angle aligns with 0.022 factor and -45.06 offset";
 
+VAL_ 870 CLUTCH_PEDAL 0 "RELEASED" 1 "PRESSED" ;
 VAL_ 357 GEAR_POS 2 "6th" 3 "5th" 4 "4th" 5 "3rd" 7 "2nd" 13 "1st" 14 "Neutral/Clutch" ;
 VAL_ 159 PARKING_BRAKE 0 "OFF" 1 "ON" ;
 VAL_ 358 GEAR_POS 4 "Forward" 5 "Forward" 6 "Reverse" ;
@@ -323,4 +327,5 @@ CM_ SG_ 540 NEW_SIGNAL_7 "Added for longitudinal control support (PR commaai/ope
 CM_ SG_ 540 NEW_SIGNAL_8 "Added for longitudinal control support (PR commaai/opendbc#3355)";
 CM_ SG_ 540 NEW_SIGNAL_5 "Added for longitudinal control support (PR commaai/opendbc#3355)";
 CM_ SG_ 540 LC_NEW_SIGNAL_6 "Added for longitudinal control support (PR commaai/opendbc#3355). Renamed from NEW_SIGNAL_6 to avoid conflict with existing signal at bit 10.";
-CM_ SG_ 357 GEAR_POS "Removed signals: CLUTCH_PRESSED (byte5 bit3, always 0), GEAR (AT-only signal). Removed BO_ 158 (ID_9E): CLUTCH_ALT and NEUTRAL_SW (both always 0). Clutch/neutral detection uses GEAR_POS values instead.";
+CM_ SG_ 357 GEAR_POS "Removed signals: CLUTCH_PRESSED (byte5 bit3, always 0), GEAR (AT-only signal). Removed BO_ 158 (ID_9E): CLUTCH_ALT and NEUTRAL_SW (both always 0). Clutch/neutral detection now uses CLUTCH_SWITCH (0x366) CLUTCH_PEDAL signal instead of GEAR_POS values.";
+CM_ SG_ 870 CLUTCH_PEDAL "Direct clutch pedal position switch. 1=pedal pressed, 0=pedal released. Identified from rlog analysis of Mazda 2 DJ MT. Signal at byte1 bit4 (bit position 12 in Intel format).";
