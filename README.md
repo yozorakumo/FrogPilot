@@ -221,6 +221,151 @@ Mazda のストック ACC（MRCC）は **レーダーECU が縦方向を制御**
 
 - comma デバイスで CAN ダンプを取得し、PROGRAMMING モード中にレーダートラックデータ（`0x361`〜`0x366`）が流れているか検証
 - もし流れていれば、`RadarInterface` を実装してビジョン + レーダーの融合が可能になる（upstream PR #3355 の "Future Work" にも記載）
+- 
+
+## CI/CD ワークフロー
+
+### ブランチ構成
+
+| ブランチ | 内容 | 用途 |
+|---|---|---|
+| `test-mazda2-dj-mt-frog` | **ソースコード** | 開発者がpushする先 |
+| `test-mazda2-dj-mt-frog-built` | **コンパイル済みバイナリ** | C3デバイスで実行する用 |
+
+### ビルドフロー
+
+1. 開発者が `test-mazda2-dj-mt-frog` にpush
+2. C3デバイスのCIランナー（self-hosted）が自動的にビルドを実行
+3. ビルド成果物を `test-mazda2-dj-mt-frog-built` にforce push
+
+### C3デバイスでビルド済みバイナリを使用する
+
+CIビルド完了後、以下のコマンドでビルド済みバイナリを取得:
+
+```bash
+cd /data/openpilot
+git fetch origin test-mazda2-dj-mt-frog-built
+git checkout test-mazda2-dj-mt-frog-built
+# openpilotを再起動
+```
+
+### 注意事項
+
+- CIランナーは常に `test-mazda2-dj-mt-frog` をcheckoutしておく必要があります（`get_branch` がローカルブランチ名を取得するため）
+- ビルド完了後、C3デバイスで実行する時だけ `test-mazda2-dj-mt-frog-built` に切り替えます
+- ソースとバイナリを分離することで、`git pull --rebase` 時のコンフリクトや `Unpacking objects` の問題を回避しています
+
+---
+
+## ログ記録メカニズム
+
+### fingerprint認識とログ記録
+
+fingerprintが認識されている場合でも未認識の場合でも、ログ記録の仕組みは同じです。イグニッションONで `loggerd` と `encoderd` が自動起動し、以下のデータが記録されます：
+
+| データ | サービス名 | 内容 |
+|--------|-----------|------|
+| CANデータ | `can` | バス上の全CANメッセージ（100Hz） |
+| CAN送信 | `sendcan` | openpilotから送信したCAN |
+| カメラ映像 | `fcamera.hevc` | 道路カメラ（20fps） |
+| ドライバー映像 | `dcamera.hevc` | ドライバーカメラ |
+| センサー | `gyroscope`, `accelerometer` | IMUデータ |
+| GPS | `gpsNMEA`, `gpsLocation` | 位置情報 |
+| 車両状態 | `carState` | 速度、ハンドル等（100Hz） |
+| 制御状態 | `controlsState` | openpilotの制御状態 |
+
+### ログが記録されない条件
+
+以下のいずれかの場合、ログ記録プロセス（loggerd, encoderd等）が停止します：
+
+1. **「Disable Logging」がON** → FrogPilot設定 → Device Management で確認
+2. **「Force Onroad」が有効** → 強制オンロード時は `no_logging = True` になる
+3. **`DisableLogging` パラメータが設定**（notCar/bodyボットのみ）
+
+### 3つの「録画」の違い
+
+| 機能 | 対象 | トリガー | フォーマット |
+|------|------|---------|-------------|
+| **loggerd** | CAN/rlog/全センサーデータ | イグニッションONで自動 | capnproto + bzip2 |
+| **encoderd** | カメラ映像（道路/広角/ドライバー） | イグニッションONで自動 | H.265/H.264 |
+| **ScreenRecorder** | UI画面の動画 | 手動でボタン押下 | H.264（OMX） |
+
+### デバッグモード
+
+デバッグモードはUI表示の開発者メトリクス（FPS、メモリ使用量、CPU/GPU使用率等）を強制表示する機能です。rlogやCANのログ記録量には影響しません。画面録画ボタンが自動表示されるようになります。
+
+### CANデータ等を確実に記録する手順
+
+1. FrogPilot設定 → Device Management → **「Disable Logging」をOFF**にする
+2. **「Force Onroad」を使用しない**（使用中は `no_logging = True` になる）
+3. イグニッションON → 自動的に全データが記録される
+
+### ログの保存先ディレクトリ
+
+| 環境 | パス |
+|------|------|
+| **デバイス（comma 3X等）** | `/data/media/0/realdata/` |
+| **HD設定あり** | `/data/media/0/realdata_HD/` |
+| **PC（開発環境）** | `$HOME/.comma/media/0/realdata` |
+
+#### セグメントディレクトリ構造
+
+1セグメント = 60秒で自動的にローテーションされます。
+
+```
+/data/media/0/realdata/
+└── 000001a3--c20ba54385/     ← 1回の走行（ルートディレクトリ）
+    ├── --0/                  ← セグメント0（0〜60秒）
+    │   ├── rlog              ← 全メッセージ（CAN、CarState、GPS等、capnproto形式）
+    │   ├── qlog              ← rlogのサブセット（クイックアクセス用）
+    │   ├── fcamera.hevc      ← 前方カメラ（HEVC / H.265、20fps）
+    │   ├── ecamera.hevc      ← 広角カメラ（HEVC / H.265）
+    │   ├── dcamera.hevc      ← ドライバーカメラ（RecordFront有効時のみ）
+    │   └── qcamera.ts        ← 低品質前方カメラ（H.264、プレビュー用）
+    ├── --1/                  ← セグメント1（60〜120秒）
+    └── --2/                  ← セグメント2（120〜180秒）
+```
+
+**注意**: CANデータは個別ファイルではなく、`rlog` 内にcapnprotoメッセージとして格納されます。
+
+---
+
+## Mazda LKAS Fault 対策
+
+### 問題の概要
+Mazda車（GEN1）でopenpilot/FrogPilotによるステアリング制御中、ドライバーのハンドルトルク不足により車両EPSがLKAS_BLOCK信号を送信し、LKAS Fault（steerFaultPermanent）が発生する。一度Faultが発生すると車両再起動+1分待機が必要。
+
+### 根本原因
+1. ドライバーのハンドルトルク不足 → EPSがLKAS_BLOCK信号を送信（STEER_RATE 0x241）
+2. LKAS_BLOCKの継続 → カメラモジュールがERR_BIT_1=1をセット（CAM_LKAS 0x243）
+3. openpilotがERR_BIT_1をそのままEPSに転送 → EPSがエラー状態にロック
+4. 車両再起動が必要になる
+
+### CANメッセージフロー
+```
+カメラ(Bus 2) → panda(ブロック) → openpilot(読取り)
+openpilot → CAM_LKAS送信(Bus 0) → EPS → STEER_RATE送信(Bus 0)
+```
+- pandaの`safety_mazda.h`でカメラのCAM_LKASはMain Busに転送されないようブロック
+- openpilotだけがMain Bus（Bus 0）にCAM_LKASを送信
+
+### 3層防御の実装
+
+| 層 | ファイル | 変更内容 | 効果 |
+|---|---|---|---|
+| **予防層** | `carcontroller.py` | LKAS_BLOCK中はステアリング要求を0に | ERR_BIT_1への遷移を予防 |
+| **伝播防止層** | `mazdacan.py` | `er1 = 0`（ERR_BIT_1を0に固定） | 車両のLKAS Fault警告灯を防止 |
+| **検出緩和層** | `carstate.py` | `steerFaultPermanent = False` | 再起動不要に |
+
+### 他プロジェクトの対応状況
+- **上流commaai/openpilot**: LKAS Fault時は即時無効化+「Restart the Car」アラートのみ。回避策なし
+- **MoreTore/openpilot**: TORQUE_INTERCEPTOR（ハードウェア）使用時に`steerFaultPermanent = False`。ソフトウェアワークアラウンドなし
+- **全GEN1 Mazda車種共通**: DBC定義、検出ロジック、ステアリングパラメータは全車種同一
+
+### 安全性のポイント
+- LKAS_BLOCK（steerFaultTemporary）は引き続き正常に検出・処理される
+- ERR_BIT_1はカメラモジュールの内部状態に過ぎず、LKAS_BLOCKが別経路で安全を担保
+- 変更は最小限（3ファイル・各1-2行）で、openpilotのコアには影響しない
 
 ---
 
@@ -488,147 +633,3 @@ Star History
 [![Star History Chart](https://api.star-history.com/svg?repos=FrogAi/FrogPilot&type=Date)](https://www.star-history.com/#FrogAi/FrogPilot&Date)
 
 ---
-
-## CI/CD ワークフロー
-
-### ブランチ構成
-
-| ブランチ | 内容 | 用途 |
-|---|---|---|
-| `test-mazda2-dj-mt-frog` | **ソースコード** | 開発者がpushする先 |
-| `test-mazda2-dj-mt-frog-built` | **コンパイル済みバイナリ** | C3デバイスで実行する用 |
-
-### ビルドフロー
-
-1. 開発者が `test-mazda2-dj-mt-frog` にpush
-2. C3デバイスのCIランナー（self-hosted）が自動的にビルドを実行
-3. ビルド成果物を `test-mazda2-dj-mt-frog-built` にforce push
-
-### C3デバイスでビルド済みバイナリを使用する
-
-CIビルド完了後、以下のコマンドでビルド済みバイナリを取得:
-
-```bash
-cd /data/openpilot
-git fetch origin test-mazda2-dj-mt-frog-built
-git checkout test-mazda2-dj-mt-frog-built
-# openpilotを再起動
-```
-
-### 注意事項
-
-- CIランナーは常に `test-mazda2-dj-mt-frog` をcheckoutしておく必要があります（`get_branch` がローカルブランチ名を取得するため）
-- ビルド完了後、C3デバイスで実行する時だけ `test-mazda2-dj-mt-frog-built` に切り替えます
-- ソースとバイナリを分離することで、`git pull --rebase` 時のコンフリクトや `Unpacking objects` の問題を回避しています
-
----
-
-## ログ記録メカニズム
-
-### fingerprint認識とログ記録
-
-fingerprintが認識されている場合でも未認識の場合でも、ログ記録の仕組みは同じです。イグニッションONで `loggerd` と `encoderd` が自動起動し、以下のデータが記録されます：
-
-| データ | サービス名 | 内容 |
-|--------|-----------|------|
-| CANデータ | `can` | バス上の全CANメッセージ（100Hz） |
-| CAN送信 | `sendcan` | openpilotから送信したCAN |
-| カメラ映像 | `fcamera.hevc` | 道路カメラ（20fps） |
-| ドライバー映像 | `dcamera.hevc` | ドライバーカメラ |
-| センサー | `gyroscope`, `accelerometer` | IMUデータ |
-| GPS | `gpsNMEA`, `gpsLocation` | 位置情報 |
-| 車両状態 | `carState` | 速度、ハンドル等（100Hz） |
-| 制御状態 | `controlsState` | openpilotの制御状態 |
-
-### ログが記録されない条件
-
-以下のいずれかの場合、ログ記録プロセス（loggerd, encoderd等）が停止します：
-
-1. **「Disable Logging」がON** → FrogPilot設定 → Device Management で確認
-2. **「Force Onroad」が有効** → 強制オンロード時は `no_logging = True` になる
-3. **`DisableLogging` パラメータが設定**（notCar/bodyボットのみ）
-
-### 3つの「録画」の違い
-
-| 機能 | 対象 | トリガー | フォーマット |
-|------|------|---------|-------------|
-| **loggerd** | CAN/rlog/全センサーデータ | イグニッションONで自動 | capnproto + bzip2 |
-| **encoderd** | カメラ映像（道路/広角/ドライバー） | イグニッションONで自動 | H.265/H.264 |
-| **ScreenRecorder** | UI画面の動画 | 手動でボタン押下 | H.264（OMX） |
-
-### デバッグモード
-
-デバッグモードはUI表示の開発者メトリクス（FPS、メモリ使用量、CPU/GPU使用率等）を強制表示する機能です。rlogやCANのログ記録量には影響しません。画面録画ボタンが自動表示されるようになります。
-
-### CANデータ等を確実に記録する手順
-
-1. FrogPilot設定 → Device Management → **「Disable Logging」をOFF**にする
-2. **「Force Onroad」を使用しない**（使用中は `no_logging = True` になる）
-3. イグニッションON → 自動的に全データが記録される
-
-### ログの保存先ディレクトリ
-
-| 環境 | パス |
-|------|------|
-| **デバイス（comma 3X等）** | `/data/media/0/realdata/` |
-| **HD設定あり** | `/data/media/0/realdata_HD/` |
-| **PC（開発環境）** | `$HOME/.comma/media/0/realdata` |
-
-#### セグメントディレクトリ構造
-
-1セグメント = 60秒で自動的にローテーションされます。
-
-```
-/data/media/0/realdata/
-└── 000001a3--c20ba54385/     ← 1回の走行（ルートディレクトリ）
-    ├── --0/                  ← セグメント0（0〜60秒）
-    │   ├── rlog              ← 全メッセージ（CAN、CarState、GPS等、capnproto形式）
-    │   ├── qlog              ← rlogのサブセット（クイックアクセス用）
-    │   ├── fcamera.hevc      ← 前方カメラ（HEVC / H.265、20fps）
-    │   ├── ecamera.hevc      ← 広角カメラ（HEVC / H.265）
-    │   ├── dcamera.hevc      ← ドライバーカメラ（RecordFront有効時のみ）
-    │   └── qcamera.ts        ← 低品質前方カメラ（H.264、プレビュー用）
-    ├── --1/                  ← セグメント1（60〜120秒）
-    └── --2/                  ← セグメント2（120〜180秒）
-```
-
-**注意**: CANデータは個別ファイルではなく、`rlog` 内にcapnprotoメッセージとして格納されます。
-
----
-
-## Mazda LKAS Fault 対策
-
-### 問題の概要
-Mazda車（GEN1）でopenpilot/FrogPilotによるステアリング制御中、ドライバーのハンドルトルク不足により車両EPSがLKAS_BLOCK信号を送信し、LKAS Fault（steerFaultPermanent）が発生する。一度Faultが発生すると車両再起動+1分待機が必要。
-
-### 根本原因
-1. ドライバーのハンドルトルク不足 → EPSがLKAS_BLOCK信号を送信（STEER_RATE 0x241）
-2. LKAS_BLOCKの継続 → カメラモジュールがERR_BIT_1=1をセット（CAM_LKAS 0x243）
-3. openpilotがERR_BIT_1をそのままEPSに転送 → EPSがエラー状態にロック
-4. 車両再起動が必要になる
-
-### CANメッセージフロー
-```
-カメラ(Bus 2) → panda(ブロック) → openpilot(読取り)
-openpilot → CAM_LKAS送信(Bus 0) → EPS → STEER_RATE送信(Bus 0)
-```
-- pandaの`safety_mazda.h`でカメラのCAM_LKASはMain Busに転送されないようブロック
-- openpilotだけがMain Bus（Bus 0）にCAM_LKASを送信
-
-### 3層防御の実装
-
-| 層 | ファイル | 変更内容 | 効果 |
-|---|---|---|---|
-| **予防層** | `carcontroller.py` | LKAS_BLOCK中はステアリング要求を0に | ERR_BIT_1への遷移を予防 |
-| **伝播防止層** | `mazdacan.py` | `er1 = 0`（ERR_BIT_1を0に固定） | 車両のLKAS Fault警告灯を防止 |
-| **検出緩和層** | `carstate.py` | `steerFaultPermanent = False` | 再起動不要に |
-
-### 他プロジェクトの対応状況
-- **上流commaai/openpilot**: LKAS Fault時は即時無効化+「Restart the Car」アラートのみ。回避策なし
-- **MoreTore/openpilot**: TORQUE_INTERCEPTOR（ハードウェア）使用時に`steerFaultPermanent = False`。ソフトウェアワークアラウンドなし
-- **全GEN1 Mazda車種共通**: DBC定義、検出ロジック、ステアリングパラメータは全車種同一
-
-### 安全性のポイント
-- LKAS_BLOCK（steerFaultTemporary）は引き続き正常に検出・処理される
-- ERR_BIT_1はカメラモジュールの内部状態に過ぎず、LKAS_BLOCKが別経路で安全を担保
-- 変更は最小限（3ファイル・各1-2行）で、openpilotのコアには影響しない
