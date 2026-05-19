@@ -2,6 +2,8 @@
 
 #include "selfdrive/ui/qt/onroad/annotated_camera.h"
 
+#include "frogpilot/ui/qt/onroad/playback_overlay.h"
+
 class FrogPilotOnroadWindow : public QWidget {
   Q_OBJECT
 
@@ -9,6 +11,7 @@ public:
   FrogPilotOnroadWindow(QWidget* parent = 0);
 
   void updateState(const UIState &s, const FrogPilotUIState &fs);
+  void resizeEvent(QResizeEvent *event) override;
 
   double fps;
 
@@ -19,10 +22,12 @@ private:
   void paintFPS(QPainter &p, const QRect &rect);
   void paintSteeringTorqueBorder(QPainter &p, const QRect &rect);
   void paintTurnSignalBorder(QPainter &p, const QRect &rect);
+  void updatePlaybackPosition();
 
   bool blindSpotLeft;
   bool blindSpotRight;
   bool flickerActive;
+  bool isCanPlayback;
   bool showBlindspot;
   bool showFPS;
   bool showSignal;
@@ -33,4 +38,11 @@ private:
   float steer;
 
   QTimer *signalTimer;
+  QTimer *playback_timer_;
+
+  PlaybackOverlay *playback_overlay_;
+
+  double playback_position_ = 0.0;
+  double playback_duration_ = 150.0;  // Default mock duration (2:30)
+  QString playback_start_time_ = "2026-05-19 14:30:00.000";
 };

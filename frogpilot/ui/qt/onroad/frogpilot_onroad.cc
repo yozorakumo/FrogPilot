@@ -1,3 +1,5 @@
+#include <QDateTime>
+
 #include "frogpilot/ui/qt/onroad/frogpilot_onroad.h"
 
 FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) {
@@ -6,6 +8,41 @@ FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) 
   QObject::connect(signalTimer, &QTimer::timeout, [this] {
     flickerActive = !flickerActive;
   });
+
+  // CAN Playback overlay - only enabled when CAN_PLAYBACK env var is set
+  isCanPlayback = getenv("CAN_PLAYBACK") != nullptr;
+
+  if (isCanPlayback) {
+    playback_overlay_ = new PlaybackOverlay(this);
+    playback_overlay_->setDuration(playback_duration_);
+    playback_overlay_->setPlaying(true);
+    playback_overlay_->showOverlay();
+
+    // Timer to simulate playback position updates (mock for UI testing)
+    playback_timer_ = new QTimer(this);
+    QObject::connect(playback_timer_, &QTimer::timeout, [this]() {
+      updatePlaybackPosition();
+    });
+    playback_timer_->start(100);  // Update every 100ms
+
+    // Connect overlay signals
+    QObject::connect(playback_overlay_, &PlaybackOverlay::seekRequested, [this](double position) {
+      playback_position_ = position;
+      playback_overlay_->setPosition(position);
+      updatePlaybackRealTime();
+    });
+
+    QObject::connect(playback_overlay_, &PlaybackOverlay::playPauseRequested, [this]() {
+      // Toggle play/pause (mock)
+      static bool playing = true;
+      playing = !playing;
+      playback_overlay_->setPlaying(playing);
+    });
+
+    QObject::connect(playback_overlay_, &PlaybackOverlay::speedChangeRequested, [this](double speed) {
+      // Speed change handled by overlay internally, this signal is for future backend integration
+    });
+  }
 }
 
 void FrogPilotOnroadWindow::updateState(const UIState &s, const FrogPilotUIState &fs) {
@@ -27,6 +64,44 @@ void FrogPilotOnroadWindow::updateState(const UIState &s, const FrogPilotUIState
   showSteering = frogpilot_toggles.value("steering_metrics").toBool();
 
   update();
+}
+
+void FrogPilotOnroadWindow::resizeEvent(QResizeEvent *event) {
+  QWidget::resizeEvent(event);
+
+  if (isCanPlayback && playback_overlay_) {
+    // Position overlay at the bottom of the widget
+    int overlay_x = 0;
+    int overlay_y = height() - PlaybackOverlay::kOverlayHeight;
+    playback_overlay_->setGeometry(overlay_x, overlay_y, width(), PlaybackOverlay::kOverlayHeight);
+    playback_overlay_->raise();
+  }
+}
+
+void FrogPilotOnroadWindow::updatePlaybackPosition() {
+  if (!isCanPlayback || !playback_overlay_) return;
+
+  // Mock: advance position by 100ms
+  playback_position_ += 0.1;
+  if (playback_position_ >= playback_duration_) {
+    playback_position_ = 0.0;  // Loop
+  }
+
+  playback_overlay_->setPosition(playback_position_);
+  updatePlaybackRealTime();
+}
+
+void FrogPilotOnroadWindow::updatePlaybackRealTime() {
+  if (!isCanPlayback || !playback_overlay_) return;
+
+  // Calculate real time from start time + current position
+  // For mock: parse the start time and add position seconds
+  QDateTime start_dt = QDateTime::fromString(playback_start_time_, "yyyy-MM-dd HH:mm:ss.zzz");
+  if (start_dt.isValid()) {
+    qint64 msecs = static_cast<qint64>(playback_position_ * 1000.0);
+    QDateTime real_dt = start_dt.addMSecs(msecs);
+    playback_overlay_->setRealTime(real_dt.toString("yyyy-MM-dd HH:mm:ss.zzz"));
+  }
 }
 
 void FrogPilotOnroadWindow::paintEvent(QPaintEvent *event) {

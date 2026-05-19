@@ -21,6 +21,7 @@ from openpilot.frogpilot.common.frogpilot_variables import get_frogpilot_toggles
 from openpilot.frogpilot.controls.frogpilot_card import FrogPilotCard
 
 REPLAY = "REPLAY" in os.environ
+CAN_PLAYBACK = os.environ.get("CAN_PLAYBACK", "0") == "1"
 
 EventName = car.CarEvent.EventName
 
@@ -44,11 +45,15 @@ class Car:
     self.params = Params()
 
     if CI is None:
-      # wait for one pandaState and one CAN packet
+      # wait for one CAN packet
       print("Waiting for CAN messages...")
       get_one_can(self.can_sock)
 
-      num_pandas = len(messaging.recv_one_retry(self.sm.sock['pandaStates']).pandaStates)
+      if CAN_PLAYBACK:
+        cloudlog.info("CAN playback mode - skipping panda init")
+        num_pandas = 1
+      else:
+        num_pandas = len(messaging.recv_one_retry(self.sm.sock['pandaStates']).pandaStates)
       experimental_long_allowed = self.params.get_bool("ExperimentalLongitudinalEnabled")
       self.CI, self.CP, FPCP = get_car(self.can_sock, self.pm.sock['sendcan'], experimental_long_allowed, self.params, num_pandas, get_frogpilot_toggles())
     else:
