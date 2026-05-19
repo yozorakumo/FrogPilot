@@ -9,6 +9,7 @@
 #define MAZDA_BCM           0x420
 #define MAZDA_CRZ_INFO      0x21b
 #define MAZDA_RADAR_UDS     0x764
+#define MAZDA_CLUTCH_SWITCH 0x366
 
 // CAN bus numbers
 #define MAZDA_MAIN 0
@@ -60,6 +61,25 @@ RxCheck mazda_long_rx_checks[] = {
   {.msg = {{MAZDA_STEER_TORQUE, 0, 8, .frequency = 83U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_ENGINE_DATA,  0, 8, .frequency = 100U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_PEDALS,       0, 8, .frequency = 50U}, { 0 }, { 0 }}},
+};
+
+// MT RX checks: includes CLUTCH_SWITCH for clutch pedal detection
+RxCheck mazda_mt_rx_checks[] = {
+  {.msg = {{MAZDA_CRZ_CTRL,      0, 8, .frequency = 50U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_CRZ_BTNS,      0, 8, .frequency = 10U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_STEER_TORQUE,  0, 8, .frequency = 83U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_ENGINE_DATA,   0, 8, .frequency = 100U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_PEDALS,        0, 8, .frequency = 50U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_CLUTCH_SWITCH, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},
+};
+
+// MT longitudinal RX checks: CRZ_CTRL removed, includes CLUTCH_SWITCH
+RxCheck mazda_mt_long_rx_checks[] = {
+  {.msg = {{MAZDA_CRZ_BTNS,      0, 8, .frequency = 10U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_STEER_TORQUE,  0, 8, .frequency = 83U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_ENGINE_DATA,   0, 8, .frequency = 100U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_PEDALS,        0, 8, .frequency = 50U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_CLUTCH_SWITCH, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},
 };
 
 static bool mazda_longitudinal = false;
@@ -238,10 +258,19 @@ static safety_config mazda_init(uint16_t param) {
   mt_main_btn_prev = false;
 
   safety_config ret;
-  if (mazda_longitudinal) {
-    ret = BUILD_SAFETY_CFG(mazda_long_rx_checks, MAZDA_LONG_TX_MSGS);
+  if (mazda_mt) {
+    // MT cars: use RX checks that include CLUTCH_SWITCH (0x366)
+    if (mazda_longitudinal) {
+      ret = BUILD_SAFETY_CFG(mazda_mt_long_rx_checks, MAZDA_LONG_TX_MSGS);
+    } else {
+      ret = BUILD_SAFETY_CFG(mazda_mt_rx_checks, MAZDA_TX_MSGS);
+    }
   } else {
-    ret = BUILD_SAFETY_CFG(mazda_rx_checks, MAZDA_TX_MSGS);
+    if (mazda_longitudinal) {
+      ret = BUILD_SAFETY_CFG(mazda_long_rx_checks, MAZDA_LONG_TX_MSGS);
+    } else {
+      ret = BUILD_SAFETY_CFG(mazda_rx_checks, MAZDA_TX_MSGS);
+    }
   }
   return ret;
 }

@@ -100,14 +100,15 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
       // ignore events when device is awakened by resetInteractiveTimeout
       ignore = !device()->isAwake() || frogpilot_scene.driver_camera_timer >= UI_FREQ / 2;
       device()->resetInteractiveTimeout(frogpilot_toggles.value("screen_timeout").toInt(), frogpilot_toggles.value("screen_timeout_onroad").toInt());
-      // Long press detection: record press time (Wayland-safe via eventFilter)
-      params.put("UIEditPressTime", std::to_string(QDateTime::currentMSecsSinceEpoch()));
+      // NOTE: Long press detection for UI Edit Mode is handled by
+      // UIEditModeManager's internal QTimer (via touchEvent/mousePressEvent
+      // in AnnotatedCameraWidget), not by Params polling here.
+      // Previous Params.put("UIEditPressTime") caused filesystem I/O on every
+      // touch event and a race condition with the timer-based detection.
       break;
     }
     case QEvent::TouchEnd:
     case QEvent::MouseButtonRelease: {
-      // Long press detection: reset press time
-      params.put("UIEditPressTime", "0");
       break;
     }
     case QEvent::TouchUpdate:

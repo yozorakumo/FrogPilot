@@ -1,5 +1,6 @@
 from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
+from openpilot.common.log import cloudlog
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.interfaces import CarStateBase
@@ -84,6 +85,10 @@ class CarState(CarStateBase):
 
       # Direct clutch pedal signal from CLUTCH_SWITCH (0x366)
       ret.clutchPressed = cp.vl["CLUTCH_SWITCH"]["CLUTCH_PEDAL"] == 1
+
+      # Debug logging for MT gear and clutch detection
+      cloudlog.debug(f"MT gear: GEAR_POS={gear_pos}, REVERSE_GEAR={cp.vl['PEDALS']['REVERSE_GEAR']}, raw={cp.vl['PEDALS']['GEAR_POS']}")
+      cloudlog.debug(f"MT clutch: CLUTCH_PEDAL={cp.vl['CLUTCH_SWITCH']['CLUTCH_PEDAL']}")
 
       if reverse_gear:  # Reverse (clean 1-bit flag from PEDALS byte3 bit0)
         ret.gearShifter = car.CarState.GearShifter.reverse

@@ -219,12 +219,7 @@ jobs:
             "$POETRY_BIN" config cache-dir /data/poetry_cache
             "$POETRY_BIN" config virtualenvs.in-project true
 
-            echo "Clearing Poetry cache and virtualenvs..."
-            "$POETRY_BIN" cache clear pypi --all || true
-            "$POETRY_BIN" cache clear _default_cache --all || true
-            # 既存の仮想環境も削除してクリーンな状態にする
-            rm -rf /home/comma/.cache/pypoetry/virtualenvs/* || true
-            rm -rf /home/comma/.config/pypoetry || true
+            echo "Verify Poetry config..."
           fi
 
           echo "Deleting old build artifacts and temporary files..."
@@ -232,8 +227,8 @@ jobs:
           sudo apt-get clean || true
           sudo apt-get autoremove -y || true
           
-          # /data/openpilot 内の不要なファイルを削除（ビルド成果物など）
-          cd /data/openpilot && git clean -fdx || true
+          # /data/openpilot 内の不要なファイルを削除（ソースコード以外のビルド中間ファイルのみ）
+          cd /data/openpilot && git clean -f -d -x -e .venv -e SConstruct -e SConscript || true
           
           echo "=== Disk space after cleanup ==="
           df -h
@@ -242,7 +237,7 @@ jobs:
         run: |
           cd /data/openpilot
           source .venv/bin/activate
-          scons -j$(nproc) --cache-disable common/params_pyx.so
+          scons -j$(nproc) common/params_pyx.so
           python3 -c "from openpilot.common.params import Params; print('params_pyx.so OK')"
 
       - name: Build FrogPilot

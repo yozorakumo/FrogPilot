@@ -584,7 +584,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"ThemesDownloaded", PERSISTENT},
     {"TinygradUpdateAvailable", PERSISTENT},
     {"UIEditMode", PERSISTENT},
-    {"UIEditPressTime", 0},
+    {"UIEditPressTime", CLEAR_ON_MANAGER_START},
     {"UIElementPositions", PERSISTENT},
     {"ToyotaDoors", PERSISTENT},
     {"TrafficFollow", PERSISTENT},
