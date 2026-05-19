@@ -50,18 +50,19 @@ BO_ 357 PEDALS: 8 XXX
  SG_ ACC_OFF : 2|1@1+ (1,0) [0|15] "" XXX
  SG_ CHKSUM : 63|8@0+ (1,0) [0|15] "" XXX
  SG_ STANDSTILL : 26|1@0+ (1,0) [0|16777215] "" XXX
- SG_ NEW_SIGNAL_3 : 23|8@0+ (1,0) [0|3] "" XXX
+ SG_ NEW_SIGNAL_3 : 23|1@0+ (1,0) [0|1] "" XXX
+ SG_ REVERSE_GEAR : 24|1@0+ (1,0) [0|1] "" XXX
  SG_ BRAKE_ON : 4|1@0+ (1,0) [0|1] "" XXX
  SG_ NO_BRAKE : 6|1@0+ (1,0) [0|7] "" XXX
  SG_ BRAKE_ON_2 : 7|1@1+ (1,0) [0|255] "" XXX
  SG_ NO_BRAKE_2 : 15|1@0+ (1,0) [0|7] "" XXX
- SG_ GEAR_POS : 55|8@0+ (1,0) [0|255] "" XXX
+ SG_ GEAR_POS : 48|8@0+ (1,0) [0|255] "" XXX
 
 BO_ 870 CLUTCH_SWITCH: 8 XXX
  SG_ CLUTCH_PEDAL : 12|1@0+ (1,0) [0|1] "" XXX
 
 BO_ 358 NEW_MSG_28: 8 XXX
- SG_ GEAR_POS : 23|4@0+ (1,0) [0|15] "" XXX
+ SG_ GEAR_POS : 20|4@0+ (1,0) [0|15] "" XXX
 
 BO_ 514 ENGINE_DATA: 8 XXX
  SG_ CHKSUM : 63|8@0+ (1,0) [0|127] "" XXX
@@ -297,6 +298,7 @@ BO_ 1088 CAM_LANEINFO: 8 XXX
  SG_ TJA_TRANSITION : 27|2@0+ (1,0) [0|63] "" XXX
 
 CM_ SG_ 357 GEAR_POS "MT gear position signal for Mazda 2 DJ. Values: 2=6th, 3=5th, 4=4th, 5=3rd, 7=2nd, 13=1st, 14=Neutral/Clutch transitional. Values 6/8/9/10/11/12=shift transition (clutch pressed). Clutch is detected when GEAR_POS is NOT in {2,3,4,5,7,13}.";
+CM_ SG_ 357 REVERSE_GEAR "Reverse gear flag from PEDALS (0x165) byte3 bit0. Identified from rlog analysis: OFF during 0-22s (neutral), ON during 4 reverse operations at 23-30s, 32-38s, 42-49s, 50-57s. This is a clean 1-bit signal that reliably indicates reverse gear engagement.";
 CM_ SG_ 1088 LANE_LINES "0 LKAS disabled, 1 no lines, 2 two lines, 3 left line, 4 right line";
 CM_ SG_ 1088 TJA "2: crz not active,  3: TJA not allowed,  4: TJA allowed";
 CM_ SG_ 1088 TJA_TRANSITION "3: if TJA signal is 3, otherwise set to 0";
@@ -311,7 +313,8 @@ CM_ SG_ 579 STEERING_ANGLE "steering angle aligns with 0.022 factor and -45.06 o
 VAL_ 870 CLUTCH_PEDAL 0 "RELEASED" 1 "PRESSED" ;
 VAL_ 357 GEAR_POS 2 "6th" 3 "5th" 4 "4th" 5 "3rd" 7 "2nd" 13 "1st" 14 "Neutral/Clutch" ;
 VAL_ 159 PARKING_BRAKE 0 "OFF" 1 "ON" ;
-VAL_ 358 GEAR_POS 4 "Forward" 5 "Forward" 6 "Reverse" ;
+VAL_ 358 GEAR_POS 4 "Neutral/Forward" ;
+VAL_ 357 REVERSE_GEAR 0 "OFF" 1 "REVERSE" ;
 VAL_ 540 RADAR_HAS_LEAD 0 "NO LEAD" 1 "HAS LEAD" ;
 VAL_ 540 RADAR_LEAD_RELATIVE_DISTANCE 0 "NO LEAD" 1 "FARTHEST" 2 "4" 3 "3" 4 "2" 5 "NEAREST" ;
 VAL_ 1143 LEFT_BS_STATUS 0 "No object detected" 1 "Object detected in left blindspot" 2 "Object detected in left blindspot with blinker - warning" ;
