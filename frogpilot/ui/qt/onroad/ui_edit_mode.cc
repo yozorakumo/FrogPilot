@@ -17,9 +17,9 @@ UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
       press_pending_ = false;
       if (!edit_mode_) {
         saveSettings();  // 編集モード終了時に保存
-        selected_element_.clear();
+          selected_element_.clear();
+        }
       }
-    }
   });
 
   // デフォルト要素を登録
@@ -27,6 +27,7 @@ UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
   elements_["max_speed"] = UIElementConfig{"Max Speed"};
   elements_["compass"] = UIElementConfig{"Compass"};
   elements_["gear"] = UIElementConfig{"Gear"};
+  elements_["brake_pb_clutch"] = UIElementConfig{"Brake/PB/Clutch"};
   elements_["steering_wheel"] = UIElementConfig{"Steering Wheel"};
   elements_["recording"] = UIElementConfig{"Recording"};
   elements_["driver_face"] = UIElementConfig{"Driver Face"};
@@ -62,7 +63,9 @@ QRect UIEditModeManager::getEffectiveBounds(const QString &name) const {
   if (it == elements_.end() || it->bounds.isEmpty()) return QRect();
 
   float sc = it->scale;
-  if (sc == 1.0f) return it->bounds;
+  int sb = it->cached_sidebar_offset_x;
+
+  if (sc == 1.0f) return it->bounds.translated(sb, 0);
 
   float ox = it->offset_x;
   float oy = it->offset_y;
@@ -74,7 +77,7 @@ QRect UIEditModeManager::getEffectiveBounds(const QString &name) const {
   float base_y = it->bounds.y() - oy;
 
   return QRect(
-    qRound(base_x * sc + ox),
+    qRound(base_x * sc + ox + sb),
     qRound(base_y * sc + oy),
     qRound(it->bounds.width() * sc),
     qRound(it->bounds.height() * sc)
@@ -87,39 +90,64 @@ void UIEditModeManager::updateBounds(const QString &name, const QRect &bounds) {
   }
 }
 
-int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int widget_width) const {
-  if (!sidebar_left && !sidebar_right) return 0;
-
-  // 要素が見つからない場合はオフセットなし
+int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int screen_width) {
   auto it = elements_.find(name);
-  if (it == elements_.end()) return 0;
-
-  if (it->bounds.isEmpty()) return 0;
-
-  // デフォルト位置（ユーザーオフセットなし）で左右判定する
-  // bounds = default_pos + user_offset, so default_center = bounds.center - offset
-  int default_center_x = qRound(it->bounds.center().x() - it->offset_x);
-  int half_width = widget_width / 2;
-
-  // 左半分にある要素 → 左サイドバー表示時に右にオフセット
-  if (default_center_x < half_width && sidebar_left) {
-    return SIDEBAR_WIDTH;
-  }
-  // 右半分にある要素 → 右開発者サイドバー表示時に左にオフセット
-  if (default_center_x >= half_width && sidebar_right) {
-    return -SIDEBAR_WIDTH;
+  if (it == elements_.end()) {
+    return 0;
   }
 
-  return 0;
+  if (!sidebar_left && !sidebar_right) {
+    it->cached_sidebar_offset_x = 0;
+    return 0;
+  }
+
+  if (it->bounds.isEmpty()) {
+    it->cached_sidebar_offset_x = 0;
+    return 0;
+  }
+
+  // デフォルト位置（ユーザーオフセットなし）を計算
+  // bounds = default_pos + user_offset, so default_bounds = bounds - offset
+  QRect default_bounds = it->bounds.translated(-qRound(it->offset_x), -qRound(it->offset_y));
+
+  // 映像表示領域（サイドバー除く）
+  int video_left = sidebar_left ? SIDEBAR_WIDTH : 0;
+  int video_right = sidebar_right ? (screen_width - SIDEBAR_WIDTH) : screen_width;
+  int video_center = (video_left + video_right) / 2;
+
+  int widget_center_x = default_bounds.center().x();
+
+  int result = 0;
+
+  // 左サイドバー表示時: デフォルト位置が映像領域の左半分にあり、かつ左サイドバーと重なる場合
+  if (sidebar_left && widget_center_x < video_center) {
+    if (default_bounds.left() < SIDEBAR_WIDTH) {
+      result = SIDEBAR_WIDTH;  // 右にオフセット
+    }
+  }
+
+  // 右開発者サイドバー表示時: デフォルト位置が映像領域の右半分にあり、かつ右サイドバーと重なる場合
+  if (sidebar_right && widget_center_x >= video_center) {
+    int right_sidebar_left = screen_width - SIDEBAR_WIDTH;
+    if (default_bounds.right() > right_sidebar_left) {
+      result = -SIDEBAR_WIDTH;  // 左にオフセット
+    }
+  }
+
+  it->cached_sidebar_offset_x = result;
+  return result;
 }
 
 bool UIEditModeManager::handleMousePress(const QPoint &pos) {
-  press_pos_ = pos;
-
-  if (!edit_mode_) {
-    return false;  // 編集モードでない場合はタイマーを開始しない（Paramsポーリングに任せる）
+  // Already tracking a long press (e.g., from touch event), skip duplicate mouse event
+  if (press_pending_) {
+    return false;
   }
 
+  press_pos_ = pos;
+
+  // 編集モードに関わらず長押しタイマーを開始
+  // （Paramsポーリングだけではプラットフォーム依存で信頼性不足のため）
   press_pending_ = true;
   long_press_timer_->start(LONG_PRESS_MS);
 

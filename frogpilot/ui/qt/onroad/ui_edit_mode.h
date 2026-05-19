@@ -18,6 +18,7 @@ struct UIElementConfig {
   float offset_y = 0.0f;  // デフォルト位置からのY オフセット (px)
   float scale = 1.0f;      // スケール (0.5-2.0)
   QRect bounds;            // 要素のデフォルト境界矩形 (編集モードでのヒットテスト用)
+  int cached_sidebar_offset_x = 0;  // 最後に計算されたサイドバーオフセット (paintOverlay用)
 };
 
 class UIEditModeManager : public QObject {
@@ -44,8 +45,10 @@ public:
   QRect getEffectiveBounds(const QString &name) const;
 
   // サイドバー表示時のオフセットを計算
+  // ウィジェットのデフォルト位置がサイドバーと重なる場合のみオフセットする
+  // screen_width: 画面全体の幅（サイドバー含む）
   static constexpr int SIDEBAR_WIDTH = 300;
-  int getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int widget_width) const;
+  int getSidebarOffsetX(const QString &name, bool sidebar_left, bool sidebar_right, int screen_width);
 
   // マウス/タッチイベント処理
   bool handleMousePress(const QPoint &pos);
@@ -77,7 +80,7 @@ private:
   QPoint press_pos_;
   bool press_pending_ = false;
   static constexpr int LONG_PRESS_MS = 2000;
-  static constexpr int MOVE_THRESHOLD = 20;
+  static constexpr int MOVE_THRESHOLD = 50;
 
   // ピンチズーム状態
   float pinch_start_scale_ = 1.0f;

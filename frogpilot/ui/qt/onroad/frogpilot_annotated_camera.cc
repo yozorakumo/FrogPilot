@@ -193,10 +193,11 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
     float compass_ox = edit_mode_manager_ ? edit_mode_manager_->getOffsetX("compass") : 0.0f;
     float compass_oy = edit_mode_manager_ ? edit_mode_manager_->getOffsetY("compass") : 0.0f;
     float compass_sc = edit_mode_manager_ ? edit_mode_manager_->getScale("compass") : 1.0f;
-    int compass_sidebar_offset = edit_mode_manager_ ? edit_mode_manager_->getSidebarOffsetX("compass",
-        frogpilot_scene.sidebar_visible, frogpilot_scene.developer_sidebar_visible,
-        parentWidget() ? parentWidget()->width() : width()) : 0;
-    p.translate(compass_ox + compass_sidebar_offset, compass_oy);
+    int compass_sidebar = 0;
+    if (edit_mode_manager_) {
+      compass_sidebar = edit_mode_manager_->getSidebarOffsetX("compass", frogpilot_scene.sidebar_visible, frogpilot_scene.developer_sidebar_visible, width());
+    }
+    p.translate(compass_ox + compass_sidebar, compass_oy);
     if (compass_sc != 1.0f) p.scale(compass_sc, compass_sc);
     paintCompass(p, frogpilot_toggles);
     if (edit_mode_manager_) {
@@ -287,10 +288,11 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
       float gear_ox = edit_mode_manager_ ? edit_mode_manager_->getOffsetX("gear") : 0.0f;
       float gear_oy = edit_mode_manager_ ? edit_mode_manager_->getOffsetY("gear") : 0.0f;
       float gear_sc = edit_mode_manager_ ? edit_mode_manager_->getScale("gear") : 1.0f;
-      int gear_sidebar_offset = edit_mode_manager_ ? edit_mode_manager_->getSidebarOffsetX("gear",
-          frogpilot_scene.sidebar_visible, frogpilot_scene.developer_sidebar_visible,
-          parentWidget() ? parentWidget()->width() : width()) : 0;
-      p.translate(gear_ox + gear_sidebar_offset, gear_oy);
+      int gear_sidebar = 0;
+      if (edit_mode_manager_) {
+        gear_sidebar = edit_mode_manager_->getSidebarOffsetX("gear", frogpilot_scene.sidebar_visible, frogpilot_scene.developer_sidebar_visible, width());
+      }
+      p.translate(gear_ox + gear_sidebar, gear_oy);
       if (gear_sc != 1.0f) p.scale(gear_sc, gear_sc);
       paintMTGear(p, carState, frogpilotCarState);
       if (edit_mode_manager_) {
@@ -313,7 +315,21 @@ void FrogPilotAnnotatedCameraWidget::paintFrogPilotWidgets(QPainter &p, UIState 
       frogpilot_toggles.value("mazda_brake_ui").toBool() ||
       frogpilot_toggles.value("mazda_pb_ui").toBool() ||
       frogpilot_toggles.value("mazda_clutch_ui").toBool()) {
+    p.save();
+    float bpc_ox = edit_mode_manager_ ? edit_mode_manager_->getOffsetX("brake_pb_clutch") : 0.0f;
+    float bpc_oy = edit_mode_manager_ ? edit_mode_manager_->getOffsetY("brake_pb_clutch") : 0.0f;
+    float bpc_sc = edit_mode_manager_ ? edit_mode_manager_->getScale("brake_pb_clutch") : 1.0f;
+    int bpc_sidebar = 0;
+    if (edit_mode_manager_) {
+      bpc_sidebar = edit_mode_manager_->getSidebarOffsetX("brake_pb_clutch", frogpilot_scene.sidebar_visible, frogpilot_scene.developer_sidebar_visible, width());
+    }
+    p.translate(bpc_ox + bpc_sidebar, bpc_oy);
+    if (bpc_sc != 1.0f) p.scale(bpc_sc, bpc_sc);
     paintBrakePBClutchStatus(p, carState, frogpilot_toggles);
+    if (edit_mode_manager_) {
+      edit_mode_manager_->updateBounds("brake_pb_clutch", QRect(width() / 2 - 140, 560, 280, 60).translated(bpc_ox, bpc_oy));
+    }
+    p.restore();
   }
 }
 
@@ -1061,59 +1077,103 @@ void FrogPilotAnnotatedCameraWidget::paintMTGear(QPainter &p, const cereal::CarS
 }
 
 void FrogPilotAnnotatedCameraWidget::paintBrakePBClutchStatus(QPainter &p, const cereal::CarState::Reader &carState, const QJsonObject &frogpilot_toggles) {
-  bool show_brake = carState.getBrakePressed() &&
-    (frogpilot_toggles.value("brake_pb_clutch_ui").toBool() || frogpilot_toggles.value("mazda_brake_ui").toBool());
-  bool show_pb = carState.getParkingBrake() &&
-    (frogpilot_toggles.value("brake_pb_clutch_ui").toBool() || frogpilot_toggles.value("mazda_pb_ui").toBool());
-  bool show_clutch = carState.getClutchPressed() &&
-    (frogpilot_toggles.value("brake_pb_clutch_ui").toBool() || frogpilot_toggles.value("mazda_clutch_ui").toBool());
+  // 各ペダルUIの有効/無効を判定（トグル設定ベース）
+  bool enable_brake = frogpilot_toggles.value("brake_pb_clutch_ui").toBool() || frogpilot_toggles.value("mazda_brake_ui").toBool();
+  bool enable_pb = frogpilot_toggles.value("brake_pb_clutch_ui").toBool() || frogpilot_toggles.value("mazda_pb_ui").toBool();
+  bool enable_clutch = frogpilot_toggles.value("brake_pb_clutch_ui").toBool() || frogpilot_toggles.value("mazda_clutch_ui").toBool();
+  bool enable_idle_stop = frogpilot_toggles.value("brake_pb_clutch_ui").toBool();  // プレースホルダー
 
-  if (!show_brake && !show_pb && !show_clutch) {
+  if (!enable_brake && !enable_pb && !enable_clutch && !enable_idle_stop) {
     return;
   }
 
   p.save();
 
-  int startX = width() / 2 - 120;
+  // ペダルの押下状態
+  bool brake_pressed = carState.getBrakePressed();
+  bool pb_engaged = carState.getParkingBrake();
+  bool clutch_pressed = carState.getClutchPressed();
+  bool idle_stop_active = false;  // TODO: アイドリングストップ信号が特定されたら置換
+
+  int itemWidth = 60;
+  int spacing = 8;
+
+  // 有効なアイテム数から全体幅を計算
+  int enabled_count = (enable_brake ? 1 : 0) + (enable_pb ? 1 : 0) + (enable_clutch ? 1 : 0) + (enable_idle_stop ? 1 : 0);
+  int totalWidth = enabled_count * itemWidth + (enabled_count - 1) * spacing;
+  int startX = width() / 2 - totalWidth / 2;
   int startY = 560;
 
-  int itemWidth = 80;
-  int spacing = 10;
+  p.setFont(InterFont(32, QFont::Bold));
 
-  p.setFont(InterFont(36, QFont::Bold));
+  int currentX = startX;
+
+  // 非アクティブ時のスタイル
+  QColor inactive_bg(80, 80, 80, 100);
+  QColor inactive_border(80, 80, 80);
+  QColor inactive_text(150, 150, 150);
 
   // Brake pedal - Red
-  if (show_brake) {
-    QRect brakeRect(startX, startY, itemWidth, 60);
-    p.setBrush(QColor(201, 34, 49, 180));
-    p.setPen(QPen(QColor(201, 34, 49), 4));
+  if (enable_brake) {
+    QRect brakeRect(currentX, startY, itemWidth, 60);
+    if (brake_pressed) {
+      p.setBrush(QColor(201, 34, 49, 180));
+      p.setPen(QPen(QColor(201, 34, 49), 4));
+    } else {
+      p.setBrush(inactive_bg);
+      p.setPen(QPen(inactive_border, 3));
+    }
     p.drawRoundedRect(brakeRect, 12, 12);
-    p.setPen(QPen(whiteColor()));
+    p.setPen(QPen(brake_pressed ? whiteColor() : inactive_text));
     p.drawText(brakeRect, Qt::AlignCenter, "BRK");
+    currentX += itemWidth + spacing;
   }
 
   // Parking brake - Orange
-  if (show_pb) {
-    int pbX = show_brake ? startX + itemWidth + spacing : startX;
-    QRect pbRect(pbX, startY, itemWidth, 60);
-    p.setBrush(QColor(255, 165, 0, 180));
-    p.setPen(QPen(QColor(255, 165, 0), 4));
+  if (enable_pb) {
+    QRect pbRect(currentX, startY, itemWidth, 60);
+    if (pb_engaged) {
+      p.setBrush(QColor(255, 165, 0, 180));
+      p.setPen(QPen(QColor(255, 165, 0), 4));
+    } else {
+      p.setBrush(inactive_bg);
+      p.setPen(QPen(inactive_border, 3));
+    }
     p.drawRoundedRect(pbRect, 12, 12);
-    p.setPen(QPen(whiteColor()));
+    p.setPen(QPen(pb_engaged ? whiteColor() : inactive_text));
     p.drawText(pbRect, Qt::AlignCenter, "P");
+    currentX += itemWidth + spacing;
   }
 
   // Clutch - Blue
-  if (show_clutch) {
-    int clutchX = startX;
-    if (show_brake) clutchX += itemWidth + spacing;
-    if (show_pb) clutchX += itemWidth + spacing;
-    QRect clutchRect(clutchX, startY, itemWidth, 60);
-    p.setBrush(QColor(0, 100, 255, 180));
-    p.setPen(QPen(QColor(0, 100, 255), 4));
+  if (enable_clutch) {
+    QRect clutchRect(currentX, startY, itemWidth, 60);
+    if (clutch_pressed) {
+      p.setBrush(QColor(0, 100, 255, 180));
+      p.setPen(QPen(QColor(0, 100, 255), 4));
+    } else {
+      p.setBrush(inactive_bg);
+      p.setPen(QPen(inactive_border, 3));
+    }
     p.drawRoundedRect(clutchRect, 12, 12);
-    p.setPen(QPen(whiteColor()));
+    p.setPen(QPen(clutch_pressed ? whiteColor() : inactive_text));
     p.drawText(clutchRect, Qt::AlignCenter, "CL");
+    currentX += itemWidth + spacing;
+  }
+
+  // Idle Stop - Green (placeholder: always inactive until signal is identified)
+  if (enable_idle_stop) {
+    QRect isRect(currentX, startY, itemWidth, 60);
+    if (idle_stop_active) {
+      p.setBrush(QColor(0, 200, 100, 180));
+      p.setPen(QPen(QColor(0, 200, 100), 4));
+    } else {
+      p.setBrush(inactive_bg);
+      p.setPen(QPen(inactive_border, 3));
+    }
+    p.drawRoundedRect(isRect, 12, 12);
+    p.setPen(QPen(idle_stop_active ? whiteColor() : inactive_text));
+    p.drawText(isRect, Qt::AlignCenter, "IS");
   }
 
   p.restore();
