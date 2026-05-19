@@ -565,3 +565,31 @@ fingerprintが認識されている場合でも未認識の場合でも、ログ
 1. FrogPilot設定 → Device Management → **「Disable Logging」をOFF**にする
 2. **「Force Onroad」を使用しない**（使用中は `no_logging = True` になる）
 3. イグニッションON → 自動的に全データが記録される
+
+### ログの保存先ディレクトリ
+
+| 環境 | パス |
+|------|------|
+| **デバイス（comma 3X等）** | `/data/media/0/realdata/` |
+| **HD設定あり** | `/data/media/0/realdata_HD/` |
+| **PC（開発環境）** | `$HOME/.comma/media/0/realdata` |
+
+#### セグメントディレクトリ構造
+
+1セグメント = 60秒で自動的にローテーションされます。
+
+```
+/data/media/0/realdata/
+└── 000001a3--c20ba54385/     ← 1回の走行（ルートディレクトリ）
+    ├── --0/                  ← セグメント0（0〜60秒）
+    │   ├── rlog              ← 全メッセージ（CAN、CarState、GPS等、capnproto形式）
+    │   ├── qlog              ← rlogのサブセット（クイックアクセス用）
+    │   ├── fcamera.hevc      ← 前方カメラ（HEVC / H.265、20fps）
+    │   ├── ecamera.hevc      ← 広角カメラ（HEVC / H.265）
+    │   ├── dcamera.hevc      ← ドライバーカメラ（RecordFront有効時のみ）
+    │   └── qcamera.ts        ← 低品質前方カメラ（H.264、プレビュー用）
+    ├── --1/                  ← セグメント1（60〜120秒）
+    └── --2/                  ← セグメント2（120〜180秒）
+```
+
+**注意**: CANデータは個別ファイルではなく、`rlog` 内にcapnprotoメッセージとして格納されます。
