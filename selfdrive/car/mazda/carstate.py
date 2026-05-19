@@ -1,6 +1,6 @@
 from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
-from openpilot.common.log import cloudlog
+from openpilot.common.swaglog import cloudlog
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.interfaces import CarStateBase
