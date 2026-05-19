@@ -63,8 +63,9 @@ RxCheck mazda_long_rx_checks[] = {
   {.msg = {{MAZDA_PEDALS,       0, 8, .frequency = 50U}, { 0 }, { 0 }}},
 };
 
-// MT RX checks: includes CLUTCH_SWITCH for clutch pedal detection, no CRZ_CTRL (MT cars don't send it)
+// MT RX checks: includes CLUTCH_SWITCH for clutch pedal detection
 RxCheck mazda_mt_rx_checks[] = {
+  {.msg = {{MAZDA_CRZ_CTRL,      0, 8, .frequency = 50U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_CRZ_BTNS,      0, 8, .frequency = 10U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_STEER_TORQUE,  0, 8, .frequency = 83U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_ENGINE_DATA,   0, 8, .frequency = 100U}, { 0 }, { 0 }}},
