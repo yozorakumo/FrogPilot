@@ -1,3 +1,4 @@
+#include "frogpilot/ui/qt/offroad/can_log_settings.h"
 #include "frogpilot/ui/qt/offroad/data_settings.h"
 #include "frogpilot/ui/qt/offroad/device_settings.h"
 #include "frogpilot/ui/qt/offroad/frogpilot_settings.h"
@@ -63,6 +64,7 @@ bool nnffLogFileExists(const QString &carFingerprint) {
 }
 
 void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
+  FrogPilotCanLogPanel *frogpilotCanLogPanel = new FrogPilotCanLogPanel(this);
   FrogPilotDataPanel *frogpilotDataPanel = new FrogPilotDataPanel(this);
   FrogPilotDevicePanel *frogpilotDevicePanel = new FrogPilotDevicePanel(this);
   FrogPilotLateralPanel *frogpilotLateralPanel = new FrogPilotLateralPanel(this);
@@ -80,7 +82,7 @@ void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
     {{tr("MANAGE"), frogpilotSoundsPanel}},
     {{tr("DRIVING MODEL"), frogpilotModelPanel}, {tr("GAS / BRAKE"), frogpilotLongitudinalPanel}, {tr("STEERING"), frogpilotLateralPanel}},
     {{tr("MAP DATA"), frogpilotMapsPanel}, {tr("NAVIGATION"), frogpilotNavigationPanel}},
-    {{tr("DATA"), frogpilotDataPanel}, {tr("DEVICE CONTROLS"), frogpilotDevicePanel}, {tr("UTILITIES"), new FrogPilotUtilitiesPanel(this)}},
+    {{tr("CAN LOGS"), frogpilotCanLogPanel}, {tr("DATA"), frogpilotDataPanel}, {tr("DEVICE CONTROLS"), frogpilotDevicePanel}, {tr("UTILITIES"), new FrogPilotUtilitiesPanel(this)}},
     {{tr("APPEARANCE"), frogpilotVisualsPanel}, {tr("THEME"), frogpilotThemesPanel}},
     {{tr("VEHICLE SETTINGS"), frogpilotVehiclesPanel}, {tr("WHEEL CONTROLS"), frogpilotWheelPanel}}
   };
@@ -89,7 +91,7 @@ void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
     {tr("Alerts and Sounds"), tr("<b>Adjust alert volumes and enable custom notifications.</b>"), "../../frogpilot/assets/toggle_icons/icon_sound.png"},
     {tr("Driving Controls"), tr("<b>Fine-tune custom FrogPilot acceleration, braking, and steering controls.</b>"), "../../frogpilot/assets/toggle_icons/icon_steering.png"},
     {tr("Navigation"), tr("<b>Download map data for the \"Speed Limit Controller\" and configure \"Navigate on openpilot\" (NOO).</b>"), "../../frogpilot/assets/toggle_icons/icon_map.png"},
-    {tr("System Settings"), tr("<b>Manage backups, device settings, screen options, storage, and tools to keep FrogPilot running smoothly.</b>"), "../../frogpilot/assets/toggle_icons/icon_system.png"},
+    {tr("System Settings"), tr("<b>Manage CAN logs, backups, device settings, screen options, storage, and tools to keep FrogPilot running smoothly.</b>"), "../../frogpilot/assets/toggle_icons/icon_system.png"},
     {tr("Theme and Appearance"), tr("<b>Customize the look of the driving screen and interface, including themes!</b>"), "../../frogpilot/assets/toggle_icons/icon_display.png"},
     {tr("Vehicle Settings"), tr("<b>Configure car-specific options and steering wheel button mappings.</b>"), "../../frogpilot/assets/toggle_icons/icon_vehicle.png"}
   };

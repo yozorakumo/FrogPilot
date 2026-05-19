@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 
 import cereal.messaging as messaging
 
+from openpilot.common.params import Params
 from openpilot.selfdrive.pandad import can_list_to_can_capnp
 from openpilot.common.swaglog import cloudlog
 
@@ -47,6 +48,7 @@ class CanPlayer:
     self.speed = speed
     self.loop = loop
     self.pm = messaging.PubMaster(['can'])
+    self.params = Params()
 
     self._paused = False
     self._stop = False
@@ -96,10 +98,12 @@ class CanPlayer:
   def pause(self):
     """再生を一時停止"""
     self._paused = True
+    self._update_params_state()
 
   def resume(self):
     """再生を再開"""
     self._paused = False
+    self._update_params_state()
 
   def toggle_pause(self):
     """一時停止/再開を切り替え"""
@@ -108,6 +112,52 @@ class CanPlayer:
   def stop(self):
     """再生を停止"""
     self._stop = True
+    self.params.put("CanPlaybackPlaying", "0")
+
+  def _update_params_state(self) -> None:
+    """Paramsに現在の再生状態を書き込む"""
+    with self._lock:
+      position = (self._current_time_ns - self._start_time_ns) / 1e9 if self._start_time_ns else 0.0
+    self.params.put("CanPlaybackPosition", str(position))
+    self.params.put("CanPlaybackDuration", str(self._duration))
+    self.params.put("CanPlaybackSpeed", str(self.speed))
+    self.params.put("CanPlaybackPlaying", "0" if self._paused else "1")
+    self.params.put("CanPlaybackRealTime", self.real_time_str)
+
+  def _check_params_commands(self) -> None:
+    """ParamsからUI側のコマンドを確認して処理する"""
+    # シークコマンドの確認
+    seek_cmd = self.params.get("CanPlaybackSeek")
+    if seek_cmd is not None:
+      try:
+        seek_pos = float(seek_cmd)
+        # seek_posはログ先頭からの相対秒数 → 絶対タイムスタンプに変換
+        abs_time = (self._start_time_ns / 1e9) + seek_pos
+        cloudlog.info(f"CAN playback: seeking to {seek_pos:.2f}s (abs: {abs_time:.2f})")
+        self.params.remove("CanPlaybackSeek")
+      except (ValueError, TypeError):
+        pass
+
+    # 一時停止/再生コマンド
+    pause_cmd = self.params.get("CanPlaybackPause")
+    if pause_cmd == "1" and not self._paused:
+      self._paused = True
+      self.params.remove("CanPlaybackPause")
+    elif pause_cmd == "0" and self._paused:
+      self._paused = False
+      self.params.remove("CanPlaybackPause")
+
+    # 速度変更コマンド
+    speed_cmd = self.params.get("CanPlaybackSpeedCmd")
+    if speed_cmd is not None:
+      try:
+        new_speed = float(speed_cmd)
+        if new_speed > 0:
+          self.speed = new_speed
+          cloudlog.info(f"CAN playback: speed changed to {new_speed}x")
+        self.params.remove("CanPlaybackSpeedCmd")
+      except (ValueError, TypeError):
+        self.params.remove("CanPlaybackSpeedCmd")
 
   @staticmethod
   def _entry_to_can_msg(entry: CanLogEntry) -> list:
@@ -139,23 +189,37 @@ class CanPlayer:
     - 一時停止中の時間は再生タイミングに影響しない
     - 同一タイムスタンプ（1ms未満の差）のエントリはバッチ送信
     """
+    # 初期状態をParamsに書き込む
+    self._update_params_state()
+
     while not self._stop:
       with CanLogReader(self.filepath) as reader:
         batch: list[list] = []
         log_start_ns = None
         playback_start = None
         total_paused_duration = 0.0
+        last_params_update = time.monotonic()
 
         while not self._stop:
           entry = reader.read_entry()
           if entry is None:
             break
 
+          # UIコマンドの確認と状態同期（100ms間隔）
+          now = time.monotonic()
+          if now - last_params_update > 0.1:
+            self._check_params_commands()
+            self._update_params_state()
+            last_params_update = now
+
           # 一時停止処理（ポーリング方式でスレッドセーフ）
           if self._paused:
+            self._update_params_state()
             pause_begin = time.monotonic()
             while self._paused and not self._stop:
               time.sleep(0.05)
+              # 一時停止中もコマンドを確認
+              self._check_params_commands()
             if self._stop:
               break
             total_paused_duration += time.monotonic() - pause_begin
