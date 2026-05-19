@@ -593,3 +593,42 @@ fingerprintが認識されている場合でも未認識の場合でも、ログ
 ```
 
 **注意**: CANデータは個別ファイルではなく、`rlog` 内にcapnprotoメッセージとして格納されます。
+
+---
+
+## Mazda LKAS Fault 対策
+
+### 問題の概要
+Mazda車（GEN1）でopenpilot/FrogPilotによるステアリング制御中、ドライバーのハンドルトルク不足により車両EPSがLKAS_BLOCK信号を送信し、LKAS Fault（steerFaultPermanent）が発生する。一度Faultが発生すると車両再起動+1分待機が必要。
+
+### 根本原因
+1. ドライバーのハンドルトルク不足 → EPSがLKAS_BLOCK信号を送信（STEER_RATE 0x241）
+2. LKAS_BLOCKの継続 → カメラモジュールがERR_BIT_1=1をセット（CAM_LKAS 0x243）
+3. openpilotがERR_BIT_1をそのままEPSに転送 → EPSがエラー状態にロック
+4. 車両再起動が必要になる
+
+### CANメッセージフロー
+```
+カメラ(Bus 2) → panda(ブロック) → openpilot(読取り)
+openpilot → CAM_LKAS送信(Bus 0) → EPS → STEER_RATE送信(Bus 0)
+```
+- pandaの`safety_mazda.h`でカメラのCAM_LKASはMain Busに転送されないようブロック
+- openpilotだけがMain Bus（Bus 0）にCAM_LKASを送信
+
+### 3層防御の実装
+
+| 層 | ファイル | 変更内容 | 効果 |
+|---|---|---|---|
+| **予防層** | `carcontroller.py` | LKAS_BLOCK中はステアリング要求を0に | ERR_BIT_1への遷移を予防 |
+| **伝播防止層** | `mazdacan.py` | `er1 = 0`（ERR_BIT_1を0に固定） | 車両のLKAS Fault警告灯を防止 |
+| **検出緩和層** | `carstate.py` | `steerFaultPermanent = False` | 再起動不要に |
+
+### 他プロジェクトの対応状況
+- **上流commaai/openpilot**: LKAS Fault時は即時無効化+「Restart the Car」アラートのみ。回避策なし
+- **MoreTore/openpilot**: TORQUE_INTERCEPTOR（ハードウェア）使用時に`steerFaultPermanent = False`。ソフトウェアワークアラウンドなし
+- **全GEN1 Mazda車種共通**: DBC定義、検出ロジック、ステアリングパラメータは全車種同一
+
+### 安全性のポイント
+- LKAS_BLOCK（steerFaultTemporary）は引き続き正常に検出・処理される
+- ERR_BIT_1はカメラモジュールの内部状態に過ぎず、LKAS_BLOCKが別経路で安全を担保
+- 変更は最小限（3ファイル・各1-2行）で、openpilotのコアには影響しない

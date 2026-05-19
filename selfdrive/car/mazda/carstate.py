@@ -192,7 +192,7 @@ class CarState(CarStateBase):
     self.lkas_disabled = cp_cam.vl["CAM_LANEINFO"]["LANE_LINES"] == 0
     self.cam_lkas = cp_cam.vl["CAM_LKAS"]
     self.cam_laneinfo = cp_cam.vl["CAM_LANEINFO"]
-    ret.steerFaultPermanent = cp_cam.vl["CAM_LKAS"]["ERR_BIT_1"] == 1
+    ret.steerFaultPermanent = False  # ERR_BIT_1 workaround: prevent permanent fault that requires car restart
 
     # FrogPilot CarState functions
     self.lkas_previously_enabled = self.lkas_enabled

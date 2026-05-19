@@ -49,7 +49,7 @@ class CarController(CarControllerBase):
 
     apply_steer = 0
 
-    if CC.latActive:
+    if CC.latActive and not CS.out.steerFaultTemporary:
       # calculate steer and also set limits due to driver torque
       new_steer = int(round(CC.actuators.steer * CarControllerParams.STEER_MAX))
       apply_steer = apply_driver_steer_torque_limits(new_steer, self.apply_steer_last,

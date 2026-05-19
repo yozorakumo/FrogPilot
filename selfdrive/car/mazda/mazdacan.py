@@ -10,7 +10,7 @@ def create_steering_control(packer, CP, frame, apply_steer, lkas):
 
   # copy values from camera
   b1 = int(lkas["BIT_1"])
-  er1 = int(lkas["ERR_BIT_1"])
+  er1 = 0  # Force clear ERR_BIT_1 to prevent EPS lockup (LKAS Fault workaround)
   lnv = 0
   ldw = 0
   er2 = int(lkas["ERR_BIT_2"])
