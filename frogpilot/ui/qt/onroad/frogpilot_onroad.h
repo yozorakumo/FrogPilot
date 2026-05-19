@@ -23,6 +23,7 @@ private:
   void paintSteeringTorqueBorder(QPainter &p, const QRect &rect);
   void paintTurnSignalBorder(QPainter &p, const QRect &rect);
   void updatePlaybackPosition();
+  void updatePlaybackRealTime();
 
   bool blindSpotLeft;
   bool blindSpotRight;

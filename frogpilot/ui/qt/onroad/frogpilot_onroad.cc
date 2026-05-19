@@ -39,7 +39,7 @@ FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) 
       playback_overlay_->setPlaying(playing);
     });
 
-    QObject::connect(playback_overlay_, &PlaybackOverlay::speedChangeRequested, [this](double speed) {
+    QObject::connect(playback_overlay_, &PlaybackOverlay::speedChangeRequested, [](double speed) {
       // Speed change handled by overlay internally, this signal is for future backend integration
     });
   }
