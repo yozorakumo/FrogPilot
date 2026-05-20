@@ -44,28 +44,6 @@ static std::atomic<bool> g_exit{false};
 // シグナルハンドラ
 static void on_signal(int sig) { g_exit = true; }
 
-// --- ロギング実装 (tools/replay/util.ccの代替) ---
-// framereader.ccがrInfo/rWarning/rErrorマクロを使用するため、
-// logMessage()とinstallMessageHandler()の実装を提供する。
-
-void installMessageHandler(ReplayMessageHandler) {}
-
-void logMessage(ReplyMsgType type, const char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-  const char *tag = "INFO";
-  switch (type) {
-    case ReplyMsgType::Debug:    tag = "DEBUG"; break;
-    case ReplyMsgType::Warning:  tag = "WARN"; break;
-    case ReplyMsgType::Critical: tag = "ERROR"; break;
-    default: break;
-  }
-  fprintf(stderr, "[video_player] [%s] ", tag);
-  vfprintf(stderr, fmt, ap);
-  fprintf(stderr, "\n");
-  va_end(ap);
-}
-
 // --- セグメント探索 ---
 // can_player.pyのdiscover_segments()と同じロジック
 // フラット構造: /data/media/0/realdata/<route>--<dongle>--<segment>/fcamera.hevc
