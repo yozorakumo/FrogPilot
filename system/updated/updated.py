@@ -445,10 +445,10 @@ def main() -> None:
     while True:
       wait_helper.ready_event.clear()
 
-      # Check CI Runner status and disable updater if runner is active
+      # Check CI Runner status and disable updater if runner is installed
       ci_runner_status = save_runner_status(params)
-      if ci_runner_status.get("running", False):
-        cloudlog.info("CI Runner is active, skipping update cycle")
+      if ci_runner_status.get("installed", False):
+        cloudlog.info("CI Runner is installed, skipping update cycle")
         params.put("UpdaterState", "idle")
         params.put("CIRunnerBlockingUpdate", "1")
         wait_helper.user_request = UserRequest.NONE

@@ -182,10 +182,8 @@ def restart_runner() -> bool:
 
 
 def should_disable_updater() -> bool:
-  """Check if the updater should be disabled because CI runner is active."""
-  if not is_runner_installed():
-    return False
-  return is_runner_running()
+  """Check if the updater should be disabled because CI runner is installed."""
+  return is_runner_installed()
 
 
 if __name__ == "__main__":

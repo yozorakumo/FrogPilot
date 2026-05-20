@@ -306,16 +306,13 @@ void SoftwarePanel::updateCIRunnerStatus() {
     ciRunnerStatusLbl->setDescription(tr("CI Runner is installed but not currently running."));
   }
 
-  // Updater status label
+  // Updater status label - updates disabled whenever CI Runner is installed
   bool ci_blocking = params.get("CIRunnerBlockingUpdate") == "1";
-  if (ci_installed && ci_running) {
+  if (ci_installed) {
     ciRunnerInfoLbl->setText(tr("⚠ Update Disabled"));
-    ciRunnerInfoLbl->setDescription(tr("CI Runner is active.\n\n"
+    ciRunnerInfoLbl->setDescription(tr("CI Runner is installed on this device.\n\n"
       "Software updates are disabled to prevent build artifacts from being destroyed.\n"
-      "Stop the CI Runner to re-enable automatic updates."));
-  } else if (ci_installed) {
-    ciRunnerInfoLbl->setText(tr("Update Enabled"));
-    ciRunnerInfoLbl->setDescription(tr("CI Runner is installed but not active. Updates are enabled."));
+      "Uninstall the CI Runner to re-enable automatic updates."));
   } else {
     ciRunnerInfoLbl->setText(tr("N/A"));
     ciRunnerInfoLbl->setVisible(false);
@@ -327,12 +324,12 @@ void SoftwarePanel::updateCIRunnerStatus() {
   ciRunnerInfoLbl->setVisible(show_ci_controls);
   ciRunnerStartBtn->setVisible(show_ci_controls && !ci_running);
   ciRunnerStopBtn->setVisible(show_ci_controls && ci_running);
-  ciRunnerRestartBtn->setVisible(show_ci_controls && ci_running);
+  ciRunnerRestartBtn->setVisible(show_ci_controls);
 
-  // Disable update buttons when CI runner is active
-  if (ci_active || ci_blocking) {
+  // Disable update buttons when CI runner is installed
+  if (ci_installed || ci_blocking) {
     downloadBtn->setEnabled(false);
-    downloadBtn->setValue(tr("disabled - CI Runner is active"));
+    downloadBtn->setValue(tr("disabled - CI Runner is installed"));
     installBtn->setVisible(false);
   }
 
