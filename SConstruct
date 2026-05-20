@@ -395,6 +395,9 @@ SConscript(['third_party/SConscript'])
 
 SConscript(['selfdrive/SConscript'])
 
+# Build FrogPilot video_player (CAN playback video server)
+SConscript(['frogpilot/can_log/SConscript'])
+
 if Dir('#tools/cabana/').exists() and GetOption('extras'):
   SConscript(['tools/replay/SConscript'])
   if arch != "larch64":

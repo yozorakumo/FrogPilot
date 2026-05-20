@@ -1,0 +1,30 @@
+Import('env', 'arch', 'common', 'messaging', 'cereal', 'visionipc')
+
+# video_player: HEVC映像をVisionIPCで配信するスタンドアロンバイナリ
+# Qt非依存（replayのCameraServerを使わず、直接VisionIpcServerを使用）
+#
+# 依存:
+#   - FrameReader (tools/replay/framereader.cc): FFmpegでHEVCをデコード
+#   - VisionIpcServer (msgq/visionipc): 共有メモリでUIにYUVフレームを配信
+#   - Params (common): can_player.pyとの同期
+
+# framereader.cc内のrInfo/rWarning/rErrorマクロは
+# video_player.ccで提供されるlogMessage()実装にリンクされる。
+# tools/replay/util.ccはリンクしない（重複定義を避けるため）。
+
+video_player_libs = [common, messaging, cereal, visionipc,
+                     'm', 'ssl', 'crypto', 'pthread',
+                     'avutil', 'avcodec', 'avformat', 'yuv']
+
+video_player_frameworks = []
+
+if arch == "Darwin":
+  video_player_frameworks.append('OpenCL')
+else:
+  video_player_libs.append('OpenCL')
+
+env.Program('frogpilot/can_log/video_player',
+            ['frogpilot/can_log/video_player.cc',
+             'tools/replay/framereader.cc'],
+            LIBS=video_player_libs,
+            FRAMEWORKS=video_player_frameworks)

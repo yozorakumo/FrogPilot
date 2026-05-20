@@ -308,6 +308,10 @@ void FrogPilotCanLogPanel::startPlayback(const QString &routePath) {
   }
   QProcess::startDetached(python_path, {"-m", "frogpilot.can_log.can_player", routePath}, "/data/openpilot");
 
+  // video_player バイナリも起動（HEVC映像をVisionIPCで配信）
+  // fcamera.hevcが存在する場合のみ映像配信が行われる
+  QProcess::startDetached("/data/openpilot/frogpilot/can_log/video_player", {routePath}, "/data/openpilot");
+
   // 設定画面を閉じてホーム画面に戻る
   // CAN メッセージがパブリッシュされると自動的に onroad UI に切り替わる
   emit requestCloseSettings();
