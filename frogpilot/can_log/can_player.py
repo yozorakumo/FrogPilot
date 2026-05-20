@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""CAN Bus Player - rlogから全イベントを読み出して各サービスにパブリッシュ
+"""CAN Bus Player - rlogからCANメッセージのみを読み出してパブリッシュ
 
-/data/media/0/realdata/ のrlogファイル（capnproto形式）から全イベントを
-読み込み、オリジナルのタイミングを再現して各サービスにパブリッシュする。
+/data/media/0/realdata/ のrlogファイル（capnproto形式）からCANメッセージを
+読み込み、オリジナルのタイミングを再現してパブリッシュする。
 
-CAN メッセージだけでなく、carState, modelV2, controlsState 等の
-全サービスのイベントをrlogから再現する。
+CAN_PLAYBACKモードでは、システムプロセス（timed, thermald, card等）が
+既に起動しており、各サービスをpublishしている。そのため、can_playerは
+CANメッセージのみをpublishし、card.pyがCANからCarState等を生成する
+通常パイプラインを通す。
 
-これにより、controlsd等の全プロセスが正しいデータを受け取り、
-カメラ映像なしでコントロールが完全に動作する。
+publishするサービス:
+  - can: CANメッセージ（rlogから）
+  - pandaStates: ダミー（ignition=True）
+  - peripheralState: ダミー
 
 使用例:
   # ルートディレクトリを指定して再生
@@ -45,16 +49,13 @@ BATCH_THRESHOLD_SEC = 0.001  # 1ms
 RLOG_FILENAME = "rlog.bz2"
 RLOG_FILENAME_UNCOMPRESSED = "rlog"
 
-# 再生時にスキップするサービス（内部ロギング用・再生不要）
-SKIP_SERVICES = {
-  'logMessage', 'errorLogMessage', 'androidLog',
-  'procLog', 'uploadFile',
-  'roadEncodeData', 'driverEncodeData', 'wideRoadEncodeData',
-  'qRoadEncodeData',
-  'livestreamRoadEncodeIdx', 'livestreamDriverEncodeIdx', 'livestreamWideRoadEncodeIdx',
-  'livestreamRoadEncodeData', 'livestreamDriverEncodeData', 'livestreamWideRoadEncodeData',
-  'managerState', 'uploaderState',
-}
+# CAN playback mode: only publish these services from rlog.
+# Other services are published by system processes (timed, thermald, etc.)
+# or generated through the normal pipeline:
+#   can → card.py → carState → controlsd → controlsState
+#   carState → modeld → modelV2
+#   carState → plannerd → lateralPlan/longitudinalPlan
+ALLOWED_SERVICES = {'can', 'pandaStates', 'peripheralState'}
 
 
 def discover_segments(route_path: str) -> list[str]:
@@ -314,19 +315,11 @@ class CanPlayer:
     if not self._events:
       raise ValueError(f"No events found in {route_path}")
 
-    # rlogに含まれるサービスを検出
-    discovered_services = set()
-    for _, event_type, _ in self._events:
-      if event_type in SERVICE_LIST and event_type not in SKIP_SERVICES:
-        discovered_services.add(event_type)
-
-    # 必須サービスを常に含める
-    discovered_services.update(['can', 'pandaStates', 'peripheralState'])
-
-    cloudlog.info(f"CAN playback: discovered {len(discovered_services)} services: {sorted(discovered_services)}")
-
-    # PubMasterを全サービスで初期化
-    self.pm = messaging.PubMaster(list(discovered_services))
+    # PubMasterを許可サービスのみで初期化
+    # システムプロセスが既にpublishしているサービスと衝突しないよう、
+    # CAN/pandaStates/peripheralStateのみpublishする
+    cloudlog.info(f"CAN playback: publishing services: {sorted(ALLOWED_SERVICES)}")
+    self.pm = messaging.PubMaster(list(ALLOWED_SERVICES))
 
     self._start_time_ns = self._events[0][0]
     self._end_time_ns = self._events[-1][0]
@@ -353,10 +346,13 @@ class CanPlayer:
 
   @property
   def real_time_str(self) -> str:
-    """ログの現実時間を文字列で返す"""
+    """再生経過時間を文字列で返す (MM:SS)"""
     with self._lock:
-      ts = self._current_time_ns / 1e9
-    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")
+      elapsed = (self._current_time_ns - self._start_time_ns) / 1e9 if self._start_time_ns else 0.0
+    total_secs = int(elapsed)
+    mins = total_secs // 60
+    secs = total_secs % 60
+    return f"{mins:02d}:{secs:02d}"
 
   @property
   def is_paused(self) -> bool:
@@ -490,8 +486,8 @@ class CanPlayer:
         if sleep_needed > BATCH_THRESHOLD_SEC:
           time.sleep(sleep_needed)
 
-        # イベントをパブリッシュ（スキップリスト以外）
-        if event_type not in SKIP_SERVICES and event_type in self.pm.sock:
+        # ALLOWED_SERVICESのイベントのみパブリッシュ
+        if event_type in ALLOWED_SERVICES and event_type in self.pm.sock:
           try:
             self.pm.send(event_type, raw_bytes)
           except Exception as e:

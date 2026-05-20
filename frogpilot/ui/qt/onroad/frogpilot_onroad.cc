@@ -164,14 +164,16 @@ void FrogPilotOnroadWindow::updatePlaybackPosition() {
 void FrogPilotOnroadWindow::updatePlaybackRealTime() {
   if (!isCanPlayback || !playback_overlay_) return;
 
-  // Calculate real time from start time + current position
-  // For mock: parse the start time and add position seconds
-  QDateTime start_dt = QDateTime::fromString(playback_start_time_, "yyyy-MM-dd HH:mm:ss.zzz");
-  if (start_dt.isValid()) {
-    qint64 msecs = static_cast<qint64>(playback_position_ * 1000.0);
-    QDateTime real_dt = start_dt.addMSecs(msecs);
-    playback_overlay_->setRealTime(real_dt.toString("yyyy-MM-dd HH:mm:ss.zzz"));
-  }
+  // Display elapsed time (MM:SS) instead of real clock time.
+  // logMonoTime is a monotonic clock (CLOCK_BOOTTIME), not epoch time,
+  // so converting it to wall clock would show 1970 dates.
+  int total_secs = static_cast<int>(playback_position_);
+  int mins = total_secs / 60;
+  int secs = total_secs % 60;
+  QString elapsed = QString("%1:%2")
+                        .arg(mins, 2, 10, QChar('0'))
+                        .arg(secs, 2, 10, QChar('0'));
+  playback_overlay_->setRealTime(elapsed);
 }
 
 void FrogPilotOnroadWindow::paintEvent(QPaintEvent *event) {
