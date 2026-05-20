@@ -1,5 +1,6 @@
 #include "frogpilot/ui/qt/offroad/can_log_settings.h"
 
+#include <QFile>
 #include <QProcess>
 
 #include "selfdrive/ui/qt/widgets/controls.h"
@@ -291,7 +292,21 @@ void FrogPilotCanLogPanel::startPlayback(const QString &routePath) {
   params.putBool("CAN_PLAYBACK", true);
 
   // can_player.py をバックグラウンドで起動
-  QProcess::startDetached("python3", {"-m", "frogpilot.can_log.can_player", routePath}, "/data/openpilot");
+  // デバイスの python3 は Python 3.8 (capnpなし) を指すため、
+  // launch_env.sh から PYTHON パスを取得するか、pyenv のパスを使用
+  QString python_path = "/usr/local/pyenv/versions/3.11.4/bin/python3";
+  QFile env_file("/data/openpilot/launch_env.sh");
+  if (env_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    while (!env_file.atEnd()) {
+      QString line = env_file.readLine();
+      if (line.startsWith("export PYTHON=")) {
+        python_path = line.split('=').last().trimmed().remove('"').remove('\'');
+        break;
+      }
+    }
+    env_file.close();
+  }
+  QProcess::startDetached(python_path, {"-m", "frogpilot.can_log.can_player", routePath}, "/data/openpilot");
 
   // 設定画面を閉じてホーム画面に戻る
   // CAN メッセージがパブリッシュされると自動的に onroad UI に切り替わる

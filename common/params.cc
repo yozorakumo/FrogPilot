@@ -629,7 +629,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"CIRunnerStatus", PERSISTENT},
 
     // CAN Playback parameters
-    {"CAN_PLAYBACK", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+    {"CAN_PLAYBACK", CLEAR_ON_MANAGER_START},
     {"CanPlaybackDuration", CLEAR_ON_MANAGER_START},
     {"CanPlaybackFile", CLEAR_ON_MANAGER_START},
     {"CanPlaybackPause", CLEAR_ON_MANAGER_START},
