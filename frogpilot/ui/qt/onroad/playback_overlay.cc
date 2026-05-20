@@ -200,7 +200,26 @@ void PlaybackOverlay::paintEvent(QPaintEvent *event) {
 
 void PlaybackOverlay::mousePressEvent(QMouseEvent *event) {
   resetHideTimer();
-  QWidget::mousePressEvent(event);
+  event->accept();
+}
+
+void PlaybackOverlay::mouseReleaseEvent(QMouseEvent *event) {
+  event->accept();
+}
+
+bool PlaybackOverlay::event(QEvent *event) {
+  // タッチイベントとマウスイベントを消費して親（サイドバー）への伝播を防ぐ
+  switch (event->type()) {
+    case QEvent::TouchBegin:
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonRelease:
+    case QEvent::MouseMove:
+      return true;
+    default:
+      return QWidget::event(event);
+  }
 }
 
 void PlaybackOverlay::updateDisplay() {

@@ -25,6 +25,7 @@ import os
 import sys
 import time
 import argparse
+import struct
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -109,8 +110,54 @@ def discover_segments(route_path: str) -> list[str]:
   return segments
 
 
+def _read_capnp_messages(data: bytes):
+  """capnpのストリーミングフォーマットからメッセージの生バイトを抽出
+
+  capnpのストリーミングフォーマットでは各メッセージが:
+    - ヘッダー: セグメント数(4bytes) + 各セグメントのサイズ(4bytes×N)
+    - パディングで8バイト境界
+    - セグメントデータ
+  という構造になっている。
+
+  Yields:
+    各メッセージの生バイト (bytes)
+  """
+  offset = 0
+  while offset < len(data):
+    # 最初の4バイト: (セグメント数 - 1)
+    if offset + 4 > len(data):
+      break
+    seg_count = struct.unpack('<I', data[offset:offset+4])[0] + 1
+
+    # 各セグメントのサイズ（8バイト単位）
+    sizes_start = offset + 4
+    if sizes_start + seg_count * 4 > len(data):
+      break
+
+    total_data_bytes = 0
+    for i in range(seg_count):
+      seg_words = struct.unpack('<I', data[sizes_start + i*4:sizes_start + i*4 + 4])[0]
+      total_data_bytes += seg_words * 8
+
+    # ヘッダーサイズ（8バイト境界にパディング）
+    header_size = 4 + seg_count * 4
+    header_size_padded = (header_size + 7) & ~7
+
+    # メッセージ全体のサイズ
+    msg_size = header_size_padded + total_data_bytes
+
+    if offset + msg_size > len(data):
+      break
+
+    yield data[offset:offset+msg_size]
+    offset += msg_size
+
+
 def read_events_from_rlog(rlog_path: str) -> list[tuple]:
   """rlogファイルから全イベントを読み込む
+
+  capnpのストリーミングフォーマットを直接パースして生バイトを取得する。
+  ent.to_bytes() はデバイスのpycapnpバージョンに存在しないため使用しない。
 
   Args:
     rlog_path: rlogファイルパス
@@ -126,18 +173,14 @@ def read_events_from_rlog(rlog_path: str) -> list[tuple]:
     dat = bz2.decompress(dat)
 
   events = []
-  try:
-    ents = capnp_log.Event.read_multiple_bytes(dat)
-    for ent in ents:
-      try:
-        event_type = ent.which()
-        log_mono_time = ent.logMonoTime
-        raw_bytes = ent.to_bytes()
-        events.append((log_mono_time, event_type, raw_bytes))
-      except Exception:
-        continue
-  except Exception:
-    pass
+  for raw_msg in _read_capnp_messages(dat):
+    try:
+      msg = capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24)
+      event_type = msg.which()
+      log_mono_time = msg.logMonoTime
+      events.append((log_mono_time, event_type, raw_msg))
+    except Exception:
+      continue
 
   return events
 
