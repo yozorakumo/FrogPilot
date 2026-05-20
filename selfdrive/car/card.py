@@ -22,6 +22,9 @@ from openpilot.frogpilot.controls.frogpilot_card import FrogPilotCard
 
 REPLAY = "REPLAY" in os.environ
 CAN_PLAYBACK = os.environ.get("CAN_PLAYBACK", "0") == "1" or Params().get_bool("CAN_PLAYBACK")
+if CAN_PLAYBACK:
+  os.environ["REPLAY"] = "1"
+  REPLAY = True
 
 EventName = car.CarEvent.EventName
 

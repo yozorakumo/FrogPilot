@@ -174,7 +174,7 @@ class CanPlayer:
     self.route_path = route_path
     self.speed = speed
     self.loop = loop
-    self.pm = messaging.PubMaster(['can'])
+    self.pm = messaging.PubMaster(['can', 'pandaStates', 'peripheralState'])
     self.params = Params()
 
     self._paused = False
@@ -299,6 +299,35 @@ class CanPlayer:
     can_bytes = can_list_to_can_capnp(batch, msgtype='can', valid=True)
     self.pm.send('can', can_bytes)
 
+  def _send_panda_state(self) -> None:
+    """ダミーpandaStatesメッセージをパブリッシュ（controlsdのpandaStates validチェック用）"""
+    dat = messaging.new_message('pandaStates', 1)
+    dat.valid = True
+    dat.pandaStates[0] = {
+      'ignitionLine': True,
+      'pandaType': "uno",
+      'controlsAllowed': True,
+      'safetyModel': 'mazda',
+      'safetyParam': 0,
+      'heartbeatSeen': True,
+      'canRxErrs': 0,
+      'canSendErrs': 0,
+      'canFwdErrs': 0,
+    }
+    self.pm.send('pandaStates', dat)
+
+  def _send_peripheral_state(self) -> None:
+    """ダミーperipheralStateメッセージをパブリッシュ"""
+    dat = messaging.new_message('peripheralState')
+    dat.valid = True
+    dat.peripheralState = {
+      'pandaType': capnp_log.PandaState.PandaType.uno,
+      'voltage': 12000,
+      'current': 500,
+      'fanSpeedRpm': 1000,
+    }
+    self.pm.send('peripheralState', dat)
+
   def run(self):
     """メイン再生ループ
 
@@ -326,6 +355,8 @@ class CanPlayer:
         if now - last_params_update > 0.1:
           self._check_params_commands()
           self._update_params_state()
+          self._send_panda_state()
+          self._send_peripheral_state()
           last_params_update = now
 
         # 一時停止処理
@@ -335,6 +366,8 @@ class CanPlayer:
           while self._paused and not self._stop:
             time.sleep(0.05)
             self._check_params_commands()
+            self._send_panda_state()
+            self._send_peripheral_state()
           if self._stop:
             break
           total_paused_duration += time.monotonic() - pause_begin
