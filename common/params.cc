@@ -622,6 +622,23 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"WheelIcon", PERSISTENT},
     {"WheelSpeed", PERSISTENT},
     {"WheelToDownload", CLEAR_ON_MANAGER_START},
+
+    // CI Runner parameters
+    {"CIRunnerActive", PERSISTENT},
+    {"CIRunnerBlockingUpdate", CLEAR_ON_MANAGER_START},
+    {"CIRunnerStatus", PERSISTENT},
+
+    // CAN Playback parameters
+    {"CAN_PLAYBACK", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+    {"CanPlaybackDuration", CLEAR_ON_MANAGER_START},
+    {"CanPlaybackFile", CLEAR_ON_MANAGER_START},
+    {"CanPlaybackPause", CLEAR_ON_MANAGER_START},
+    {"CanPlaybackPlaying", CLEAR_ON_MANAGER_START},
+    {"CanPlaybackPosition", CLEAR_ON_MANAGER_START},
+    {"CanPlaybackRealTime", CLEAR_ON_MANAGER_START},
+    {"CanPlaybackSeek", CLEAR_ON_MANAGER_START},
+    {"CanPlaybackSpeed", CLEAR_ON_MANAGER_START},
+    {"CanPlaybackSpeedCmd", CLEAR_ON_MANAGER_START},
 };
 
 } // namespace
