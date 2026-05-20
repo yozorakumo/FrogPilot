@@ -22,6 +22,7 @@ from openpilot.selfdrive.controls.lib.alertmanager import set_offroad_alert
 from openpilot.system.hardware import AGNOS, HARDWARE
 from openpilot.system.version import get_build_metadata
 
+from openpilot.frogpilot.common.ci_runner import should_disable_updater, save_runner_status
 from openpilot.frogpilot.common.frogpilot_variables import BACKUP_PATH, get_frogpilot_toggles, params_memory
 
 LOCK_FILE = os.getenv("UPDATER_LOCK_FILE", "/tmp/safe_staging_overlay.lock")
@@ -443,6 +444,18 @@ def main() -> None:
 
     while True:
       wait_helper.ready_event.clear()
+
+      # Check CI Runner status and disable updater if runner is active
+      ci_runner_status = save_runner_status(params)
+      if ci_runner_status.get("running", False):
+        cloudlog.info("CI Runner is active, skipping update cycle")
+        params.put("UpdaterState", "idle")
+        params.put("CIRunnerBlockingUpdate", "1")
+        wait_helper.user_request = UserRequest.NONE
+        wait_helper.sleep(60)
+        continue
+      else:
+        params.remove("CIRunnerBlockingUpdate")
 
       frogpilot_toggles = get_frogpilot_toggles()
 

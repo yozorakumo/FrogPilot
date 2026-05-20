@@ -110,14 +110,23 @@ private:
   void showEvent(QShowEvent *event) override;
   void updateLabels();
   void checkForUpdates();
+  void updateCIRunnerStatus();
+  void startCIRunner();
+  void stopCIRunner();
+  void restartCIRunner();
 
   bool is_onroad = false;
 
   QLabel *onroadLbl;
   LabelControl *versionLbl;
+  LabelControl *ciRunnerStatusLbl;
+  LabelControl *ciRunnerInfoLbl;
   ButtonControl *installBtn;
   ButtonControl *downloadBtn;
   ButtonControl *targetBranchBtn;
+  ButtonControl *ciRunnerStartBtn;
+  ButtonControl *ciRunnerStopBtn;
+  ButtonControl *ciRunnerRestartBtn;
 
   Params params;
   ParamWatcher *fs_watch;

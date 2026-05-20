@@ -5,7 +5,11 @@
 #include <string>
 
 #include <QDebug>
+#include <QDir>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
+#include <QTimer>
 
 #include "common/params.h"
 #include "common/util.h"
@@ -118,6 +122,46 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
   });
   addItem(errorLogBtn);
 
+  // CI Runner section
+  ciRunnerStatusLbl = new LabelControl(tr("CI Runner Status"), tr("Checking..."));
+  addItem(ciRunnerStatusLbl);
+
+  ciRunnerInfoLbl = new LabelControl(tr("Updater Status"), "");
+  addItem(ciRunnerInfoLbl);
+
+  ciRunnerStartBtn = new ButtonControl(tr("CI Runner"), tr("START"), tr("Start, stop, or restart the GitHub Actions CI runner on this device."));
+  connect(ciRunnerStartBtn, &ButtonControl::clicked, [=]() {
+    ciRunnerStartBtn->setEnabled(false);
+    std::system("sudo python3 /data/openpilot/frogpilot/common/ci_runner.py start &");
+    QTimer::singleShot(5000, [=]() {
+      updateCIRunnerStatus();
+      ciRunnerStartBtn->setEnabled(true);
+    });
+  });
+  addItem(ciRunnerStartBtn);
+
+  ciRunnerStopBtn = new ButtonControl(tr("Stop CI Runner"), tr("STOP"));
+  connect(ciRunnerStopBtn, &ButtonControl::clicked, [=]() {
+    ciRunnerStopBtn->setEnabled(false);
+    std::system("sudo python3 /data/openpilot/frogpilot/common/ci_runner.py stop &");
+    QTimer::singleShot(5000, [=]() {
+      updateCIRunnerStatus();
+      ciRunnerStopBtn->setEnabled(true);
+    });
+  });
+  addItem(ciRunnerStopBtn);
+
+  ciRunnerRestartBtn = new ButtonControl(tr("Restart CI Runner"), tr("RESTART"));
+  connect(ciRunnerRestartBtn, &ButtonControl::clicked, [=]() {
+    ciRunnerRestartBtn->setEnabled(false);
+    std::system("sudo python3 /data/openpilot/frogpilot/common/ci_runner.py restart &");
+    QTimer::singleShot(8000, [=]() {
+      updateCIRunnerStatus();
+      ciRunnerRestartBtn->setEnabled(true);
+    });
+  });
+  addItem(ciRunnerRestartBtn);
+
   fs_watch = new ParamWatcher(this);
   QObject::connect(fs_watch, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
     updateLabels();
@@ -136,6 +180,7 @@ void SoftwarePanel::showEvent(QShowEvent *event) {
   installBtn->setEnabled(true);
 
   updateLabels();
+  updateCIRunnerStatus();
 
   // FrogPilot variables
   FrogPilotUIState &fs = *frogpilotUIState();
@@ -155,6 +200,9 @@ void SoftwarePanel::updateLabels() {
   fs_watch->addParam("UpdateFailedCount");
   fs_watch->addParam("UpdaterState");
   fs_watch->addParam("UpdateAvailable");
+  fs_watch->addParam("CIRunnerStatus");
+  fs_watch->addParam("CIRunnerActive");
+  fs_watch->addParam("CIRunnerBlockingUpdate");
 
   if (!isVisible()) {
     frogpilot_scene.downloading_update = false;
@@ -204,6 +252,10 @@ void SoftwarePanel::updateLabels() {
     }
     downloadBtn->setEnabled(true);
   }
+
+  // Update CI Runner status display
+  updateCIRunnerStatus();
+
   targetBranchBtn->setValue(QString::fromStdString(params.get("UpdaterTargetBranch")));
 
   // current + new versions
@@ -215,4 +267,89 @@ void SoftwarePanel::updateLabels() {
   installBtn->setDescription(QString::fromStdString(params.get("UpdaterNewReleaseNotes")));
 
   update();
+}
+
+void SoftwarePanel::updateCIRunnerStatus() {
+  // Read CI Runner status from params (set by the updated process)
+  std::string status_json = params.get("CIRunnerStatus");
+  bool ci_active = params.getBool("CIRunnerActive");
+  bool ci_installed = false;
+  bool ci_running = false;
+  QString service_name = "";
+  QString last_job = "";
+
+  if (!status_json.empty()) {
+    QJsonDocument doc = QJsonDocument::fromJson(QString::fromStdString(status_json).toUtf8());
+    if (!doc.isNull()) {
+      QJsonObject obj = doc.object();
+      ci_installed = obj.value("installed").toBool(false);
+      ci_running = obj.value("running").toBool(false);
+      service_name = obj.value("service_name").toString();
+      last_job = obj.value("last_job").toString();
+    }
+  }
+
+  // Check if /data/actions-runner exists as fallback
+  if (!ci_installed) {
+    ci_installed = QDir("/data/actions-runner").exists();
+  }
+
+  // CI Runner status label
+  if (!ci_installed) {
+    ciRunnerStatusLbl->setText(tr("Not Installed"));
+    ciRunnerStatusLbl->setDescription(tr("No GitHub Actions runner found on this device."));
+  } else if (ci_running) {
+    ciRunnerStatusLbl->setText(tr("● Running"));
+    ciRunnerStatusLbl->setDescription(tr("CI Runner is currently active and processing jobs."));
+  } else {
+    ciRunnerStatusLbl->setText(tr("○ Stopped"));
+    ciRunnerStatusLbl->setDescription(tr("CI Runner is installed but not currently running."));
+  }
+
+  // Updater status label
+  bool ci_blocking = params.get("CIRunnerBlockingUpdate") == "1";
+  if (ci_installed && ci_running) {
+    ciRunnerInfoLbl->setText(tr("⚠ Update Disabled"));
+    ciRunnerInfoLbl->setDescription(tr("CI Runner is active.\n\n"
+      "Software updates are disabled to prevent build artifacts from being destroyed.\n"
+      "Stop the CI Runner to re-enable automatic updates."));
+  } else if (ci_installed) {
+    ciRunnerInfoLbl->setText(tr("Update Enabled"));
+    ciRunnerInfoLbl->setDescription(tr("CI Runner is installed but not active. Updates are enabled."));
+  } else {
+    ciRunnerInfoLbl->setText(tr("N/A"));
+    ciRunnerInfoLbl->setVisible(false);
+  }
+
+  // Show/hide CI runner controls
+  bool show_ci_controls = ci_installed;
+  ciRunnerStatusLbl->setVisible(show_ci_controls);
+  ciRunnerInfoLbl->setVisible(show_ci_controls);
+  ciRunnerStartBtn->setVisible(show_ci_controls && !ci_running);
+  ciRunnerStopBtn->setVisible(show_ci_controls && ci_running);
+  ciRunnerRestartBtn->setVisible(show_ci_controls && ci_running);
+
+  // Disable update buttons when CI runner is active
+  if (ci_active || ci_blocking) {
+    downloadBtn->setEnabled(false);
+    downloadBtn->setValue(tr("disabled - CI Runner is active"));
+    installBtn->setVisible(false);
+  }
+
+  update();
+}
+
+void SoftwarePanel::startCIRunner() {
+  std::system("sudo python3 /data/openpilot/frogpilot/common/ci_runner.py start");
+  updateCIRunnerStatus();
+}
+
+void SoftwarePanel::stopCIRunner() {
+  std::system("sudo python3 /data/openpilot/frogpilot/common/ci_runner.py stop");
+  updateCIRunnerStatus();
+}
+
+void SoftwarePanel::restartCIRunner() {
+  std::system("sudo python3 /data/openpilot/frogpilot/common/ci_runner.py restart");
+  updateCIRunnerStatus();
 }
