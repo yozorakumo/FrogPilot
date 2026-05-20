@@ -164,16 +164,9 @@ void FrogPilotOnroadWindow::updatePlaybackPosition() {
 void FrogPilotOnroadWindow::updatePlaybackRealTime() {
   if (!isCanPlayback || !playback_overlay_) return;
 
-  // Display elapsed time (MM:SS) instead of real clock time.
-  // logMonoTime is a monotonic clock (CLOCK_BOOTTIME), not epoch time,
-  // so converting it to wall clock would show 1970 dates.
-  int total_secs = static_cast<int>(playback_position_);
-  int mins = total_secs / 60;
-  int secs = total_secs % 60;
-  QString elapsed = QString("%1:%2")
-                        .arg(mins, 2, 10, QChar('0'))
-                        .arg(secs, 2, 10, QChar('0'));
-  playback_overlay_->setRealTime(elapsed);
+  // CanPlaybackRealTimeには録画日時（YYYY-MM-DD HH:MM）が設定される
+  // （can_player.pyがセグメントディレクトリのmtimeから取得）
+  // そのまま表示する（updatePlaybackPositionで既にrealtime_strを読み取っている）
 }
 
 void FrogPilotOnroadWindow::paintEvent(QPaintEvent *event) {

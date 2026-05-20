@@ -223,6 +223,11 @@ bool PlaybackOverlay::event(QEvent *event) {
 }
 
 void PlaybackOverlay::updateDisplay() {
+  // ローディング表示: durationが0またはpositionが0でまだ再生開始前
+  if (duration_seconds_ <= 0.0) {
+    time_label_->setText("Loading...");
+    return;
+  }
   time_label_->setText(formatTime(position_seconds_) + " / " + formatTime(duration_seconds_));
 }
 

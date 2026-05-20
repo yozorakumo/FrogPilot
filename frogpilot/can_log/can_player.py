@@ -4,15 +4,14 @@
 /data/media/0/realdata/ のrlogファイル（capnproto形式）からCANメッセージを
 読み込み、オリジナルのタイミングを再現してパブリッシュする。
 
-CAN_PLAYBACKモードでは、システムプロセス（timed, thermald, card等）が
+CAN_PLAYBACKモードでは、システムプロセス（timed, thermald等）が
 既に起動しており、各サービスをpublishしている。そのため、can_playerは
-CANメッセージのみをpublishし、card.pyがCANからCarState等を生成する
-通常パイプラインを通す。
+SKIP_SERVICESにリストされたサービスのみスキップし、それ以外はrlogから
+publishする。carState, controlsState, modelV2等がrlogから直接再現される。
 
-publishするサービス:
-  - can: CANメッセージ（rlogから）
-  - pandaStates: ダミー（ignition=True）
-  - peripheralState: ダミー
+スキップするサービス:
+  - clocks, thermal, deviceState等: システムプロセスがpublish
+  - roadEncodeIdx等: エンコードデータ（サイズが大きすぎる）
 
 使用例:
   # ルートディレクトリを指定して再生
@@ -49,13 +48,22 @@ BATCH_THRESHOLD_SEC = 0.001  # 1ms
 RLOG_FILENAME = "rlog.bz2"
 RLOG_FILENAME_UNCOMPRESSED = "rlog"
 
-# CAN playback mode: only publish these services from rlog.
-# Other services are published by system processes (timed, thermald, etc.)
-# or generated through the normal pipeline:
-#   can → card.py → carState → controlsd → controlsState
-#   carState → modeld → modelV2
-#   carState → plannerd → lateralPlan/longitudinalPlan
-ALLOWED_SERVICES = {'can', 'pandaStates', 'peripheralState'}
+# CAN playback mode: skip these services from rlog.
+# System processes (timed, thermald, etc.) publish these, causing
+# MultiplePublishersError if we also publish them.
+# Encode services are skipped due to large data size.
+SKIP_SERVICES = {
+    # システムプロセスがpublish（MultiplePublishersError回避）
+    'clocks',          # timed.py
+    'thermal',         # thermald
+    'deviceState',     # manager
+    'procLog',         # proclogd
+    'logs',            # logd
+    'uploadQueue',     # uploader
+    # エンコード系（映像データ、サイズが大きすぎる）
+    'roadEncodeIdx', 'driverEncodeIdx', 'wideEncodeIdx',
+    'qRoadEncodeIdx', 'qDriverEncodeIdx', 'qWideEncodeIdx',
+}
 
 
 def discover_segments(route_path: str) -> list[str]:
@@ -315,16 +323,28 @@ class CanPlayer:
     if not self._events:
       raise ValueError(f"No events found in {route_path}")
 
-    # PubMasterを許可サービスのみで初期化
-    # システムプロセスが既にpublishしているサービスと衝突しないよう、
-    # CAN/pandaStates/peripheralStateのみpublishする
-    cloudlog.info(f"CAN playback: publishing services: {sorted(ALLOWED_SERVICES)}")
-    self.pm = messaging.PubMaster(list(ALLOWED_SERVICES))
+    # PubMasterをSKIP_SERVICES以外のサービスで初期化
+    # rlogに含まれるサービスのうち、システムプロセスがpublishするもののみスキップ
+    services_to_publish = set()
+    for _, event_type, _ in self._events:
+      if event_type not in SKIP_SERVICES:
+        services_to_publish.add(event_type)
+    cloudlog.info(f"CAN playback: publishing {len(services_to_publish)} services: {sorted(services_to_publish)}")
+    self.pm = messaging.PubMaster(list(services_to_publish))
 
     self._start_time_ns = self._events[0][0]
     self._end_time_ns = self._events[-1][0]
     self._event_count = len(self._events)
     self._duration = (self._end_time_ns - self._start_time_ns) / 1e9
+
+    # 録画日時をセグメントディレクトリの変更日時から取得
+    segments = discover_segments(route_path)
+    if segments:
+      recording_timestamp = os.path.getmtime(segments[0])
+      recording_dt = datetime.fromtimestamp(recording_timestamp, tz=timezone.utc)
+      self._recording_time_str = recording_dt.strftime('%Y-%m-%d %H:%M')
+    else:
+      self._recording_time_str = ""
 
   @property
   def duration_seconds(self) -> float:
@@ -346,13 +366,8 @@ class CanPlayer:
 
   @property
   def real_time_str(self) -> str:
-    """再生経過時間を文字列で返す (MM:SS)"""
-    with self._lock:
-      elapsed = (self._current_time_ns - self._start_time_ns) / 1e9 if self._start_time_ns else 0.0
-    total_secs = int(elapsed)
-    mins = total_secs // 60
-    secs = total_secs % 60
-    return f"{mins:02d}:{secs:02d}"
+    """録画日時を文字列で返す (YYYY-MM-DD HH:MM)"""
+    return self._recording_time_str
 
   @property
   def is_paused(self) -> bool:
@@ -395,7 +410,7 @@ class CanPlayer:
     self.params.put("CanPlaybackDuration", str(self._duration))
     self.params.put("CanPlaybackSpeed", str(self.speed))
     self.params.put("CanPlaybackPlaying", "0" if self._paused else "1")
-    self.params.put("CanPlaybackRealTime", self.real_time_str)
+    self.params.put("CanPlaybackRealTime", self._recording_time_str)
 
   def _check_params_commands(self) -> None:
     """ParamsからUI側のコマンドを確認して処理する"""
@@ -486,8 +501,8 @@ class CanPlayer:
         if sleep_needed > BATCH_THRESHOLD_SEC:
           time.sleep(sleep_needed)
 
-        # ALLOWED_SERVICESのイベントのみパブリッシュ
-        if event_type in ALLOWED_SERVICES and event_type in self.pm.sock:
+        # SKIP_SERVICES以外のイベントをパブリッシュ
+        if event_type not in SKIP_SERVICES and event_type in self.pm.sock:
           try:
             self.pm.send(event_type, raw_bytes)
           except Exception as e:

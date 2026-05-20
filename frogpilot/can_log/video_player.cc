@@ -168,43 +168,75 @@ int main(int argc, char *argv[]) {
   size_t frames_sent = 0;
   bool vipc_ready = false;
 
+  // 時間ベース同期の変数（Params読み取りを200ms間隔に削減し、
+  // 間は時間補間でフレームを送信してスムーズな20FPSを実現）
+  double synced_position = 0.0;
+  double synced_speed = 1.0;
+  bool synced_paused = false;
+  auto last_params_read = std::chrono::steady_clock::now();
+  auto last_frame_time = std::chrono::steady_clock::now();
+  static constexpr double PARAMS_READ_INTERVAL = 0.2;  // Params読み取り間隔（秒）
+  static constexpr double FRAME_INTERVAL = 1.0 / FPS;  // フレーム間隔（秒）
+
   fprintf(stderr, "[video_player] Waiting for CAN playback to start...\n");
 
   while (!g_exit) {
     // CAN_PLAYBACKが有効か確認
     if (!params.getBool("CAN_PLAYBACK")) {
       if (frames_sent > 0) {
-        // 再生中にCAN_PLAYBACKが無効になった → 終了
         fprintf(stderr, "[video_player] CAN_PLAYBACK disabled, exiting\n");
         break;
       }
-      // まだ開始していない場合は待機
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
       continue;
     }
 
-    // 再生位置を読み取り (can_player.pyが100ms間隔で更新)
-    std::string pos_str = params.get("CanPlaybackPosition");
-    if (pos_str.empty()) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    auto now = std::chrono::steady_clock::now();
+    double time_since_read = std::chrono::duration<double>(now - last_params_read).count();
+
+    // Paramsから定期的に状態を読み取り（200ms間隔）
+    // 毎フレームParamsを読むとファイルシステムI/OでFPSが低下するため
+    if (time_since_read >= PARAMS_READ_INTERVAL) {
+      std::string pos_str = params.get("CanPlaybackPosition");
+      if (!pos_str.empty()) {
+        try { synced_position = std::stod(pos_str); } catch (...) {}
+      }
+
+      std::string speed_str = params.get("CanPlaybackSpeed");
+      if (!speed_str.empty()) {
+        try { synced_speed = std::stod(speed_str); } catch (...) {}
+      }
+
+      std::string playing_str = params.get("CanPlaybackPlaying");
+      synced_paused = (playing_str == "0");
+
+      last_params_read = now;
+      time_since_read = 0.0;
+    }
+
+    // 一時停止中はフレームを送信しない
+    if (synced_paused) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
       continue;
     }
 
-    double pos_sec = 0.0;
-    try {
-      pos_sec = std::stod(pos_str);
-    } catch (...) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    // 時間補間で現在位置を計算（Params読み取り間の補間）
+    double current_pos = synced_position + time_since_read * synced_speed;
+
+    // フレームタイミング制御（20FPS）
+    double time_since_frame = std::chrono::duration<double>(now - last_frame_time).count();
+    if (time_since_frame < FRAME_INTERVAL * 0.9) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
       continue;
     }
 
     // フレームインデックス計算 (20fps)
-    int total_frame = static_cast<int>(pos_sec * FPS);
+    int total_frame = static_cast<int>(current_pos * FPS);
     if (total_frame < 0) total_frame = 0;
 
     // 既に送信済みのフレームはスキップ
     if (total_frame == last_frame) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
       continue;
     }
 
@@ -215,14 +247,14 @@ int main(int argc, char *argv[]) {
     // セグメント範囲チェック
     if (seg >= static_cast<int>(segments.size())) {
       if (do_loop) {
-        // ループ: 最初に戻る
         last_frame = -1;
         cur_seg = -1;
         reader.reset();
+        synced_position = 0.0;
+        last_params_read = std::chrono::steady_clock::now();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         continue;
       }
-      // 最後まで再生済み → 待機
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       continue;
     }
@@ -233,7 +265,7 @@ int main(int argc, char *argv[]) {
       auto new_reader = std::make_unique<FrameReader>();
       if (!new_reader->loadFromFile(RoadCam, hevc, true)) {
         fprintf(stderr, "[video_player] Failed to load segment %d: %s\n", seg, hevc.c_str());
-        cur_seg = seg;  // 再試行を防止
+        cur_seg = seg;
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         continue;
       }
@@ -259,7 +291,6 @@ int main(int argc, char *argv[]) {
       vipc_w = reader->width;
       vipc_h = reader->height;
 
-      // 古いサーバーを破棄
       vipc.reset();
 
       vipc = std::make_unique<VisionIpcServer>("camerad");
@@ -282,15 +313,13 @@ int main(int argc, char *argv[]) {
     if (reader->get(frame_in_seg, buf)) {
       VisionIpcBufExtra extra = {};
       extra.frame_id = static_cast<uint64_t>(total_frame);
-      extra.timestamp_sof = static_cast<uint64_t>(pos_sec * 1e9);
-      extra.timestamp_eof = static_cast<uint64_t>((pos_sec + 0.05) * 1e9);
+      extra.timestamp_sof = static_cast<uint64_t>(current_pos * 1e9);
+      extra.timestamp_eof = static_cast<uint64_t>((current_pos + 0.05) * 1e9);
       vipc->send(buf, &extra, false);
       frames_sent++;
       last_frame = total_frame;
+      last_frame_time = now;
     }
-
-    // CPU使用率を抑えるため短いスリープ
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
   fprintf(stderr, "[video_player] Exiting. Sent %zu frames total.\n", frames_sent);
