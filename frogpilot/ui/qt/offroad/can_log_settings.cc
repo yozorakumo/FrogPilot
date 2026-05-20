@@ -1,5 +1,7 @@
 #include "frogpilot/ui/qt/offroad/can_log_settings.h"
 
+#include <QProcess>
+
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "frogpilot/ui/qt/widgets/frogpilot_controls.h"
 
@@ -13,7 +15,23 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
   QFileInfo routeInfo(routePath);
   QString routeName = routeInfo.fileName();
 
-  // ルート名から日時を抽出（例: 000001a3--c20ba54385 → そのまま表示）
+  // ルート名から日時をパース（例: 2026-05-19--14-30-25 → 2026/05/19 14:30:25）
+  QString displayText;
+  QStringList nameParts = routeName.split("--");
+  if (nameParts.size() >= 2) {
+    QString datePart = nameParts[0];
+    QString timePart = nameParts[1];
+    // Check if date part looks like YYYY-MM-DD and time part looks like HH-MM-SS
+    if (datePart.length() == 10 && datePart[4] == '-' && datePart[7] == '-' &&
+        timePart.length() == 8 && timePart[2] == '-' && timePart[5] == '-') {
+      displayText = datePart + " " + QString(timePart).replace("-", ":");
+    } else {
+      displayText = routeName;
+    }
+  } else {
+    displayText = routeName;
+  }
+
   // セグメント数をカウント
   QDir routeDir(routePath);
   QStringList segFilters;
@@ -46,8 +64,8 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
 
   QString rlogStr = hasRlog ? tr("✓ CAN data available") : tr("✕ No CAN data");
 
-  // 情報ラベル
-  QLabel *infoLabel = new QLabel(routeName + "\n" + sizeStr + " | " + QString::number(segCount) + " segments\n" + rlogStr, this);
+  // 情報ラベル（日付/時刻 + サイズ + セグメント数 + CAN データ有無）
+  QLabel *infoLabel = new QLabel(displayText + "\n" + sizeStr + " | " + QString::number(segCount) + " segments\n" + rlogStr, this);
   infoLabel->setStyleSheet("QLabel { color: #E4E4E4; font-size: 35px; }");
   infoLabel->setWordWrap(true);
   layout->addWidget(infoLabel, 1);
@@ -262,15 +280,22 @@ void FrogPilotCanLogPanel::deleteAllLogs() {
 }
 
 void FrogPilotCanLogPanel::startPlayback(const QString &routePath) {
-  // 再生ルートパスをParamsに設定してCAN_PLAYBACKモードで再起動
-  params.put("CanPlaybackFile", routePath.toStdString());
-  params.putBool("CanPlaybackMode", true);
-
-  // 再起動を促すダイアログ
-  if (FrogPilotConfirmationDialog::yesorno(
-    tr("Start CAN playback with this route?\nThe device will reboot into playback mode."), this)) {
-    Hardware::reboot();
+  // 確認ダイアログ
+  if (!FrogPilotConfirmationDialog::yesorno(
+    tr("Start CAN playback with this route?"), this)) {
+    return;
   }
+
+  // 再生パラメータを設定
+  params.put("CanPlaybackFile", routePath.toStdString());
+  params.putBool("CAN_PLAYBACK", true);
+
+  // can_player.py をバックグラウンドで起動
+  QProcess::startDetached("python3", {"-m", "frogpilot.can_log.can_player", routePath}, "/data/openpilot");
+
+  // 設定画面を閉じてホーム画面に戻る
+  // CAN メッセージがパブリッシュされると自動的に onroad UI に切り替わる
+  emit requestCloseSettings();
 }
 
 QString FrogPilotCanLogPanel::formatFileSize(qint64 bytes) const {

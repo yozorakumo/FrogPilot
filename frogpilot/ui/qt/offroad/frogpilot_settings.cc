@@ -140,6 +140,9 @@ void FrogPilotSettingsWindow::createPanelButtons(FrogPilotListWidget *list) {
     list->addItem(panelButton);
   }
 
+  QObject::connect(frogpilotCanLogPanel, &FrogPilotCanLogPanel::requestCloseSettings, [this]() {
+    closePanel();
+  });
   QObject::connect(frogpilotDataPanel, &FrogPilotDataPanel::openSubPanel, this, &FrogPilotSettingsWindow::openSubPanel);
   QObject::connect(frogpilotDevicePanel, &FrogPilotDevicePanel::openSubPanel, this, &FrogPilotSettingsWindow::openSubPanel);
   QObject::connect(frogpilotLateralPanel, &FrogPilotLateralPanel::openSubPanel, this, &FrogPilotSettingsWindow::openSubPanel);

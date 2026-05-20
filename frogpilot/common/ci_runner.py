@@ -50,11 +50,36 @@ def is_runner_running() -> bool:
     return False
 
 
+def is_job_running() -> bool:
+  """Check if a CI job is currently being executed (not just idle).
+
+  Returns True if Runner.Worker process exists, indicating an active job.
+  """
+  try:
+    result = subprocess.run(
+      ["pgrep", "-f", "Runner.Worker"],
+      capture_output=True, text=True, timeout=5
+    )
+    return result.returncode == 0
+  except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+    return False
+
+
 def get_runner_status() -> dict:
-  """Get comprehensive CI runner status information."""
+  """Get comprehensive CI runner status information.
+
+  Returns a dict with:
+    installed: bool - whether the runner is installed
+    running: bool - whether the runner service is active
+    status: str - one of "not_installed", "stopped", "idle", "building"
+    service_name: str - the systemd service name
+    last_job: str - last job info from diag logs
+    last_check: str - timestamp of this check
+  """
   status = {
     "installed": is_runner_installed(),
     "running": False,
+    "status": "not_installed",
     "service_name": "",
     "last_job": "",
     "last_check": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -64,6 +89,15 @@ def get_runner_status() -> dict:
     return status
 
   status["running"] = is_runner_running()
+
+  if not status["running"]:
+    status["status"] = "stopped"
+  else:
+    # Determine if a job is currently running or just idle
+    if is_job_running():
+      status["status"] = "building"
+    else:
+      status["status"] = "idle"
 
   # Get service name
   try:

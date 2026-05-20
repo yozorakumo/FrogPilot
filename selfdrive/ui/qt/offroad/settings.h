@@ -119,6 +119,7 @@ private:
 
   QLabel *onroadLbl;
   LabelControl *versionLbl;
+  LabelControl *gitCommitLbl;
   LabelControl *ciRunnerStatusLbl;
   LabelControl *ciRunnerInfoLbl;
   ButtonControl *installBtn;

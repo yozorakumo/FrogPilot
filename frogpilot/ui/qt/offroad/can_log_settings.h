@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDateTime>
+#include <QProcess>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -35,6 +36,7 @@ public:
 
 signals:
   void openSubPanel();
+  void requestCloseSettings();
 
 protected:
   void showEvent(QShowEvent *event) override;

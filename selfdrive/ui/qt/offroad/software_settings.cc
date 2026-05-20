@@ -6,6 +6,7 @@
 
 #include <QDebug>
 #include <QDir>
+#include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
@@ -32,6 +33,26 @@ SoftwarePanel::SoftwarePanel(QWidget* parent) : ListWidget(parent) {
   // current version
   versionLbl = new LabelControl(tr("Current Version"), "");
   addItem(versionLbl);
+
+  // git commit hash
+  QString gitCommit;
+  QFile headFile("/data/openpilot/.git/HEAD");
+  if (headFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    QString ref = headFile.readLine().trimmed();
+    headFile.close();
+    if (ref.startsWith("ref: ")) {
+      QString refPath = "/data/openpilot/.git/" + ref.mid(5);
+      QFile refFile(refPath);
+      if (refFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        gitCommit = refFile.readLine().trimmed().left(7);
+        refFile.close();
+      }
+    } else {
+      gitCommit = ref.left(7);
+    }
+  }
+  gitCommitLbl = new LabelControl(tr("CI Runner Build"), gitCommit.isEmpty() ? tr("N/A") : gitCommit);
+  addItem(gitCommitLbl);
 
   // automatic updates toggle
   ParamControl *automaticUpdatesToggle = new ParamControl("AutomaticUpdates", tr("Automatically Update FrogPilot"),
@@ -274,6 +295,7 @@ void SoftwarePanel::updateCIRunnerStatus() {
   std::string status_json = params.get("CIRunnerStatus");
   bool ci_installed = false;
   bool ci_running = false;
+  QString ci_status = "";
   QString service_name = "";
   QString last_job = "";
 
@@ -283,6 +305,7 @@ void SoftwarePanel::updateCIRunnerStatus() {
       QJsonObject obj = doc.object();
       ci_installed = obj.value("installed").toBool(false);
       ci_running = obj.value("running").toBool(false);
+      ci_status = obj.value("status").toString();
       service_name = obj.value("service_name").toString();
       last_job = obj.value("last_job").toString();
     }
@@ -293,13 +316,16 @@ void SoftwarePanel::updateCIRunnerStatus() {
     ci_installed = QDir("/data/actions-runner").exists();
   }
 
-  // CI Runner status label
+  // CI Runner status label with detailed status
   if (!ci_installed) {
-    ciRunnerStatusLbl->setText(tr("Not Installed"));
+    ciRunnerStatusLbl->setText(tr("✕ Not Installed"));
     ciRunnerStatusLbl->setDescription(tr("No GitHub Actions runner found on this device."));
-  } else if (ci_running) {
-    ciRunnerStatusLbl->setText(tr("● Running"));
-    ciRunnerStatusLbl->setDescription(tr("CI Runner is currently active and processing jobs."));
+  } else if (ci_status == "building") {
+    ciRunnerStatusLbl->setText(tr("● Running - Building"));
+    ciRunnerStatusLbl->setDescription(tr("CI Runner is currently executing a build job."));
+  } else if (ci_status == "idle" || ci_running) {
+    ciRunnerStatusLbl->setText(tr("● Running - Idle"));
+    ciRunnerStatusLbl->setDescription(tr("CI Runner is active and waiting for jobs."));
   } else {
     ciRunnerStatusLbl->setText(tr("○ Stopped"));
     ciRunnerStatusLbl->setDescription(tr("CI Runner is installed but not currently running."));
