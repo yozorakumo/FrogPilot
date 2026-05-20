@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""CAN Bus Player - ログファイルからcanサービスにメッセージをパブリッシュ
+"""CAN Bus Player - rlogからCANメッセージを読み出してcanサービスにパブリッシュ
 
-CANログファイルを読み込み、オリジナルのタイミングを再現してcanサービスに
-メッセージをパブリッシュする。tools/sim/lib/simulated_car.pyのパターンを参考。
+/data/media/0/realdata/ のrlogファイル（capnproto形式）からCANメッセージを
+読み込み、オリジナルのタイミングを再現してcanサービスにパブリッシュする。
 
 使用例:
-  # 実時間再生
-  python -m frogpilot.can_log.can_player /path/to.can_log
+  # ルートディレクトリを指定して再生
+  python -m frogpilot.can_log.can_player /data/media/0/realdata/000001a3--c20ba54385
 
   # 2倍速再生
-  python -m frogpilot.can_log.can_player --speed 2.0 /path/to.can_log
+  python -m frogpilot.can_log.can_player --speed 2.0 /data/media/0/realdata/000001a3--c20ba54385
 
   # ループ再生
-  python -m frogpilot.can_log.can_player --loop /path/to.can_log
+  python -m frogpilot.can_log.can_player --loop /data/media/0/realdata/000001a3--c20ba54385
 """
 
 import os
@@ -21,30 +21,128 @@ import time
 import argparse
 import threading
 from datetime import datetime, timezone
+from pathlib import Path
 
+import bz2
+from cereal import log as capnp_log
 import cereal.messaging as messaging
 
 from openpilot.common.params import Params
 from openpilot.selfdrive.pandad import can_list_to_can_capnp
 from openpilot.common.swaglog import cloudlog
 
-from frogpilot.can_log.can_log_lib import CanLogReader, CanLogEntry
-
 # 同一バッチとみなす最小タイムスタンプ差（秒）
 BATCH_THRESHOLD_SEC = 0.001  # 1ms
 
+# rlogファイル名（デバイス上はbz2圧縮）
+RLOG_FILENAME = "rlog.bz2"
+RLOG_FILENAME_UNCOMPRESSED = "rlog"
+
+
+def discover_segments(route_path: str) -> list[str]:
+  """ルートディレクトリからセグメントディレクトリを検索
+
+  Args:
+    route_path: ルートディレクトリパス（例: /data/media/0/realdata/000001a3--c20ba54385）
+
+  Returns:
+    セグメントディレクトリパスのリスト（セグメント番号順）
+  """
+  route_dir = Path(route_path)
+  if not route_dir.is_dir():
+    return []
+
+  segments = []
+  for entry in sorted(route_dir.iterdir()):
+    if entry.is_dir() and entry.name.startswith("--"):
+      # rlogファイルが存在するか確認
+      has_rlog = (entry / RLOG_FILENAME).exists() or (entry / RLOG_FILENAME_UNCOMPRESSED).exists()
+      if has_rlog:
+        segments.append(str(entry))
+
+  return segments
+
+
+def read_can_messages_from_rlog(rlog_path: str) -> list[tuple]:
+  """rlogファイルからCANメッセージを読み込む
+
+  Args:
+    rlog_path: rlogファイルパス
+
+  Returns:
+    [(logMonoTime, can_addr, busTime, dat_bytes, src_bus), ...] のリスト
+  """
+  with open(rlog_path, 'rb') as f:
+    dat = f.read()
+
+  # bz2圧縮チェック
+  if dat.startswith(b'BZh9'):
+    dat = bz2.decompress(dat)
+
+  messages = []
+  ents = capnp_log.Event.read_multiple_bytes(dat)
+
+  for ent in ents:
+    try:
+      if ent.which() == 'can':
+        log_mono_time = ent.logMonoTime
+        for can_msg in ent.can:
+          messages.append((
+            log_mono_time,
+            can_msg.address,
+            can_msg.busTime,
+            bytes(can_msg.dat),
+            can_msg.src,
+          ))
+    except Exception:
+      continue
+
+  return messages
+
+
+def load_route_can_data(route_path: str) -> list[tuple]:
+  """ルート全体のCANデータを全セグメントから読み込む
+
+  Args:
+    route_path: ルートディレクトリパス
+
+  Returns:
+    タイムスタンプ順にソートされたCANメッセージのリスト
+  """
+  segments = discover_segments(route_path)
+  if not segments:
+    cloudlog.warning(f"No segments found in {route_path}")
+    return []
+
+  all_messages = []
+  for seg_path in segments:
+    seg_dir = Path(seg_path)
+    rlog_path = seg_dir / RLOG_FILENAME
+    if not rlog_path.exists():
+      rlog_path = seg_dir / RLOG_FILENAME_UNCOMPRESSED
+    if not rlog_path.exists():
+      continue
+
+    cloudlog.info(f"Loading CAN data from {rlog_path}")
+    msgs = read_can_messages_from_rlog(str(rlog_path))
+    all_messages.extend(msgs)
+
+  # タイムスタンプでソート
+  all_messages.sort(key=lambda x: x[0])
+  return all_messages
+
 
 class CanPlayer:
-  """CANログファイルを再生し、canサービスにメッセージをパブリッシュするクラス"""
+  """rlogからCANメッセージを読み出し、canサービスにパブリッシュするクラス"""
 
-  def __init__(self, filepath: str, speed: float = 1.0, loop: bool = False):
+  def __init__(self, route_path: str, speed: float = 1.0, loop: bool = False):
     """
     Args:
-      filepath: CANログファイルパス
+      route_path: ルートディレクトリパス（/data/media/0/realdata/...）
       speed: 再生速度（1.0=実時間、2.0=2倍速）
       loop: ループ再生するか
     """
-    self.filepath = filepath
+    self.route_path = route_path
     self.speed = speed
     self.loop = loop
     self.pm = messaging.PubMaster(['can'])
@@ -55,12 +153,15 @@ class CanPlayer:
     self._current_time_ns = 0
     self._lock = threading.Lock()
 
-    # ファイルメタデータを取得（インデックス付きリーダーで高速）
-    with CanLogReader(filepath) as reader:
-      self._duration = reader.duration_seconds
-      self._start_time_ns = reader._start_time_nano or 0
-      self._end_time_ns = reader._end_time_nano or 0
-      self._message_count = reader.message_count
+    # ルート全体のCANデータをロード
+    self._can_messages = load_route_can_data(route_path)
+    if not self._can_messages:
+      raise ValueError(f"No CAN messages found in {route_path}")
+
+    self._start_time_ns = self._can_messages[0][0]
+    self._end_time_ns = self._can_messages[-1][0]
+    self._message_count = len(self._can_messages)
+    self._duration = (self._end_time_ns - self._start_time_ns) / 1e9
 
   @property
   def duration_seconds(self) -> float:
@@ -131,9 +232,7 @@ class CanPlayer:
     if seek_cmd is not None:
       try:
         seek_pos = float(seek_cmd)
-        # seek_posはログ先頭からの相対秒数 → 絶対タイムスタンプに変換
-        abs_time = (self._start_time_ns / 1e9) + seek_pos
-        cloudlog.info(f"CAN playback: seeking to {seek_pos:.2f}s (abs: {abs_time:.2f})")
+        cloudlog.info(f"CAN playback: seeking to {seek_pos:.2f}s")
         self.params.remove("CanPlaybackSeek")
       except (ValueError, TypeError):
         pass
@@ -159,14 +258,6 @@ class CanPlayer:
       except (ValueError, TypeError):
         self.params.remove("CanPlaybackSpeedCmd")
 
-  @staticmethod
-  def _entry_to_can_msg(entry: CanLogEntry) -> list:
-    """CanLogEntryをcan_list_to_can_capnp用の形式に変換
-
-    can_list_to_can_capnp expects: [address, busTime, dat, src]
-    """
-    return [entry.can_addr, 0, bytes(entry.data[:entry.datalen]), entry.src_bus]
-
   def _send_batch(self, batch: list):
     """CANメッセージのバッチをパブリッシュ
 
@@ -181,128 +272,119 @@ class CanPlayer:
   def run(self):
     """メイン再生ループ
 
-    ログエントリをストリーミングで読み込み、オリジナルのタイミングを
-    再現しながらcanサービスにパブリッシュする。
-
-    タイミング制御:
-    - time.monotonic()を基準にwall clock時間を管理
-    - 一時停止中の時間は再生タイミングに影響しない
-    - 同一タイムスタンプ（1ms未満の差）のエントリはバッチ送信
+    rlogから読み込んだCANメッセージを、オリジナルのタイミングを再現しながら
+    canサービスにパブリッシュする。
     """
     # 初期状態をParamsに書き込む
     self._update_params_state()
 
     while not self._stop:
-      with CanLogReader(self.filepath) as reader:
-        batch: list[list] = []
-        log_start_ns = None
-        playback_start = None
-        total_paused_duration = 0.0
-        last_params_update = time.monotonic()
+      batch: list[list] = []
+      log_start_ns = None
+      playback_start = None
+      total_paused_duration = 0.0
+      last_params_update = time.monotonic()
 
-        while not self._stop:
-          entry = reader.read_entry()
-          if entry is None:
-            break
-
-          # UIコマンドの確認と状態同期（100ms間隔）
-          now = time.monotonic()
-          if now - last_params_update > 0.1:
-            self._check_params_commands()
-            self._update_params_state()
-            last_params_update = now
-
-          # 一時停止処理（ポーリング方式でスレッドセーフ）
-          if self._paused:
-            self._update_params_state()
-            pause_begin = time.monotonic()
-            while self._paused and not self._stop:
-              time.sleep(0.05)
-              # 一時停止中もコマンドを確認
-              self._check_params_commands()
-            if self._stop:
-              break
-            total_paused_duration += time.monotonic() - pause_begin
-
-          with self._lock:
-            self._current_time_ns = entry.timestamp_nano
-
-          # 最初のエントリ：再生開始基準を設定
-          if log_start_ns is None:
-            log_start_ns = entry.timestamp_nano
-            playback_start = time.monotonic()
-            batch.append(self._entry_to_can_msg(entry))
-            continue
-
-          # タイミング計算
-          # effective_elapsed: 一時停止を除いた実際の経過wall clock時間
-          effective_elapsed = time.monotonic() - playback_start - total_paused_duration
-
-          # target_elapsed: ログ内の経過時間を再生速度でスケーリング
-          log_elapsed_sec = (entry.timestamp_nano - log_start_ns) / 1e9
-          target_elapsed = log_elapsed_sec / self.speed
-
-          sleep_needed = target_elapsed - effective_elapsed
-
-          if sleep_needed > BATCH_THRESHOLD_SEC:
-            # タイムギャップあり → 蓄積したバッチを送信して待機
-            if batch:
-              self._send_batch(batch)
-              batch = []
-
-            # 精度向上のため残り時間を再計算してスリープ
-            remaining = target_elapsed - (time.monotonic() - playback_start - total_paused_duration)
-            if remaining > 0:
-              time.sleep(remaining)
-
-          batch.append(self._entry_to_can_msg(entry))
-
-        # 最後のバッチを送信
-        if batch:
-          self._send_batch(batch)
-
-        if not self.loop:
+      for msg in self._can_messages:
+        if self._stop:
           break
 
-        cloudlog.info("CAN playback loop: restarting from beginning")
+        log_mono_time, can_addr, bus_time, dat_bytes, src_bus = msg
+
+        # UIコマンドの確認と状態同期（100ms間隔）
+        now = time.monotonic()
+        if now - last_params_update > 0.1:
+          self._check_params_commands()
+          self._update_params_state()
+          last_params_update = now
+
+        # 一時停止処理
+        if self._paused:
+          self._update_params_state()
+          pause_begin = time.monotonic()
+          while self._paused and not self._stop:
+            time.sleep(0.05)
+            self._check_params_commands()
+          if self._stop:
+            break
+          total_paused_duration += time.monotonic() - pause_begin
+
+        with self._lock:
+          self._current_time_ns = log_mono_time
+
+        # 最初のメッセージ：再生開始基準を設定
+        if log_start_ns is None:
+          log_start_ns = log_mono_time
+          playback_start = time.monotonic()
+          batch.append([can_addr, bus_time, dat_bytes, src_bus])
+          continue
+
+        # タイミング計算
+        effective_elapsed = time.monotonic() - playback_start - total_paused_duration
+        log_elapsed_sec = (log_mono_time - log_start_ns) / 1e9
+        target_elapsed = log_elapsed_sec / self.speed
+
+        sleep_needed = target_elapsed - effective_elapsed
+
+        if sleep_needed > BATCH_THRESHOLD_SEC:
+          # タイムギャップあり → 蓄積したバッチを送信して待機
+          if batch:
+            self._send_batch(batch)
+            batch = []
+
+          remaining = target_elapsed - (time.monotonic() - playback_start - total_paused_duration)
+          if remaining > 0:
+            time.sleep(remaining)
+
+        batch.append([can_addr, bus_time, dat_bytes, src_bus])
+
+      # 最後のバッチを送信
+      if batch:
+        self._send_batch(batch)
+
+      if not self.loop:
+        break
+
+      cloudlog.info("CAN playback loop: restarting from beginning")
 
     cloudlog.info("CAN playback finished")
 
 
 def main():
   parser = argparse.ArgumentParser(
-    description='CAN Bus Log Player - ログファイルからcanサービスにメッセージをパブリッシュ',
+    description='CAN Bus Log Player - rlogからCANメッセージを読み出してcanサービスにパブリッシュ',
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog="""
 使用例:
-  # 実時間再生
-  python -m frogpilot.can_log.can_player /path/to.can_log
+  # ルートディレクトリを指定して再生
+  python -m frogpilot.can_log.can_player /data/media/0/realdata/000001a3--c20ba54385
 
   # 2倍速再生
-  python -m frogpilot.can_log.can_player --speed 2.0 /path/to.can_log
+  python -m frogpilot.can_log.can_player --speed 2.0 /data/media/0/realdata/000001a3--c20ba54385
 
   # ループ再生
-  python -m frogpilot.can_log.can_player --loop /path/to.can_log
-
-  card.pyと組み合わせて再生モードで起動:
-  CAN_PLAYBACK=1 python -m frogpilot.can_log.can_player /path/to.can_log &
-  CAN_PLAYBACK=1 selfdrive/card.py
+  python -m frogpilot.can_log.can_player --loop /data/media/0/realdata/000001a3--c20ba54385
 """)
-  parser.add_argument('filepath', help='CAN log file path (.can_log)')
+  parser.add_argument('route_path', help='Route directory path (e.g., /data/media/0/realdata/000001a3--c20ba54385)')
   parser.add_argument('--speed', type=float, default=1.0,
                       help='Playback speed multiplier (default: 1.0)')
   parser.add_argument('--loop', action='store_true',
                       help='Loop playback')
   args = parser.parse_args()
 
-  if not os.path.exists(args.filepath):
-    print(f"Error: File not found: {args.filepath}")
+  if not os.path.isdir(args.route_path):
+    print(f"Error: Directory not found: {args.route_path}")
     sys.exit(1)
 
-  player = CanPlayer(args.filepath, speed=args.speed, loop=args.loop)
+  try:
+    player = CanPlayer(args.route_path, speed=args.speed, loop=args.loop)
+  except ValueError as e:
+    print(f"Error: {e}")
+    sys.exit(1)
 
-  print("CAN Log Player")
-  print(f"  File:       {args.filepath}")
+  route_name = Path(args.route_path).name
+  print("CAN Log Player (rlog)")
+  print(f"  Route:      {route_name}")
   print(f"  Duration:   {player.duration_seconds:.2f}s")
   print(f"  Messages:   {player.message_count}")
   print(f"  Speed:      {args.speed}x")

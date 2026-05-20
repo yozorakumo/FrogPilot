@@ -11,20 +11,20 @@
 
 #include "frogpilot/ui/qt/offroad/frogpilot_settings.h"
 
-class CanLogFileItem : public QWidget {
+class CanLogRouteItem : public QWidget {
   Q_OBJECT
 
 public:
-  explicit CanLogFileItem(const QString &filepath, QWidget *parent = nullptr);
+  explicit CanLogRouteItem(const QString &routePath, QWidget *parent = nullptr);
 
-  QString filepath() const { return filePath; }
+  QString routePath() const { return m_routePath; }
 
 signals:
-  void playClicked(const QString &filepath);
-  void deleteClicked(const QString &filepath);
+  void playClicked(const QString &routePath);
+  void deleteClicked(const QString &routePath);
 
 private:
-  QString filePath;
+  QString m_routePath;
 };
 
 class FrogPilotCanLogPanel : public FrogPilotListWidget {
@@ -41,9 +41,9 @@ protected:
 
 private:
   void refreshFileList();
-  void deleteFile(const QString &filepath);
+  void deleteRoute(const QString &routePath);
   void deleteAllLogs();
-  void startPlayback(const QString &filepath);
+  void startPlayback(const QString &routePath);
   QString formatFileSize(qint64 bytes) const;
   QString formatDuration(float seconds) const;
 
@@ -57,5 +57,5 @@ private:
   Params params;
   Params params_memory{"/dev/shm/params"};
 
-  static constexpr const char *LOG_DIR = "/data/can_logs/";
+  static constexpr const char *LOG_DIR = "/data/media/0/realdata/";
 };

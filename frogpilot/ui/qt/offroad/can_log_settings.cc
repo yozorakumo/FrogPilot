@@ -3,46 +3,58 @@
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "frogpilot/ui/qt/widgets/frogpilot_controls.h"
 
-// CanLogFileItem - 個別のログファイルエントリ
+// CanLogRouteItem - 個別のルート（走行ログ）エントリ
 
-CanLogFileItem::CanLogFileItem(const QString &filepath, QWidget *parent) : QWidget(parent), filePath(filepath) {
+CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QWidget(parent), m_routePath(routePath) {
   QHBoxLayout *layout = new QHBoxLayout(this);
   layout->setContentsMargins(20, 10, 20, 10);
   layout->setSpacing(15);
 
-  QFileInfo fileInfo(filepath);
+  QFileInfo routeInfo(routePath);
+  QString routeName = routeInfo.fileName();
 
-  // ファイル名（日付部分を抽出してフォーマット）
-  QString baseName = fileInfo.completeBaseName();
-  // can_log_20240101_120000 → 2024-01-01 12:00:00
-  QString displayDate = baseName;
-  displayDate.remove("can_log_");
-  if (displayDate.length() >= 15) {
-    displayDate = displayDate.mid(0, 4) + "-" + displayDate.mid(4, 2) + "-" + displayDate.mid(6, 2) +
-                  " " + displayDate.mid(9, 2) + ":" + displayDate.mid(11, 2) + ":" + displayDate.mid(13, 2);
+  // ルート名から日時を抽出（例: 000001a3--c20ba54385 → そのまま表示）
+  // セグメント数をカウント
+  QDir routeDir(routePath);
+  QStringList segFilters;
+  segFilters << "--*";
+  int segCount = routeDir.entryList(segFilters, QDir::Dirs).size();
+
+  // ルートの総サイズを計算
+  qint64 totalSize = 0;
+  QDirIterator it(routePath, QDir::Files, QDirIterator::Subdirectories);
+  while (it.hasNext()) {
+    it.next();
+    totalSize += it.fileInfo().size();
   }
 
-  // ファイルサイズ
-  qint64 fileSize = fileInfo.size();
   QString sizeStr;
-  if (fileSize >= 1024 * 1024) {
-    sizeStr = QString::number(fileSize / (1024 * 1024.0), 'f', 1) + " MB";
-  } else if (fileSize >= 1024) {
-    sizeStr = QString::number(fileSize / 1024.0, 'f', 1) + " KB";
+  if (totalSize >= 1024 * 1024 * 1024) {
+    sizeStr = QString::number(totalSize / (1024.0 * 1024 * 1024), 'f', 2) + " GB";
+  } else if (totalSize >= 1024 * 1024) {
+    sizeStr = QString::number(totalSize / (1024.0 * 1024), 'f', 1) + " MB";
   } else {
-    sizeStr = QString::number(fileSize) + " B";
+    sizeStr = QString::number(totalSize / 1024.0, 'f', 1) + " KB";
   }
 
-  QString compressedStr = filepath.endsWith(".gz") ? tr(" [Compressed]") : "";
+  // rlogの存在確認
+  bool hasRlog = false;
+  QDirIterator rit(routePath, QStringList() << "rlog" << "rlog.bz2", QDir::Files, QDirIterator::Subdirectories);
+  if (rit.hasNext()) {
+    hasRlog = true;
+  }
+
+  QString rlogStr = hasRlog ? tr("✓ CAN data available") : tr("✕ No CAN data");
 
   // 情報ラベル
-  QLabel *infoLabel = new QLabel(displayDate + "\n" + sizeStr + compressedStr, this);
+  QLabel *infoLabel = new QLabel(routeName + "\n" + sizeStr + " | " + QString::number(segCount) + " segments\n" + rlogStr, this);
   infoLabel->setStyleSheet("QLabel { color: #E4E4E4; font-size: 35px; }");
   infoLabel->setWordWrap(true);
   layout->addWidget(infoLabel, 1);
 
   // 再生ボタン
   QPushButton *playButton = new QPushButton(tr("▶ Play"), this);
+  playButton->setEnabled(hasRlog);
   playButton->setStyleSheet(R"(
     QPushButton {
       padding: 0px 20px;
@@ -57,9 +69,13 @@ CanLogFileItem::CanLogFileItem(const QString &filepath, QWidget *parent) : QWidg
     QPushButton:pressed {
       background-color: #4a4a4a;
     }
+    QPushButton:disabled {
+      color: #606060;
+      background-color: #2a2a2a;
+    }
   )");
   QObject::connect(playButton, &QPushButton::clicked, [this]() {
-    emit playClicked(filePath);
+    emit playClicked(m_routePath);
   });
   layout->addWidget(playButton);
 
@@ -81,7 +97,7 @@ CanLogFileItem::CanLogFileItem(const QString &filepath, QWidget *parent) : QWidg
     }
   )");
   QObject::connect(deleteButton, &QPushButton::clicked, [this]() {
-    emit deleteClicked(filePath);
+    emit deleteClicked(m_routePath);
   });
   layout->addWidget(deleteButton);
 
@@ -94,17 +110,17 @@ FrogPilotCanLogPanel::FrogPilotCanLogPanel(FrogPilotSettingsWindow *parent)
   : FrogPilotListWidget(parent), parent(parent) {
 
   // ステータスラベル
-  statusLabel = new QLabel(tr("No CAN log files found."), this);
+  statusLabel = new QLabel(tr("No driving logs found."), this);
   statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
   statusLabel->setAlignment(Qt::AlignCenter);
   statusLabel->setWordWrap(true);
 
-  // ログ記録ON/OFFトグル
-  ParamControl *canLoggingToggle = new ParamControl("CanLoggingEnabled",
-    tr("CAN Bus Logging"),
-    tr("<b>Enable CAN bus message logging while driving.</b> Log files are saved to /data/can_logs/."),
-    "../../frogpilot/assets/toggle_icons/icon_system.png");
-  addItem(canLoggingToggle);
+  // 説明ラベル
+  QLabel *descLabel = new QLabel(tr("Driving logs are automatically recorded by loggerd.\nCAN data is included in each route's rlog file."), this);
+  descLabel->setStyleSheet("QLabel { color: #A0A0A0; font-size: 30px; padding: 15px 20px; }");
+  descLabel->setAlignment(Qt::AlignCenter);
+  descLabel->setWordWrap(true);
+  addItem(descLabel);
 
   // ファイルリストコンテナ
   fileListWidget = new QWidget(this);
@@ -117,9 +133,9 @@ FrogPilotCanLogPanel::FrogPilotCanLogPanel(FrogPilotSettingsWindow *parent)
   // 全ログ削除ボタン
   ButtonControl *deleteAllButton = new ButtonControl(tr("Delete All Logs"),
     tr("DELETE ALL"),
-    tr("<b>Permanently delete all CAN log files from the device.</b>"));
+    tr("<b>Permanently delete all driving log files from the device.</b>"));
   QObject::connect(deleteAllButton, &ButtonControl::clicked, [this]() {
-    if (FrogPilotConfirmationDialog::yesorno(tr("Are you sure you want to delete ALL CAN log files? This cannot be undone."), this)) {
+    if (FrogPilotConfirmationDialog::yesorno(tr("Are you sure you want to delete ALL driving log files? This cannot be undone."), this)) {
       deleteAllLogs();
     }
   });
@@ -143,7 +159,7 @@ void FrogPilotCanLogPanel::refreshFileList() {
 
   QDir logDir(LOG_DIR);
   if (!logDir.exists()) {
-    statusLabel = new QLabel(tr("No CAN log directory found.\nLogs will be saved to /data/can_logs/ when recording is enabled."), this);
+    statusLabel = new QLabel(tr("No log directory found.\nLogs are saved to /data/media/0/realdata/ while driving."), this);
     statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
     statusLabel->setAlignment(Qt::AlignCenter);
     statusLabel->setWordWrap(true);
@@ -151,13 +167,13 @@ void FrogPilotCanLogPanel::refreshFileList() {
     return;
   }
 
-  // canbinファイルとcanbin.gzファイルを収集
-  QStringList filters;
-  filters << "can_log_*.canbin" << "can_log_*.canbin.gz";
-  QFileInfoList files = logDir.entryInfoList(filters, QDir::Files, QDir::Time | QDir::Reversed);
+  // ルートディレクトリを収集（--を含むディレクトリ名 = ルート）
+  QStringList routeFilters;
+  routeFilters << "*--*";
+  QFileInfoList routes = logDir.entryInfoList(routeFilters, QDir::Dirs | QDir::NoDotAndDotDot, QDir::Time | QDir::Reversed);
 
-  if (files.isEmpty()) {
-    statusLabel = new QLabel(tr("No CAN log files found."), this);
+  if (routes.isEmpty()) {
+    statusLabel = new QLabel(tr("No driving logs found."), this);
     statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
     statusLabel->setAlignment(Qt::AlignCenter);
     statusLabel->setWordWrap(true);
@@ -166,21 +182,34 @@ void FrogPilotCanLogPanel::refreshFileList() {
   }
 
   // ヘッダーラベル
-  QLabel *headerLabel = new QLabel(tr("CAN Log Files (%1)").arg(files.size()), this);
+  QLabel *headerLabel = new QLabel(tr("Driving Logs (%1 routes)").arg(routes.size()), this);
   headerLabel->setStyleSheet("QLabel { color: #E0E879; font-size: 40px; font-weight: bold; padding: 15px 20px; }");
   fileListLayout->addWidget(headerLabel);
 
-  // 各ファイルエントリを追加
-  for (const QFileInfo &fileInfo : files) {
-    CanLogFileItem *item = new CanLogFileItem(fileInfo.absoluteFilePath(), this);
+  // 各ルートエントリを追加
+  for (const QFileInfo &routeInfo : routes) {
+    // rlogが存在するか確認
+    bool hasRlog = false;
+    QDir routeDir(routeInfo.absoluteFilePath());
+    QDirIterator it(routeInfo.absoluteFilePath(), QStringList() << "rlog" << "rlog.bz2", QDir::Files, QDirIterator::Subdirectories);
+    if (it.hasNext()) {
+      hasRlog = true;
+    }
 
-    QObject::connect(item, &CanLogFileItem::playClicked, [this](const QString &filepath) {
-      startPlayback(filepath);
+    // rlogがないルートはスキップ（CAN再生に使用できないため）
+    if (!hasRlog) {
+      continue;
+    }
+
+    CanLogRouteItem *item = new CanLogRouteItem(routeInfo.absoluteFilePath(), this);
+
+    QObject::connect(item, &CanLogRouteItem::playClicked, [this](const QString &routePath) {
+      startPlayback(routePath);
     });
 
-    QObject::connect(item, &CanLogFileItem::deleteClicked, [this](const QString &filepath) {
-      if (FrogPilotConfirmationDialog::yesorno(tr("Delete this log file?"), this)) {
-        deleteFile(filepath);
+    QObject::connect(item, &CanLogRouteItem::deleteClicked, [this](const QString &routePath) {
+      if (FrogPilotConfirmationDialog::yesorno(tr("Delete this driving log?"), this)) {
+        deleteRoute(routePath);
       }
     });
 
@@ -189,8 +218,10 @@ void FrogPilotCanLogPanel::refreshFileList() {
 
   // 合計サイズを表示
   qint64 totalSize = 0;
-  for (const QFileInfo &fileInfo : files) {
-    totalSize += fileInfo.size();
+  QDirIterator totalIt(LOG_DIR, QDir::Files, QDirIterator::Subdirectories);
+  while (totalIt.hasNext()) {
+    totalIt.next();
+    totalSize += totalIt.fileInfo().size();
   }
 
   QString totalStr;
@@ -202,42 +233,42 @@ void FrogPilotCanLogPanel::refreshFileList() {
     totalStr = QString::number(totalSize / 1024.0, 'f', 1) + " KB";
   }
 
-  QLabel *totalLabel = new QLabel(tr("Total: %1 (%2 files)").arg(totalStr).arg(files.size()), this);
+  QLabel *totalLabel = new QLabel(tr("Total: %1").arg(totalStr), this);
   totalLabel->setStyleSheet("QLabel { color: #808080; font-size: 30px; padding: 10px 20px; }");
   totalLabel->setAlignment(Qt::AlignRight);
   fileListLayout->addWidget(totalLabel);
 }
 
-void FrogPilotCanLogPanel::deleteFile(const QString &filepath) {
-  QFile file(filepath);
-  if (file.remove()) {
-    refreshFileList();
-  }
+void FrogPilotCanLogPanel::deleteRoute(const QString &routePath) {
+  QDir routeDir(routePath);
+  routeDir.removeRecursively();
+  refreshFileList();
 }
 
 void FrogPilotCanLogPanel::deleteAllLogs() {
   QDir logDir(LOG_DIR);
   if (!logDir.exists()) return;
 
-  QStringList filters;
-  filters << "can_log_*.canbin" << "can_log_*.canbin.gz";
-  QStringList files = logDir.entryList(filters, QDir::Files);
+  QStringList routeFilters;
+  routeFilters << "*--*";
+  QFileInfoList routes = logDir.entryInfoList(routeFilters, QDir::Dirs | QDir::NoDotAndDotDot);
 
-  for (const QString &fileName : files) {
-    QFile::remove(logDir.absoluteFilePath(fileName));
+  for (const QFileInfo &routeInfo : routes) {
+    QDir routeDir(routeInfo.absoluteFilePath());
+    routeDir.removeRecursively();
   }
 
   refreshFileList();
 }
 
-void FrogPilotCanLogPanel::startPlayback(const QString &filepath) {
-  // 再生ファイルパスをParamsに設定してCAN_PLAYBACKモードで再起動
-  params.put("CanPlaybackFile", filepath.toStdString());
+void FrogPilotCanLogPanel::startPlayback(const QString &routePath) {
+  // 再生ルートパスをParamsに設定してCAN_PLAYBACKモードで再起動
+  params.put("CanPlaybackFile", routePath.toStdString());
   params.putBool("CanPlaybackMode", true);
 
   // 再起動を促すダイアログ
   if (FrogPilotConfirmationDialog::yesorno(
-    tr("Start CAN playback with this file?\nThe device will reboot into playback mode."), this)) {
+    tr("Start CAN playback with this route?\nThe device will reboot into playback mode."), this)) {
     Hardware::reboot();
   }
 }
