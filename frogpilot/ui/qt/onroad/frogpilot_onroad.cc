@@ -1,5 +1,6 @@
 #include <QDateTime>
 
+#include "common/params.h"
 #include "frogpilot/ui/qt/onroad/frogpilot_onroad.h"
 
 FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) {
@@ -9,43 +10,56 @@ FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) 
     flickerActive = !flickerActive;
   });
 
-  // CAN Playback overlay - only enabled when CAN_PLAYBACK env var is set
-  isCanPlayback = getenv("CAN_PLAYBACK") != nullptr;
+  // CAN Playback overlay will be initialized lazily in updateState()
+  // when CAN_PLAYBACK is detected in Params (set by UI from can_log_settings)
+  isCanPlayback = false;
+  playback_overlay_ = nullptr;
+  playback_timer_ = nullptr;
+}
 
-  if (isCanPlayback) {
-    playback_overlay_ = new PlaybackOverlay(this);
-    playback_overlay_->setDuration(playback_duration_);
-    playback_overlay_->setPlaying(true);
-    playback_overlay_->showOverlay();
+void FrogPilotOnroadWindow::initPlaybackOverlay() {
+  if (playback_overlay_ != nullptr) return;
 
-    // Timer to simulate playback position updates (mock for UI testing)
-    playback_timer_ = new QTimer(this);
-    QObject::connect(playback_timer_, &QTimer::timeout, [this]() {
-      updatePlaybackPosition();
-    });
-    playback_timer_->start(100);  // Update every 100ms
+  playback_overlay_ = new PlaybackOverlay(this);
+  playback_overlay_->setDuration(playback_duration_);
+  playback_overlay_->setPlaying(true);
+  playback_overlay_->showOverlay();
 
-    // Connect overlay signals
-    QObject::connect(playback_overlay_, &PlaybackOverlay::seekRequested, [this](double position) {
-      playback_position_ = position;
-      playback_overlay_->setPosition(position);
-      updatePlaybackRealTime();
-    });
+  // Timer to update playback position from Params
+  playback_timer_ = new QTimer(this);
+  QObject::connect(playback_timer_, &QTimer::timeout, [this]() {
+    updatePlaybackPosition();
+  });
+  playback_timer_->start(100);  // Update every 100ms
 
-    QObject::connect(playback_overlay_, &PlaybackOverlay::playPauseRequested, [this]() {
-      // Toggle play/pause (mock)
-      static bool playing = true;
-      playing = !playing;
-      playback_overlay_->setPlaying(playing);
-    });
+  // Connect overlay signals
+  QObject::connect(playback_overlay_, &PlaybackOverlay::seekRequested, [this](double position) {
+    playback_position_ = position;
+    playback_overlay_->setPosition(position);
+    updatePlaybackRealTime();
+  });
 
-    QObject::connect(playback_overlay_, &PlaybackOverlay::speedChangeRequested, [](double speed) {
-      // Speed change handled by overlay internally, this signal is for future backend integration
-    });
-  }
+  QObject::connect(playback_overlay_, &PlaybackOverlay::playPauseRequested, [this]() {
+    static bool playing = true;
+    playing = !playing;
+    playback_overlay_->setPlaying(playing);
+  });
+
+  QObject::connect(playback_overlay_, &PlaybackOverlay::speedChangeRequested, [](double speed) {
+    // Speed change handled by overlay internally, this signal is for future backend integration
+  });
 }
 
 void FrogPilotOnroadWindow::updateState(const UIState &s, const FrogPilotUIState &fs) {
+  // Check CAN_PLAYBACK from Params (lazy initialization)
+  if (!isCanPlayback) {
+    Params params;
+    isCanPlayback = params.getBool("CAN_PLAYBACK");
+    if (isCanPlayback) {
+      initPlaybackOverlay();
+    }
+  }
+
   QJsonObject &frogpilot_toggles = fs.frogpilot_toggles;
   SubMaster &fpsm = *(fs.sm);
 

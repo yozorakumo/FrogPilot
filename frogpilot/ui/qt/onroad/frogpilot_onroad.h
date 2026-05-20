@@ -22,6 +22,7 @@ private:
   void paintFPS(QPainter &p, const QRect &rect);
   void paintSteeringTorqueBorder(QPainter &p, const QRect &rect);
   void paintTurnSignalBorder(QPainter &p, const QRect &rect);
+  void initPlaybackOverlay();
   void updatePlaybackPosition();
   void updatePlaybackRealTime();
 

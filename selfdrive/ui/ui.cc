@@ -267,6 +267,7 @@ static void update_state(UIState *s, FrogPilotUIState *fs) {
     fs->frogpilot_scene.started_timer += 1;
   }
   scene.started |= fs->frogpilot_toggles.value("force_onroad").toBool();
+  scene.started |= Params().getBool("CAN_PLAYBACK");
   scene.started &= !fs->frogpilot_toggles.value("force_offroad").toBool();
 
   scene.world_objects_visible = scene.world_objects_visible ||

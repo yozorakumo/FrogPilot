@@ -214,6 +214,7 @@ class CanPlayer:
     """再生を停止"""
     self._stop = True
     self.params.put("CanPlaybackPlaying", "0")
+    self.params.remove("CAN_PLAYBACK")
 
   def _update_params_state(self) -> None:
     """Paramsに現在の再生状態を書き込む"""
@@ -348,6 +349,8 @@ class CanPlayer:
       cloudlog.info("CAN playback loop: restarting from beginning")
 
     cloudlog.info("CAN playback finished")
+    # Clean up CAN_PLAYBACK flag so manager returns to offroad
+    self.params.remove("CAN_PLAYBACK")
 
 
 def main():

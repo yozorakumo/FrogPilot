@@ -167,6 +167,10 @@ def manager_thread() -> None:
 
     started = sm['deviceState'].started
 
+    # CAN playback mode: force started=True to launch onroad processes
+    if not started and params.get_bool("CAN_PLAYBACK"):
+      started = True
+
     if started and not started_prev:
       if not frogpilot_toggles.force_onroad:
         params.clear_all(ParamKeyType.CLEAR_ON_ONROAD_TRANSITION)

@@ -21,7 +21,7 @@ from openpilot.frogpilot.common.frogpilot_variables import get_frogpilot_toggles
 from openpilot.frogpilot.controls.frogpilot_card import FrogPilotCard
 
 REPLAY = "REPLAY" in os.environ
-CAN_PLAYBACK = os.environ.get("CAN_PLAYBACK", "0") == "1"
+CAN_PLAYBACK = os.environ.get("CAN_PLAYBACK", "0") == "1" or Params().get_bool("CAN_PLAYBACK")
 
 EventName = car.CarEvent.EventName
 
