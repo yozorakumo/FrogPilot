@@ -32,9 +32,41 @@ def set_realtime_priority(level: int) -> None:
     os.sched_setscheduler(0, os.SCHED_FIFO, os.sched_param(level))
 
 
+def get_online_cores() -> list[int]:
+  """Get list of online CPU cores from /sys/devices/system/cpu/online.
+
+  Returns:
+    List of online core indices, e.g. [0, 1, 2, 3].
+    Falls back to os.cpu_count() if sysfs is unavailable.
+  """
+  try:
+    with open('/sys/devices/system/cpu/online', 'r') as f:
+      online_str = f.read().strip()
+    # Parse "0-3" → [0,1,2,3], "0-7" → [0,1,...,7], "0,2,4-6" → [0,2,4,5,6]
+    cores = []
+    for part in online_str.split(','):
+      if '-' in part:
+        start, end = part.split('-')
+        cores.extend(range(int(start), int(end) + 1))
+      else:
+        cores.append(int(part))
+    return cores
+  except (FileNotFoundError, ValueError):
+    return list(range(os.cpu_count() or 4))
+
+
 def set_core_affinity(cores: list[int]) -> None:
   if not PC:
-    os.sched_setaffinity(0, cores)
+    # Filter requested cores to only those that are online
+    online_cores = get_online_cores()
+    valid_cores = [c for c in cores if c in online_cores]
+
+    if not valid_cores:
+      # All requested cores are offline; fall back to online cores
+      valid_cores = online_cores[:len(cores)]
+
+    if valid_cores:
+      os.sched_setaffinity(0, valid_cores)
 
 
 def config_realtime_process(cores: int | list[int], priority: int) -> None:

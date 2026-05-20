@@ -42,8 +42,16 @@ RLOG_FILENAME_UNCOMPRESSED = "rlog"
 def discover_segments(route_path: str) -> list[str]:
   """ルートディレクトリからセグメントディレクトリを検索
 
+  2つのディレクトリ構造に対応:
+    - フラット構造（commaデバイス）:
+        /data/media/0/realdata/<route>--<dongle>--<segment>/rlog
+        route_pathにいずれかのセグメントを指定すると、兄弟ディレクトリから
+        同一ルートの全セグメントを自動検出する。
+    - ネスト構造:
+        /data/media/0/realdata/<route>/<segment>/rlog
+
   Args:
-    route_path: ルートディレクトリパス（例: /data/media/0/realdata/000001a3--c20ba54385）
+    route_path: ルートまたはセグメントディレクトリパス
 
   Returns:
     セグメントディレクトリパスのリスト（セグメント番号順）
@@ -52,13 +60,34 @@ def discover_segments(route_path: str) -> list[str]:
   if not route_dir.is_dir():
     return []
 
+  # ヘルパー: ディレクトリにrlogが存在するか
+  def _has_rlog(d: Path) -> bool:
+    return (d / RLOG_FILENAME).exists() or (d / RLOG_FILENAME_UNCOMPRESSED).exists()
+
+  # Case 1: フラット構造
+  # ディレクトリ名が <route>--<dongle>--<segment_number> の形式かチェック
+  dir_name = route_dir.name
+  parts = dir_name.rsplit('--', 1)
+  if len(parts) == 2 and parts[1].isdigit():
+    route_prefix = parts[0]  # e.g. "00000007--33243391ae"
+    parent = route_dir.parent
+    segments: list[str] = []
+    for entry in sorted(parent.iterdir()):
+      if entry.is_dir() and entry.name.startswith(route_prefix + '--'):
+        if _has_rlog(entry):
+          segments.append(str(entry))
+    if segments:
+      return segments
+
+  # Case 2: ネスト構造（セグメントがサブディレクトリとして存在）
   segments = []
   for entry in sorted(route_dir.iterdir()):
-    if entry.is_dir() and entry.name.startswith("--"):
-      # rlogファイルが存在するか確認
-      has_rlog = (entry / RLOG_FILENAME).exists() or (entry / RLOG_FILENAME_UNCOMPRESSED).exists()
-      if has_rlog:
-        segments.append(str(entry))
+    if entry.is_dir() and _has_rlog(entry):
+      segments.append(str(entry))
+
+  # Case 3: route_path自体がrlogを含む単一セグメント
+  if not segments and _has_rlog(route_dir):
+    segments.append(str(route_dir))
 
   return segments
 
