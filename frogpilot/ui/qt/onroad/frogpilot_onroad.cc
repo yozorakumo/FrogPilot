@@ -124,6 +124,12 @@ void FrogPilotOnroadWindow::updatePlaybackPosition() {
   QString realtime_str = QString::fromStdString(params.get("CanPlaybackRealTime"));
   QString speed_str = QString::fromStdString(params.get("CanPlaybackSpeed"));
 
+  // Read loading progress (0-100%)
+  QString loading_str = QString::fromStdString(params.get("CanPlaybackLoadingProgress"));
+  if (!loading_str.isEmpty()) {
+    loading_progress_ = loading_str.toInt();
+  }
+
   if (!position_str.isEmpty()) {
     playback_position_ = position_str.toDouble();
     playback_overlay_->setPosition(playback_position_);
@@ -174,6 +180,21 @@ void FrogPilotOnroadWindow::paintEvent(QPaintEvent *event) {
   p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
 
   QRect rect = this->rect();
+
+  // CAN Playback loading overlay
+  if (isCanPlayback && loading_progress_ < 100) {
+    p.fillRect(rect, QColor(0, 0, 0, 180));
+
+    QString loadingText = QString("Loading %1%").arg(loading_progress_);
+    p.setFont(InterFont(72, QFont::Bold));
+    p.setPen(Qt::white);
+
+    QRect textRect = p.fontMetrics().boundingRect(loadingText);
+    int xPos = (rect.width() - textRect.width()) / 2;
+    int yPos = (rect.height() - textRect.height()) / 2 + textRect.height() / 2;
+    p.drawText(xPos, yPos, loadingText);
+    return;
+  }
 
   QRegion marginRegion;
   marginRegion += QRegion(0, 0, rect.width(), UI_BORDER_SIZE);

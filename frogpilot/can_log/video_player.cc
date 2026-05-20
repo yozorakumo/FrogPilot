@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
   bool synced_paused = false;
   auto last_params_read = std::chrono::steady_clock::now();
   auto last_frame_time = std::chrono::steady_clock::now();
-  static constexpr double PARAMS_READ_INTERVAL = 0.2;  // Params読み取り間隔（秒）
+  static constexpr double PARAMS_READ_INTERVAL = 0.1;  // Params読み取り間隔（秒）
   static constexpr double FRAME_INTERVAL = 1.0 / FPS;  // フレーム間隔（秒）
 
   fprintf(stderr, "[video_player] Waiting for CAN playback to start...\n");

@@ -47,4 +47,5 @@ private:
   double playback_position_ = 0.0;
   double playback_duration_ = 0.0;
   QString playback_start_time_;
+  int loading_progress_ = 0;
 };

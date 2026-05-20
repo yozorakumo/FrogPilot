@@ -16,21 +16,27 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
   QFileInfo routeInfo(routePath);
   QString routeName = routeInfo.fileName();
 
-  // ルート名から日時をパース（例: 2026-05-19--14-30-25 → 2026/05/19 14:30:25）
+  // セグメントディレクトリのmtimeから記録日時を取得
   QString displayText;
-  QStringList nameParts = routeName.split("--");
-  if (nameParts.size() >= 2) {
-    QString datePart = nameParts[0];
-    QString timePart = nameParts[1];
-    // Check if date part looks like YYYY-MM-DD and time part looks like HH-MM-SS
-    if (datePart.length() == 10 && datePart[4] == '-' && datePart[7] == '-' &&
-        timePart.length() == 8 && timePart[2] == '-' && timePart[5] == '-') {
-      displayText = datePart + " " + QString(timePart).replace("-", ":");
+  QDateTime recordTime = routeInfo.lastModified().toUTC();
+  if (recordTime.isValid()) {
+    // UTC時間をローカルタイムゾーンで表示
+    displayText = recordTime.toLocalTime().toString("yyyy/MM/dd HH:mm");
+  } else {
+    // フォールバック: ルート名からパース
+    QStringList nameParts = routeName.split("--");
+    if (nameParts.size() >= 2) {
+      QString datePart = nameParts[0];
+      QString timePart = nameParts[1];
+      if (datePart.length() == 10 && datePart[4] == '-' && datePart[7] == '-' &&
+          timePart.length() == 8 && timePart[2] == '-' && timePart[5] == '-') {
+        displayText = datePart + " " + QString(timePart).replace("-", ":");
+      } else {
+        displayText = routeName;
+      }
     } else {
       displayText = routeName;
     }
-  } else {
-    displayText = routeName;
   }
 
   // セグメント数をカウント
@@ -189,7 +195,7 @@ void FrogPilotCanLogPanel::refreshFileList() {
   // ルートディレクトリを収集（--を含むディレクトリ名 = ルート）
   QStringList routeFilters;
   routeFilters << "*--*";
-  QFileInfoList routes = logDir.entryInfoList(routeFilters, QDir::Dirs | QDir::NoDotAndDotDot, QDir::Time | QDir::Reversed);
+  QFileInfoList routes = logDir.entryInfoList(routeFilters, QDir::Dirs | QDir::NoDotAndDotDot, QDir::Time);
 
   if (routes.isEmpty()) {
     statusLabel = new QLabel(tr("No driving logs found."), this);
