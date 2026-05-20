@@ -16,27 +16,48 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
   QFileInfo routeInfo(routePath);
   QString routeName = routeInfo.fileName();
 
-  // セグメントディレクトリのmtimeから記録日時を取得
+  // rlogファイルのmtimeから記録日時を取得（ディレクトリmtimeより正確）
   QString displayText;
-  QDateTime recordTime = routeInfo.lastModified().toUTC();
+  QDateTime recordTime;
+  // 最初のセグメントのrlogファイルを探す
+  QDir routeDir(routePath);
+  QStringList segFilters;
+  segFilters << "--*";
+  QStringList segDirs = routeDir.entryList(segFilters, QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+  if (!segDirs.isEmpty()) {
+    // 最初のセグメントのrlog/rlog.bz2のmtimeを使用
+    for (const QString &segDir : segDirs) {
+      QString rlogPath = routeDir.filePath(segDir + "/rlog");
+      QString rlogBz2Path = routeDir.filePath(segDir + "/rlog.bz2");
+      QFileInfo rlogInfo(rlogPath);
+      QFileInfo rlogBz2Info(rlogBz2Path);
+      if (rlogInfo.exists()) {
+        recordTime = rlogInfo.lastModified().toUTC();
+        break;
+      } else if (rlogBz2Info.exists()) {
+        recordTime = rlogBz2Info.lastModified().toUTC();
+        break;
+      }
+    }
+  }
+  // フォールバック: rlogが見つからなければディレクトリのmtime
+  if (!recordTime.isValid()) {
+    // ルート直下のrlogをチェック
+    QFileInfo rlogInfo(routePath + "/rlog");
+    QFileInfo rlogBz2Info(routePath + "/rlog.bz2");
+    if (rlogInfo.exists()) {
+      recordTime = rlogInfo.lastModified().toUTC();
+    } else if (rlogBz2Info.exists()) {
+      recordTime = rlogBz2Info.lastModified().toUTC();
+    } else {
+      recordTime = routeInfo.lastModified().toUTC();
+    }
+  }
   if (recordTime.isValid()) {
     // UTC時間をローカルタイムゾーンで表示
     displayText = recordTime.toLocalTime().toString("yyyy/MM/dd HH:mm");
   } else {
-    // フォールバック: ルート名からパース
-    QStringList nameParts = routeName.split("--");
-    if (nameParts.size() >= 2) {
-      QString datePart = nameParts[0];
-      QString timePart = nameParts[1];
-      if (datePart.length() == 10 && datePart[4] == '-' && datePart[7] == '-' &&
-          timePart.length() == 8 && timePart[2] == '-' && timePart[5] == '-') {
-        displayText = datePart + " " + QString(timePart).replace("-", ":");
-      } else {
-        displayText = routeName;
-      }
-    } else {
-      displayText = routeName;
-    }
+    displayText = routeName;
   }
 
   // セグメント数をカウント

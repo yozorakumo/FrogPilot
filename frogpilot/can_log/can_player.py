@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""CAN Bus Player - rlogからCANメッセージのみを読み出してパブリッシュ
+"""CAN Bus Player - rlogから全イベントを読み出してパブリッシュ（フルイベントリプレイ）
 
-/data/media/0/realdata/ のrlogファイル（capnproto形式）からCANメッセージを
+/data/media/0/realdata/ のrlogファイル（capnproto形式）から全イベントを
 読み込み、オリジナルのタイミングを再現してパブリッシュする。
 
-CAN_ONLYモード: can, pandaStates, peripheralState のみをpublishする。
-card.pyがCAN→carStateを生成し、controlsdがcarState→controlsStateを生成する
-通常パイプラインを利用する。これによりMultiplePublishersErrorを回避する。
+CAN_PLAYBACKモードでは、managerが他のシステムプロセスをスキップするため、
+can_playerがrlog内のほぼ全イベントを安全にパブリッシュできる。
+これにより、UIにcarState/controlsState/modelV2等が正しく表示される。
+
+スキップするサービス:
+  - initData: 通常のサービスではない
+  - managerState: managerプロセスがパブリッシュするため衝突回避
+  - Encode系: サイズが大きく再生に不要
 
 使用例:
-  # ルートディレクトリを指定して再生
   python -m frogpilot.can_log.can_player /data/media/0/realdata/000001a3--c20ba54385
-
-  # 2倍速再生
   python -m frogpilot.can_log.can_player --speed 2.0 /data/media/0/realdata/000001a3--c20ba54385
-
-  # ループ再生
   python -m frogpilot.can_log.can_player --loop /data/media/0/realdata/000001a3--c20ba54385
 """
 
@@ -42,9 +42,20 @@ BATCH_THRESHOLD_SEC = 0.001  # 1ms
 RLOG_FILENAME = "rlog.bz2"
 RLOG_FILENAME_UNCOMPRESSED = "rlog"
 
-# CAN-only publish: これらのサービスのみパブリッシュする
-# card.pyがCAN→carStateを生成、controlsdがcarState→controlsStateを生成
-PUBLISH_SERVICES = ['can', 'pandaStates', 'peripheralState']
+# フルイベントリプレイでスキップするサービス
+# - initData: 初期化データ、通常サービスではない
+# - managerState: managerプロセス自身がpublishするため衝突する
+# - Encode系: サイズが大きく再生に不要
+SKIP_SERVICES = {
+  'initData',
+  'managerState',
+  'roadEncodeIdx', 'driverEncodeIdx', 'wideRoadEncodeIdx',
+  'qRoadEncodeIdx', 'qDriverEncodeIdx', 'qWideEncodeIdx',
+  'roadEncodeData', 'driverEncodeData', 'wideRoadEncodeData',
+  'qRoadEncodeData',
+  'livestreamWideRoadEncodeIdx', 'livestreamRoadEncodeIdx', 'livestreamDriverEncodeIdx',
+  'livestreamWideRoadEncodeData', 'livestreamRoadEncodeData', 'livestreamDriverEncodeData',
+}
 
 
 def discover_segments(route_path: str) -> list[str]:
@@ -143,14 +154,14 @@ def _read_capnp_messages(data: bytes):
     offset += msg_size
 
 
-def read_can_events_from_rlog(rlog_path: str) -> list[tuple]:
-  """rlogファイルからCANイベントのみを読み込む
+def read_all_events_from_rlog(rlog_path: str) -> list[tuple]:
+  """rlogファイルから全イベントを読み込む
 
   Args:
     rlog_path: rlogファイルパス
 
   Returns:
-    [(logMonoTime, 'can', raw_bytes), ...] のリスト（canイベントのみ）
+    [(logMonoTime, event_type, raw_bytes), ...] のリスト
   """
   with open(rlog_path, 'rb') as f:
     dat = f.read()
@@ -164,9 +175,8 @@ def read_can_events_from_rlog(rlog_path: str) -> list[tuple]:
     try:
       with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
         event_type = msg.which()
-        if event_type == 'can':
-          log_mono_time = msg.logMonoTime
-          events.append((log_mono_time, event_type, raw_msg))
+        log_mono_time = msg.logMonoTime
+        events.append((log_mono_time, event_type, raw_msg))
     except Exception as e:
       cloudlog.exception(f"Failed to parse event: {e}")
       continue
@@ -174,8 +184,29 @@ def read_can_events_from_rlog(rlog_path: str) -> list[tuple]:
   return events
 
 
-def load_all_can_events(route_path: str) -> list[tuple]:
-  """ルート全体のCANイベントを全セグメントから読み込む
+def extract_recording_time(events: list[tuple]) -> int | None:
+  """イベントリストから最初のclocksイベントのwallTimeNanosを取得
+
+  clocks.wallTimeNanosはUNIXエポック時間（ナノ秒）。
+
+  Args:
+    events: イベントリスト
+
+  Returns:
+    wallTimeNanos（ナノ秒）、見つからなければNone
+  """
+  for log_mono_time, event_type, raw_msg in events:
+    if event_type == 'clocks':
+      try:
+        with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
+          return msg.clocks.wallTimeNanos
+      except Exception:
+        continue
+  return None
+
+
+def load_all_events(route_path: str) -> tuple[list[tuple], set[str], int | None]:
+  """ルート全体のイベントを全セグメントから読み込む
 
   ローディング進捗をCanPlaybackLoadingProgress Paramsに書き込む。
 
@@ -183,7 +214,10 @@ def load_all_can_events(route_path: str) -> list[tuple]:
     route_path: ルートディレクトリパス
 
   Returns:
-    タイムスタンプ順にソートされたCANイベントのリスト
+    (events, service_names, recording_time_ns) のタプル
+    - events: タイムスタンプ順にソートされたイベントのリスト
+    - service_names: パブリッシュが必要なサービス名のセット
+    - recording_time_ns: 録画開始時刻のwallTimeNanos（ナノ秒）、なければNone
   """
   params = Params()
   params.put("CanPlaybackLoadingProgress", "0")
@@ -192,7 +226,7 @@ def load_all_can_events(route_path: str) -> list[tuple]:
   if not segments:
     cloudlog.warning(f"No segments found in {route_path}")
     params.put("CanPlaybackLoadingProgress", "100")
-    return []
+    return [], set(), None
 
   all_events = []
   total_segments = len(segments)
@@ -207,93 +241,35 @@ def load_all_can_events(route_path: str) -> list[tuple]:
     if not rlog_path.exists():
       continue
 
-    cloudlog.info(f"Loading CAN events from {rlog_path} ({i+1}/{total_segments})")
-    events = read_can_events_from_rlog(str(rlog_path))
+    cloudlog.info(f"Loading events from {rlog_path} ({i+1}/{total_segments})")
+    events = read_all_events_from_rlog(str(rlog_path))
     all_events.extend(events)
 
   # タイムスタンプでソート
   all_events.sort(key=lambda x: x[0])
+
+  # パブリッシュが必要なサービス名を収集
+  service_names = set()
+  for _, event_type, _ in all_events:
+    if event_type not in SKIP_SERVICES:
+      service_names.add(event_type)
+
+  # 録画日時をclocksイベントから取得
+  recording_time_ns = extract_recording_time(all_events)
+
   params.put("CanPlaybackLoadingProgress", "100")
-  return all_events
 
+  cloudlog.info(f"Loaded {len(all_events)} events, {len(service_names)} services to publish")
+  cloudlog.info(f"Services: {sorted(service_names)}")
 
-# --- Legacy CAN-only functions (kept for debugging) ---
-
-def read_can_messages_from_rlog(rlog_path: str) -> list[tuple]:
-  """rlogファイルからCANメッセージのみを読み込む（レガシー）
-
-  Args:
-    rlog_path: rlogファイルパス
-
-  Returns:
-    [(logMonoTime, can_addr, busTime, dat_bytes, src_bus), ...] のリスト
-  """
-  with open(rlog_path, 'rb') as f:
-    dat = f.read()
-
-  # bz2圧縮チェック
-  if dat.startswith(b'BZh9'):
-    dat = bz2.decompress(dat)
-
-  messages = []
-  ents = capnp_log.Event.read_multiple_bytes(dat)
-
-  for ent in ents:
-    try:
-      if ent.which() == 'can':
-        log_mono_time = ent.logMonoTime
-        for can_msg in ent.can:
-          messages.append((
-            log_mono_time,
-            can_msg.address,
-            can_msg.busTime,
-            bytes(can_msg.dat),
-            can_msg.src,
-          ))
-    except Exception:
-      continue
-
-  return messages
-
-
-def load_route_can_data(route_path: str) -> list[tuple]:
-  """ルート全体のCANデータを全セグメントから読み込む（レガシー）
-
-  Args:
-    route_path: ルートディレクトリパス
-
-  Returns:
-    タイムスタンプ順にソートされたCANメッセージのリスト
-  """
-  segments = discover_segments(route_path)
-  if not segments:
-    cloudlog.warning(f"No segments found in {route_path}")
-    return []
-
-  all_messages = []
-  for seg_path in segments:
-    seg_dir = Path(seg_path)
-    rlog_path = seg_dir / RLOG_FILENAME
-    if not rlog_path.exists():
-      rlog_path = seg_dir / RLOG_FILENAME_UNCOMPRESSED
-    if not rlog_path.exists():
-      continue
-
-    cloudlog.info(f"Loading CAN data from {rlog_path}")
-    msgs = read_can_messages_from_rlog(str(rlog_path))
-    all_messages.extend(msgs)
-
-  # タイムスタンプでソート
-  all_messages.sort(key=lambda x: x[0])
-  return all_messages
+  return all_events, service_names, recording_time_ns
 
 
 class CanPlayer:
-  """rlogからCANメッセージのみを読み出し、CAN-onlyでパブリッシュするクラス
+  """rlogから全イベントを読み出し、フルイベントリプレイするクラス
 
-  publishするサービス: can, pandaStates, peripheralState のみ
-  card.pyがCAN→carStateを生成、controlsdがcarState→controlsStateを生成する
-  通常パイプラインを利用する。
+  managerがCAN_PLAYBACKモードで他のシステムプロセスをスキップするため、
+  can_playerがrlog内のほぼ全イベントを安全にパブリッシュできる。
   """
 
   def __init__(self, route_path: str, speed: float = 1.0, loop: bool = False):
@@ -313,28 +289,35 @@ class CanPlayer:
     self._current_time_ns = 0
     self._lock = threading.Lock()
 
-    # ルート全体のCANイベントをロード（進捗をParamsに書き込み）
-    self._events = load_all_can_events(route_path)
+    # ルート全体のイベントをロード（進捗をParamsに書き込み）
+    self._events, self._service_names, self._recording_time_ns = load_all_events(route_path)
     if not self._events:
-      raise ValueError(f"No CAN events found in {route_path}")
+      raise ValueError(f"No events found in {route_path}")
 
-    # PubMasterをCAN-onlyサービスで初期化
-    cloudlog.info(f"CAN playback: publishing CAN-only services: {PUBLISH_SERVICES}")
-    self.pm = messaging.PubMaster(PUBLISH_SERVICES)
+    # PubMasterをフルイベントサービスで初期化
+    cloudlog.info(f"CAN playback: publishing {len(self._service_names)} services: {sorted(self._service_names)}")
+    self.pm = messaging.PubMaster(sorted(self._service_names))
 
     self._start_time_ns = self._events[0][0]
     self._end_time_ns = self._events[-1][0]
     self._event_count = len(self._events)
     self._duration = (self._end_time_ns - self._start_time_ns) / 1e9
 
-    # 録画日時をセグメントディレクトリの変更日時から取得
-    segments = discover_segments(route_path)
-    if segments:
-      recording_timestamp = os.path.getmtime(segments[0])
-      recording_dt = datetime.fromtimestamp(recording_timestamp, tz=timezone.utc)
+    # 録画日時を設定
+    # 1. clocks.wallTimeNanosから取得（最も正確）
+    # 2. フォールバック: ファイルのmtime
+    if self._recording_time_ns is not None:
+      recording_dt = datetime.fromtimestamp(self._recording_time_ns / 1e9, tz=timezone.utc)
       self._recording_time_str = recording_dt.strftime('%Y-%m-%d %H:%M')
     else:
-      self._recording_time_str = ""
+      # フォールバック: セグメントディレクトリの変更日時
+      segments = discover_segments(route_path)
+      if segments:
+        recording_timestamp = os.path.getmtime(segments[0])
+        recording_dt = datetime.fromtimestamp(recording_timestamp, tz=timezone.utc)
+        self._recording_time_str = recording_dt.strftime('%Y-%m-%d %H:%M')
+      else:
+        self._recording_time_str = ""
 
   @property
   def duration_seconds(self) -> float:
@@ -435,27 +418,11 @@ class CanPlayer:
       except (ValueError, TypeError):
         self.params.remove("CanPlaybackSpeedCmd")
 
-  def _send_dummy_panda_states(self) -> None:
-    """ダミーのpandaStatesメッセージを送信"""
-    try:
-      msg = messaging.new_message('pandaStates', 1)
-      self.pm.send('pandaStates', msg)
-    except Exception as e:
-      cloudlog.error(f"CAN playback: error sending pandaStates: {e}")
-
-  def _send_dummy_peripheral_state(self) -> None:
-    """ダミーのperipheralStateメッセージを送信"""
-    try:
-      msg = messaging.new_message('peripheralState')
-      self.pm.send('peripheralState', msg)
-    except Exception as e:
-      cloudlog.error(f"CAN playback: error sending peripheralState: {e}")
-
   def run(self):
     """メイン再生ループ
 
-    rlogから読み込んだCANイベントをオリジナルのタイミングでパブリッシュする。
-    定期的にダミーのpandaStates, peripheralStateもパブリッシュする。
+    rlogから読み込んだ全イベントをオリジナルのタイミングでパブリッシュする。
+    SKIP_SERVICESに含まれるイベントはパブリッシュしない。
     """
     # 初期状態をParamsに書き込む
     self._update_params_state()
@@ -465,7 +432,6 @@ class CanPlayer:
       playback_start = None
       total_paused_duration = 0.0
       last_params_update = time.monotonic()
-      last_dummy_send = time.monotonic()
 
       for log_mono_time, event_type, raw_bytes in self._events:
         if self._stop:
@@ -478,12 +444,6 @@ class CanPlayer:
           self._update_params_state()
           last_params_update = now
 
-        # ダミーメッセージの定期送信（1秒間隔）
-        if now - last_dummy_send > 1.0:
-          self._send_dummy_panda_states()
-          self._send_dummy_peripheral_state()
-          last_dummy_send = now
-
         # 一時停止処理
         if self._paused:
           self._update_params_state()
@@ -491,11 +451,6 @@ class CanPlayer:
           while self._paused and not self._stop:
             time.sleep(0.05)
             self._check_params_commands()
-            # 一時停止中もダミーメッセージを送信
-            if time.monotonic() - last_dummy_send > 1.0:
-              self._send_dummy_panda_states()
-              self._send_dummy_peripheral_state()
-              last_dummy_send = time.monotonic()
           if self._stop:
             break
           total_paused_duration += time.monotonic() - pause_begin
@@ -518,11 +473,12 @@ class CanPlayer:
         if sleep_needed > BATCH_THRESHOLD_SEC:
           time.sleep(sleep_needed)
 
-        # CANイベントをパブリッシュ
-        try:
-          self.pm.send('can', raw_bytes)
-        except Exception as e:
-          cloudlog.error(f"CAN playback: error sending can: {e}")
+        # イベントをパブリッシュ（スキップ対象以外）
+        if event_type in self._service_names:
+          try:
+            self.pm.send(event_type, raw_bytes)
+          except Exception as e:
+            cloudlog.error(f"CAN playback: error sending {event_type}: {e}")
 
       if not self.loop:
         break
@@ -536,7 +492,7 @@ class CanPlayer:
 
 def main():
   parser = argparse.ArgumentParser(
-    description='CAN Bus Log Player - rlogからCANメッセージを読み出してパブリッシュ（CAN-only mode）',
+    description='CAN Bus Log Player - rlogから全イベントをパブリッシュ（フルイベントリプレイ）',
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog="""
 使用例:
@@ -567,13 +523,15 @@ def main():
     sys.exit(1)
 
   route_name = Path(args.route_path).name
-  print("CAN Log Player (CAN-only mode)")
+  print("CAN Log Player (Full Event Replay)")
   print(f"  Route:      {route_name}")
   print(f"  Duration:   {player.duration_seconds:.2f}s")
-  print(f"  CAN Events: {player.event_count}")
+  print(f"  Events:     {player.event_count}")
+  print(f"  Services:   {len(player._service_names)}")
   print(f"  Speed:      {args.speed}x")
   print(f"  Loop:       {args.loop}")
   print(f"  Start time: {datetime.fromtimestamp(player.start_time, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}")
+  print(f"  Recorded:   {player.real_time_str}")
   print()
 
   try:

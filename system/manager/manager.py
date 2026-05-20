@@ -21,6 +21,25 @@ from openpilot.system.version import get_build_metadata, terms_version, training
 from openpilot.frogpilot.common.frogpilot_functions import convert_params, frogpilot_boot_functions, setup_frogpilot, uninstall_frogpilot
 from openpilot.frogpilot.common.frogpilot_variables import EXCLUDED_KEYS, frogpilot_default_params, get_frogpilot_toggles, params_cache, params_memory
 
+# CAN playback mode: skip these processes to avoid MultiplePublishersError.
+# can_player.py publishes all events from rlog, so system publishers must be skipped.
+# Kept running: ui, hardwared, deleter, tombstoned, updated, logmessaged
+# Only 'ui', 'deleter', 'tombstoned' are kept running during CAN playback.
+CAN_PLAYBACK_SKIP_PROCESSES = [
+  'manage_athenad', 'camerad', 'logcatd', 'proclogd', 'logmessaged',
+  'micd', 'timed', 'hardwared',
+  'dmonitoringmodeld', 'encoderd', 'stream_encoderd', 'loggerd',
+  'modeld', 'mapsd', 'navmodeld', 'sensord',
+  'soundd', 'locationd', 'pandad',
+  'calibrationd', 'torqued', 'controlsd', 'card',
+  'dmonitoringd', 'qcomgpsd', 'ubloxd', 'pigeond',
+  'navd', 'paramsd', 'lagd', 'plannerd', 'radard',
+  'bridge', 'webrtcd', 'webjoystick',
+  'classic_modeld', 'tinygrad_modeld',
+  'frogpilot_process', 'speed_limit_filler', 'mapd', 'the_pond', 'device_syncd',
+  'statsd', 'uploader', 'updated',
+]
+
 
 def manager_init() -> None:
   save_bootlog()
@@ -152,7 +171,8 @@ def manager_thread() -> None:
   pm = messaging.PubMaster(['managerState'])
 
   write_onroad_params(False, params)
-  ensure_running(managed_processes.values(), False, params=params, CP=sm['carParams'], not_run=ignore, classic_model=False, tinygrad_model=False, frogpilot_toggles=get_frogpilot_toggles())
+  can_playback_skip = CAN_PLAYBACK_SKIP_PROCESSES if params.get_bool("CAN_PLAYBACK") else []
+  ensure_running(managed_processes.values(), False, params=params, CP=sm['carParams'], not_run=ignore + can_playback_skip, classic_model=False, tinygrad_model=False, frogpilot_toggles=get_frogpilot_toggles())
 
   started_prev = False
 
@@ -191,7 +211,8 @@ def manager_thread() -> None:
 
     started_prev = started
 
-    ensure_running(managed_processes.values(), started, params=params, CP=sm['carParams'], not_run=ignore, classic_model=classic_model, tinygrad_model=tinygrad_model, frogpilot_toggles=frogpilot_toggles)
+    can_playback_skip = CAN_PLAYBACK_SKIP_PROCESSES if params.get_bool("CAN_PLAYBACK") else []
+    ensure_running(managed_processes.values(), started, params=params, CP=sm['carParams'], not_run=ignore + can_playback_skip, classic_model=classic_model, tinygrad_model=tinygrad_model, frogpilot_toggles=frogpilot_toggles)
 
     running = ' '.join("{}{}\u001b[0m".format("\u001b[32m" if p.proc.is_alive() else "\u001b[31m", p.name)
                        for p in managed_processes.values() if p.proc)

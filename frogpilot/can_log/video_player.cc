@@ -39,6 +39,7 @@ namespace fs = std::filesystem;
 static const int FPS = 20;
 static const int SEGMENT_SEC = 60;
 static const int BUFFER_COUNT = 40;
+static const int PRELOAD_THRESHOLD = 5 * FPS;  // Pre-load next segment when within 5 seconds of end
 static std::atomic<bool> g_exit{false};
 
 // シグナルハンドラ
@@ -162,6 +163,7 @@ int main(int argc, char *argv[]) {
   Params params;
   std::unique_ptr<VisionIpcServer> vipc;
   std::unique_ptr<FrameReader> reader;
+  std::unique_ptr<FrameReader> next_reader;  // Pre-loaded next segment
   int cur_seg = -1;
   int last_frame = -1;
   int vipc_w = 0, vipc_h = 0;
@@ -261,18 +263,41 @@ int main(int argc, char *argv[]) {
 
     // セグメント切替え
     if (seg != cur_seg) {
-      std::string hevc = (fs::path(segments[seg]) / "fcamera.hevc").string();
-      auto new_reader = std::make_unique<FrameReader>();
-      if (!new_reader->loadFromFile(RoadCam, hevc, true)) {
-        fprintf(stderr, "[video_player] Failed to load segment %d: %s\n", seg, hevc.c_str());
-        cur_seg = seg;
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        continue;
+      // Check if we already pre-loaded this segment
+      if (next_reader && seg == cur_seg + 1) {
+        reader = std::move(next_reader);
+        next_reader.reset();
+        fprintf(stderr, "[video_player] Segment %d: using pre-loaded segment\n", seg);
+      } else {
+        std::string hevc = (fs::path(segments[seg]) / "fcamera.hevc").string();
+        auto new_reader = std::make_unique<FrameReader>();
+        if (!new_reader->loadFromFile(RoadCam, hevc, true)) {
+          fprintf(stderr, "[video_player] Failed to load segment %d: %s\n", seg, hevc.c_str());
+          cur_seg = seg;
+          std::this_thread::sleep_for(std::chrono::milliseconds(100));
+          continue;
+        }
+        fprintf(stderr, "[video_player] Segment %d: %zu frames, %dx%d\n",
+                seg, new_reader->getFrameCount(), new_reader->width, new_reader->height);
+        reader = std::move(new_reader);
       }
-      fprintf(stderr, "[video_player] Segment %d: %zu frames, %dx%d\n",
-              seg, new_reader->getFrameCount(), new_reader->width, new_reader->height);
-      reader = std::move(new_reader);
       cur_seg = seg;
+    }
+
+    // Pre-load next segment when approaching end of current segment
+    if (!next_reader && seg + 1 < static_cast<int>(segments.size())) {
+      int frames_in_seg = reader ? static_cast<int>(reader->getFrameCount()) : (SEGMENT_SEC * FPS);
+      int frames_remaining = frames_in_seg - frame_in_seg;
+      if (frames_remaining < PRELOAD_THRESHOLD) {
+        int next_seg = seg + 1;
+        std::string next_hevc = (fs::path(segments[next_seg]) / "fcamera.hevc").string();
+        auto pre_reader = std::make_unique<FrameReader>();
+        if (pre_reader->loadFromFile(RoadCam, next_hevc, true)) {
+          fprintf(stderr, "[video_player] Pre-loaded segment %d: %zu frames\n",
+                  next_seg, pre_reader->getFrameCount());
+          next_reader = std::move(pre_reader);
+        }
+      }
     }
 
     if (!reader) {
@@ -314,11 +339,11 @@ int main(int argc, char *argv[]) {
       VisionIpcBufExtra extra = {};
       extra.frame_id = static_cast<uint64_t>(total_frame);
       extra.timestamp_sof = static_cast<uint64_t>(current_pos * 1e9);
-      extra.timestamp_eof = static_cast<uint64_t>((current_pos + 0.05) * 1e9);
+      extra.timestamp_eof = static_cast<uint64_t>((current_pos + FRAME_INTERVAL) * 1e9);
       vipc->send(buf, &extra, false);
       frames_sent++;
       last_frame = total_frame;
-      last_frame_time = now;
+      last_frame_time = std::chrono::steady_clock::now();  // Update after actual send
     }
   }
 
