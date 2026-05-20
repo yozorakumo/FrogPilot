@@ -272,7 +272,6 @@ void SoftwarePanel::updateLabels() {
 void SoftwarePanel::updateCIRunnerStatus() {
   // Read CI Runner status from params (set by the updated process)
   std::string status_json = params.get("CIRunnerStatus");
-  bool ci_active = params.getBool("CIRunnerActive");
   bool ci_installed = false;
   bool ci_running = false;
   QString service_name = "";
