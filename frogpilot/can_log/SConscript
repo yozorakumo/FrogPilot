@@ -23,8 +23,8 @@ if arch == "Darwin":
 else:
   video_player_libs.append('OpenCL')
 
-env.Program('frogpilot/can_log/video_player',
-            ['frogpilot/can_log/video_player.cc',
-             'tools/replay/framereader.cc'],
+env.Program('video_player',
+            ['video_player.cc',
+             '../../tools/replay/framereader.cc'],
             LIBS=video_player_libs,
             FRAMEWORKS=video_player_frameworks)
