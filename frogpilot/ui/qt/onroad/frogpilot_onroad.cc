@@ -20,9 +20,24 @@ FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) 
 void FrogPilotOnroadWindow::initPlaybackOverlay() {
   if (playback_overlay_ != nullptr) return;
 
+  // Read initial playback state from Params (written by can_player.py)
+  Params params;
+  QString duration_str = QString::fromStdString(params.get("CanPlaybackDuration"));
+  QString realtime_str = QString::fromStdString(params.get("CanPlaybackRealTime"));
+  QString playing_str = QString::fromStdString(params.get("CanPlaybackPlaying"));
+
+  if (!duration_str.isEmpty()) {
+    playback_duration_ = duration_str.toDouble();
+  }
+  if (!realtime_str.isEmpty()) {
+    // Parse real time to get start time: real_time = start_time + position
+    // Store the raw real time string for display
+    playback_start_time_ = realtime_str;
+  }
+
   playback_overlay_ = new PlaybackOverlay(this);
   playback_overlay_->setDuration(playback_duration_);
-  playback_overlay_->setPlaying(true);
+  playback_overlay_->setPlaying(playing_str != "0");
   playback_overlay_->showOverlay();
 
   // Timer to update playback position from Params
@@ -34,19 +49,25 @@ void FrogPilotOnroadWindow::initPlaybackOverlay() {
 
   // Connect overlay signals
   QObject::connect(playback_overlay_, &PlaybackOverlay::seekRequested, [this](double position) {
+    // Write seek command to Params for can_player.py to read
+    Params params;
+    params.put("CanPlaybackSeek", std::to_string(position));
     playback_position_ = position;
     playback_overlay_->setPosition(position);
     updatePlaybackRealTime();
   });
 
   QObject::connect(playback_overlay_, &PlaybackOverlay::playPauseRequested, [this]() {
-    static bool playing = true;
-    playing = !playing;
-    playback_overlay_->setPlaying(playing);
+    Params params;
+    bool currently_playing = playback_overlay_->isPlaying();
+    params.put("CanPlaybackPause", currently_playing ? "1" : "0");
+    playback_overlay_->setPlaying(!currently_playing);
   });
 
   QObject::connect(playback_overlay_, &PlaybackOverlay::speedChangeRequested, [](double speed) {
-    // Speed change handled by overlay internally, this signal is for future backend integration
+    // Write speed change command to Params for can_player.py to read
+    Params params;
+    params.put("CanPlaybackSpeedCmd", std::to_string(speed));
   });
 }
 
@@ -95,14 +116,49 @@ void FrogPilotOnroadWindow::resizeEvent(QResizeEvent *event) {
 void FrogPilotOnroadWindow::updatePlaybackPosition() {
   if (!isCanPlayback || !playback_overlay_) return;
 
-  // Mock: advance position by 100ms
-  playback_position_ += 0.1;
-  if (playback_position_ >= playback_duration_) {
-    playback_position_ = 0.0;  // Loop
+  // Read playback state from Params (written by can_player.py)
+  Params params;
+  QString position_str = QString::fromStdString(params.get("CanPlaybackPosition"));
+  QString duration_str = QString::fromStdString(params.get("CanPlaybackDuration"));
+  QString playing_str = QString::fromStdString(params.get("CanPlaybackPlaying"));
+  QString realtime_str = QString::fromStdString(params.get("CanPlaybackRealTime"));
+  QString speed_str = QString::fromStdString(params.get("CanPlaybackSpeed"));
+
+  if (!position_str.isEmpty()) {
+    playback_position_ = position_str.toDouble();
+    playback_overlay_->setPosition(playback_position_);
   }
 
-  playback_overlay_->setPosition(playback_position_);
-  updatePlaybackRealTime();
+  if (!duration_str.isEmpty()) {
+    double duration = duration_str.toDouble();
+    if (duration != playback_duration_) {
+      playback_duration_ = duration;
+      playback_overlay_->setDuration(playback_duration_);
+    }
+  }
+
+  if (!playing_str.isEmpty()) {
+    playback_overlay_->setPlaying(playing_str != "0");
+  }
+
+  if (!realtime_str.isEmpty()) {
+    playback_overlay_->setRealTime(realtime_str);
+  }
+
+  if (!speed_str.isEmpty()) {
+    playback_overlay_->setPlaybackSpeed(speed_str.toDouble());
+  }
+
+  // Check if playback has ended (CAN_PLAYBACK removed)
+  if (!params.getBool("CAN_PLAYBACK")) {
+    isCanPlayback = false;
+    if (playback_overlay_) {
+      playback_overlay_->hideOverlay();
+    }
+    if (playback_timer_) {
+      playback_timer_->stop();
+    }
+  }
 }
 
 void FrogPilotOnroadWindow::updatePlaybackRealTime() {

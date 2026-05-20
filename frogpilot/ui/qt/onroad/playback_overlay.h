@@ -17,6 +17,7 @@ public:
   void setRealTime(const QString &time_str);
   void setPlaybackSpeed(double speed);
   void setPlaying(bool playing);
+  bool isPlaying() const { return is_playing_; }
 
   void showOverlay();
   void hideOverlay();

@@ -45,6 +45,6 @@ private:
   PlaybackOverlay *playback_overlay_;
 
   double playback_position_ = 0.0;
-  double playback_duration_ = 150.0;  // Default mock duration (2:30)
-  QString playback_start_time_ = "2026-05-19 14:30:00.000";
+  double playback_duration_ = 0.0;
+  QString playback_start_time_;
 };
