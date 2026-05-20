@@ -175,11 +175,12 @@ def read_events_from_rlog(rlog_path: str) -> list[tuple]:
   events = []
   for raw_msg in _read_capnp_messages(dat):
     try:
-      msg = capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24)
-      event_type = msg.which()
-      log_mono_time = msg.logMonoTime
-      events.append((log_mono_time, event_type, raw_msg))
-    except Exception:
+      with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
+        event_type = msg.which()
+        log_mono_time = msg.logMonoTime
+        events.append((log_mono_time, event_type, raw_msg))
+    except Exception as e:
+      cloudlog.exception(f"Failed to parse event: {e}")
       continue
 
   return events
