@@ -61,9 +61,6 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
   }
 
   // セグメント数をカウント
-  QDir routeDir(routePath);
-  QStringList segFilters;
-  segFilters << "--*";
   int segCount = routeDir.entryList(segFilters, QDir::Dirs).size();
 
   // ルートの総サイズを計算
