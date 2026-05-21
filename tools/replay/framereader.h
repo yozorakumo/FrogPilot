@@ -1,6 +1,9 @@
 #pragma once
 
+#include <atomic>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "msgq/visionipc/visionbuf.h"
@@ -34,6 +37,21 @@ public:
     int64_t pos;
   };
   std::vector<PacketInfo> packets_info;
+
+  // Frame cache for smoother playback
+  struct CachedFrame {
+    std::vector<uint8_t> y_data;
+    std::vector<uint8_t> uv_data;
+    int stride;
+  };
+  void setCacheSize(size_t max_frames) { max_cache_frames_ = max_frames; }
+  void preCache(int from_idx, int count);
+  void clearCache() { frame_cache_.clear(); }
+
+  std::mutex decode_mutex_;
+  std::unordered_map<int, CachedFrame> frame_cache_;
+  size_t max_cache_frames_ = 0;
+  std::atomic<bool> cache_abort_{false};
 };
 
 

@@ -164,6 +164,7 @@ int main(int argc, char *argv[]) {
   std::unique_ptr<VisionIpcServer> vipc;
   std::unique_ptr<FrameReader> reader;
   std::unique_ptr<FrameReader> next_reader;  // Pre-loaded next segment
+  std::thread cache_thread;                  // Background frame cache thread
   int cur_seg = -1;
   int last_frame = -1;
   int vipc_w = 0, vipc_h = 0;
@@ -263,6 +264,10 @@ int main(int argc, char *argv[]) {
 
     // セグメント切替え
     if (seg != cur_seg) {
+      // Stop previous cache thread
+      if (reader) reader->cache_abort_ = true;
+      if (cache_thread.joinable()) cache_thread.join();
+
       // Check if we already pre-loaded this segment
       if (next_reader && seg == cur_seg + 1) {
         reader = std::move(next_reader);
@@ -271,7 +276,7 @@ int main(int argc, char *argv[]) {
       } else {
         std::string hevc = (fs::path(segments[seg]) / "fcamera.hevc").string();
         auto new_reader = std::make_unique<FrameReader>();
-        if (!new_reader->loadFromFile(RoadCam, hevc, true)) {
+        if (!new_reader->loadFromFile(RoadCam, hevc, false)) {
           fprintf(stderr, "[video_player] Failed to load segment %d: %s\n", seg, hevc.c_str());
           cur_seg = seg;
           std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -281,6 +286,19 @@ int main(int argc, char *argv[]) {
                 seg, new_reader->getFrameCount(), new_reader->width, new_reader->height);
         reader = std::move(new_reader);
       }
+
+      // Enable frame cache and start background pre-caching
+      if (reader) {
+        reader->setCacheSize(std::min<size_t>(reader->getFrameCount(), 600));
+        reader->cache_abort_ = false;
+        FrameReader *cr = reader.get();
+        cache_thread = std::thread([cr]() {
+          cr->preCache(0, cr->getFrameCount());
+        });
+        fprintf(stderr, "[video_player] Frame cache enabled for segment %d (max %zu frames)\n",
+                seg, std::min<size_t>(reader->getFrameCount(), 600));
+      }
+
       cur_seg = seg;
     }
 
@@ -292,7 +310,7 @@ int main(int argc, char *argv[]) {
         int next_seg = seg + 1;
         std::string next_hevc = (fs::path(segments[next_seg]) / "fcamera.hevc").string();
         auto pre_reader = std::make_unique<FrameReader>();
-        if (pre_reader->loadFromFile(RoadCam, next_hevc, true)) {
+        if (pre_reader->loadFromFile(RoadCam, next_hevc, false)) {
           fprintf(stderr, "[video_player] Pre-loaded segment %d: %zu frames\n",
                   next_seg, pre_reader->getFrameCount());
           next_reader = std::move(pre_reader);
@@ -346,6 +364,10 @@ int main(int argc, char *argv[]) {
       last_frame_time = std::chrono::steady_clock::now();  // Update after actual send
     }
   }
+
+  // Stop cache thread
+  if (reader) reader->cache_abort_ = true;
+  if (cache_thread.joinable()) cache_thread.join();
 
   fprintf(stderr, "[video_player] Exiting. Sent %zu frames total.\n", frames_sent);
 

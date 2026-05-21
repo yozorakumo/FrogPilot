@@ -1,5 +1,6 @@
 #include "tools/replay/framereader.h"
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <tuple>
@@ -12,6 +13,9 @@
 #ifdef __APPLE__
 #define HW_DEVICE_TYPE AV_HWDEVICE_TYPE_VIDEOTOOLBOX
 #define HW_PIX_FMT AV_PIX_FMT_VIDEOTOOLBOX
+#elif defined(QCOM2)
+#define HW_DEVICE_TYPE AV_HWDEVICE_TYPE_VAAPI
+#define HW_PIX_FMT AV_PIX_FMT_VAAPI
 #else
 #define HW_DEVICE_TYPE AV_HWDEVICE_TYPE_CUDA
 #define HW_PIX_FMT AV_PIX_FMT_CUDA
@@ -101,7 +105,62 @@ bool FrameReader::get(int idx, VisionBuf *buf) {
   if (!buf || idx < 0 || idx >= packets_info.size()) {
     return false;
   }
-  return decoder_->decode(this, idx, buf);
+
+  std::lock_guard<std::mutex> lock(decode_mutex_);
+
+  // Check frame cache first
+  auto it = frame_cache_.find(idx);
+  if (it != frame_cache_.end()) {
+    const auto &cached = it->second;
+    int copy_width = std::min(buf->stride, cached.stride);
+    for (int row = 0; row < height; row++) {
+      memcpy(buf->y + row * buf->stride, cached.y_data.data() + row * cached.stride, copy_width);
+    }
+    for (int row = 0; row < height / 2; row++) {
+      memcpy(buf->uv + row * buf->stride, cached.uv_data.data() + row * cached.stride, copy_width);
+    }
+    return true;
+  }
+
+  // Decode and cache
+  bool result = decoder_->decode(this, idx, buf);
+  if (result && max_cache_frames_ > 0 && frame_cache_.size() < max_cache_frames_) {
+    auto &cached = frame_cache_[idx];
+    cached.stride = buf->stride;
+    size_t y_size = static_cast<size_t>(height) * buf->stride;
+    size_t uv_size = static_cast<size_t>(height / 2) * buf->stride;
+    cached.y_data.assign(buf->y, buf->y + y_size);
+    cached.uv_data.assign(buf->uv, buf->uv + uv_size);
+  }
+  return result;
+}
+
+void FrameReader::preCache(int from_idx, int count) {
+  if (!decoder_ || width <= 0 || height <= 0) return;
+
+  size_t y_size = static_cast<size_t>(width) * height;
+  size_t uv_size = static_cast<size_t>(width) * height / 2;
+  std::vector<uint8_t> tmp_storage(y_size + uv_size);
+
+  VisionBuf tmp_buf;
+  tmp_buf.y = tmp_storage.data();
+  tmp_buf.uv = tmp_storage.data() + y_size;
+  tmp_buf.stride = width;
+
+  int end_idx = std::min(from_idx + count, static_cast<int>(packets_info.size()));
+  for (int i = from_idx; i < end_idx && !cache_abort_; i++) {
+    std::lock_guard<std::mutex> lock(decode_mutex_);
+
+    if (frame_cache_.count(i)) continue;
+    if (frame_cache_.size() >= max_cache_frames_) break;
+
+    if (decoder_->decode(this, i, &tmp_buf)) {
+      auto &cached = frame_cache_[i];
+      cached.stride = width;
+      cached.y_data.assign(tmp_buf.y, tmp_buf.y + y_size);
+      cached.uv_data.assign(tmp_buf.uv, tmp_buf.uv + uv_size);
+    }
+  }
 }
 
 // class VideoDecoder
