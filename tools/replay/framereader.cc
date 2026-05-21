@@ -112,7 +112,7 @@ bool FrameReader::get(int idx, VisionBuf *buf) {
   auto it = frame_cache_.find(idx);
   if (it != frame_cache_.end()) {
     const auto &cached = it->second;
-    int copy_width = std::min(buf->stride, cached.stride);
+    int copy_width = std::min((int)buf->stride, cached.stride);
     for (int row = 0; row < height; row++) {
       memcpy(buf->y + row * buf->stride, cached.y_data.data() + row * cached.stride, copy_width);
     }
