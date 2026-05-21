@@ -3,12 +3,10 @@
 // can_player.pyとParams経由で同期し、fcamera.hevcをFrameReaderで
 // デコードしてVisionIpcServerでUIに配信する。
 //
-// 再生開始前にセグメントの全フレームをデコードしてメモリにキャッシュする。
-// デコード完了後はキャッシュから即座にフレームを取得するため、
-// デコード遅延によるカクつきが発生しない。
-//
-// メモリ使用量: 約1.8GB/セグメント (60秒×20fps×1.5MB/フレーム)
-// CAN_PLAYBACKモードでは他プロセスがほぼいないため実用可能。
+// ストリーミングデコード: セグメントのフレームを順次デコードし、
+// 最大200フレーム（10秒@20fps）先までキューに保持する。
+// 再生側がフレームを消費するとデコードスレッドが次のフレームをデコードする。
+// メモリ使用量: 約300MB/最大（200フレーム × 1.5MB/フレーム）
 //
 // 使用例:
 //   video_player /data/media/0/realdata/2026-05-19--14-30-25--33243391ae
@@ -131,10 +129,10 @@ static std::tuple<size_t, size_t, size_t> calc_nv12_info(int w, int h) {
 #endif
 }
 
-// --- 全フレーム事前デコード ---
-// セグメントの全フレームをデコードしてメモリにキャッシュする。
-// 再生時はキャッシュから即座にフレームを取得できるため、
-// デコード遅延によるカクつきが発生しない。
+// --- ストリーミングデコード（10秒先読み）---
+// セグメントのフレームを順次デコードし、最大200フレーム（10秒@20fps）先まで
+// キューに保持する。再生側がフレームを消費するとデコードスレッドが次のフレームを
+// デコードする。シーク時はキューをクリアしてデコード位置をジャンプする。
 
 struct CachedFrame {
   std::vector<uint8_t> y_data;
@@ -145,37 +143,30 @@ struct CachedFrame {
   int frame_id;  // セグメント内のフレームインデックス
 };
 
-// 全フレームキャッシュ
-static std::mutex g_cache_mutex;
-static std::vector<CachedFrame> g_all_frames;          // セグメントの全フレーム
-static std::atomic<bool> g_decode_complete{false};      // デコード完了フラグ
-static std::atomic<bool> g_decode_abort{false};         // デコード中止フラグ
-static std::atomic<int> g_decode_progress{0};           // デコード進捗 (0-100)
-static std::atomic<int> g_decode_total{0};              // 総フレーム数
+static constexpr int MAX_QUEUE_SIZE = 200;  // 10 seconds at 20fps
+
+static std::mutex g_decode_mutex;
+static std::condition_variable g_decode_cv;
+static std::deque<CachedFrame> g_decode_queue;
+static std::atomic<bool> g_decode_abort{false};
+static std::atomic<int> g_decode_seek_target{-1};  // -1 = no seek
 static FrameReader* g_decode_reader = nullptr;
 static std::thread g_decode_thread;
 
-// 事前デコードスレッド: セグメントの全フレームをデコードしてg_all_framesに保存
-static void predecodeThreadFunc() {
+// デコードスレッド: セグメントのフレームを順次デコードしてキューに追加
+static void decodeThreadFunc() {
   // リーダーが設定されるまで待機
   while (!g_decode_reader && !g_decode_abort) {
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
   if (g_decode_abort || !g_decode_reader) return;
 
-  size_t total_frames = g_decode_reader->getFrameCount();
-  g_decode_total = static_cast<int>(total_frames);
-  g_decode_progress = 0;
-
   auto [stride, scanlines, buf_size] = calc_nv12_info(g_decode_reader->width, g_decode_reader->height);
+  size_t total_frames = g_decode_reader->getFrameCount();
 
-  fprintf(stderr, "[video_player::predecode] Starting: %zu frames, %dx%d, stride=%zu\n",
-          total_frames, g_decode_reader->width, g_decode_reader->height, stride);
-
-  // 一時バッファ
+  // デコード用一時バッファ
   std::vector<uint8_t> y_buf(stride * g_decode_reader->height);
   std::vector<uint8_t> uv_buf(stride * g_decode_reader->height / 2);
-
   VisionBuf tmp_buf = {};
   tmp_buf.width = g_decode_reader->width;
   tmp_buf.height = g_decode_reader->height;
@@ -183,102 +174,135 @@ static void predecodeThreadFunc() {
   tmp_buf.y = y_buf.data();
   tmp_buf.uv = uv_buf.data();
 
-  // 全フレームを事前確保
-  {
-    std::lock_guard<std::mutex> lock(g_cache_mutex);
-    g_all_frames.resize(total_frames);
-  }
+  fprintf(stderr, "[video_player::decode] Starting streaming decode: %zu frames, %dx%d, stride=%zu\n",
+          total_frames, g_decode_reader->width, g_decode_reader->height, stride);
 
-  Params params;
-  auto start_time = std::chrono::steady_clock::now();
+  int frame_id = 0;
+  while (!g_decode_abort && frame_id < static_cast<int>(total_frames)) {
+    // シーク要求チェック
+    int seek = g_decode_seek_target.exchange(-1);
+    if (seek >= 0) {
+      frame_id = seek;
+      {
+        std::lock_guard<std::mutex> lock(g_decode_mutex);
+        g_decode_queue.clear();
+      }
+      g_decode_cv.notify_one();
+      fprintf(stderr, "[video_player::decode] Seek to frame %d\n", frame_id);
+      continue;
+    }
 
-  for (size_t i = 0; i < total_frames && !g_decode_abort; i++) {
+    // キューが満杯なら消費を待機
+    {
+      std::unique_lock<std::mutex> lock(g_decode_mutex);
+      while (g_decode_queue.size() >= MAX_QUEUE_SIZE && !g_decode_abort) {
+        g_decode_cv.wait_for(g_decode_mutex, std::chrono::milliseconds(10));
+      }
+      if (g_decode_abort) break;
+    }
+
     // フレームをデコード
-    if (!g_decode_reader->get(static_cast<int>(i), &tmp_buf)) {
-      fprintf(stderr, "[video_player::predecode] Failed to decode frame %zu\n", i);
-      // 失敗フレームは空のまま
-      g_all_frames[i].frame_id = static_cast<int>(i);
-      g_all_frames[i].stride = stride;
-      g_all_frames[i].width = g_decode_reader->width;
-      g_all_frames[i].height = g_decode_reader->height;
+    if (!g_decode_reader->get(frame_id, &tmp_buf)) {
+      fprintf(stderr, "[video_player::decode] Failed to decode frame %d\n", frame_id);
+      frame_id++;
       continue;
     }
 
     // デコード直後にデータをコピー（次の get() で上書きされるため）
-    auto &frame = g_all_frames[i];
-    frame.frame_id = static_cast<int>(i);
+    CachedFrame frame;
+    frame.frame_id = frame_id;
+    frame.width = tmp_buf.width;
+    frame.height = tmp_buf.height;
     frame.stride = stride;
-    frame.width = g_decode_reader->width;
-    frame.height = g_decode_reader->height;
-    frame.y_data.assign(tmp_buf.y, tmp_buf.y + stride * g_decode_reader->height);
-    frame.uv_data.assign(tmp_buf.uv, tmp_buf.uv + stride * g_decode_reader->height / 2);
+    size_t y_size = stride * tmp_buf.height;
+    size_t uv_size = stride * (tmp_buf.height / 2);
+    frame.y_data.assign(tmp_buf.y, tmp_buf.y + y_size);
+    frame.uv_data.assign(tmp_buf.uv, tmp_buf.uv + uv_size);
 
-    // 進捗を更新（10フレームごと）
-    int progress = static_cast<int>((i + 1) * 100 / total_frames);
-    g_decode_progress = progress;
-
-    // Paramsに進捗を書き込み（20フレームごと、I/O削減）
-    if (i % 20 == 0 || i == total_frames - 1) {
-      params.put("CanPlaybackDecodeProgress", std::to_string(progress));
+    {
+      std::lock_guard<std::mutex> lock(g_decode_mutex);
+      g_decode_queue.push_back(std::move(frame));
     }
+    g_decode_cv.notify_one();
+    frame_id++;
   }
 
-  if (!g_decode_abort) {
-    auto elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time).count();
-    size_t mem_mb = (stride * g_decode_reader->height * 3 / 2 * total_frames) / (1024 * 1024);
-    fprintf(stderr, "[video_player::predecode] Complete: %zu frames in %.1fs, ~%zuMB cached\n",
-            total_frames, elapsed, mem_mb);
-    g_decode_progress = 100;
-    params.put("CanPlaybackDecodeProgress", "100");
-    g_decode_complete = true;
-  } else {
-    fprintf(stderr, "[video_player::predecode] Aborted at frame %zu/%zu\n",
-            g_decode_progress * total_frames / 100, total_frames);
-  }
+  fprintf(stderr, "[video_player::decode] Thread finished at frame %d/%zu\n",
+          frame_id, total_frames);
 }
 
-// 事前デコードスレッドを開始
-static void startPredecode(FrameReader* reader) {
+// デコードスレッドを開始
+static void startDecodeThread(FrameReader* reader) {
   g_decode_abort = false;
-  g_decode_complete = false;
-  g_decode_progress = 0;
-  g_decode_total = 0;
+  g_decode_seek_target = -1;
   {
-    std::lock_guard<std::mutex> lock(g_cache_mutex);
-    g_all_frames.clear();
+    std::lock_guard<std::mutex> lock(g_decode_mutex);
+    g_decode_queue.clear();
   }
   g_decode_reader = reader;
-  g_decode_thread = std::thread(predecodeThreadFunc);
+  g_decode_thread = std::thread(decodeThreadFunc);
 }
 
-// 事前デコードスレッドを停止
-static void stopPredecode() {
+// デコードスレッドを停止
+static void stopDecodeThread() {
   g_decode_abort = true;
+  g_decode_cv.notify_all();
   if (g_decode_thread.joinable()) {
     g_decode_thread.join();
   }
   {
-    std::lock_guard<std::mutex> lock(g_cache_mutex);
-    g_all_frames.clear();
+    std::lock_guard<std::mutex> lock(g_decode_mutex);
+    g_decode_queue.clear();
   }
   g_decode_reader = nullptr;
-  g_decode_complete = false;
-  g_decode_progress = 0;
 }
 
-// キャッシュからフレームを直接取得
-// デコード完了後はインデックスアクセスで即座に取得
-static bool getCachedFrame(int frame_id, CachedFrame& out) {
-  std::lock_guard<std::mutex> lock(g_cache_mutex);
+// デコードキューから指定フレームを取得
+// キューの先頭が要求フレームになるまで待機し、一致したら取り出す。
+// 古いフレーム（過去のフレーム）は破棄する。
+// タイムアウトした場合はfalseを返す（メインループでリトライ）。
+static bool getDecodedFrame(int frame_id, CachedFrame& out) {
+  std::unique_lock<std::mutex> lock(g_decode_mutex);
 
-  if (!g_decode_complete) return false;
-  if (frame_id < 0 || frame_id >= static_cast<int>(g_all_frames.size())) return false;
+  auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(500);
 
-  auto &frame = g_all_frames[frame_id];
-  if (frame.y_data.empty()) return false;  // デコード失敗フレーム
+  while (std::chrono::steady_clock::now() < deadline && !g_decode_abort) {
+    // 要求位置より古いフレームを破棄
+    while (!g_decode_queue.empty() && g_decode_queue.front().frame_id < frame_id) {
+      g_decode_queue.pop_front();
+      g_decode_cv.notify_one();  // デコードスレッドを起こす（キューに空きができた）
+    }
 
-  out = frame;  // コピー（g_all_framesは保持）
-  return true;
+    // 要求フレームが先頭にあれば取得
+    if (!g_decode_queue.empty() && g_decode_queue.front().frame_id == frame_id) {
+      out = std::move(g_decode_queue.front());
+      g_decode_queue.pop_front();
+      g_decode_cv.notify_one();
+      return true;
+    }
+
+    // キューの先頭が要求より先にある場合はシークが必要
+    if (!g_decode_queue.empty() && g_decode_queue.front().frame_id > frame_id) {
+      g_decode_seek_target = frame_id;
+      g_decode_cv.notify_one();
+      // シーク完了を待機
+      g_decode_cv.wait_for(lock, std::chrono::milliseconds(200), [&] {
+        return !g_decode_queue.empty() && g_decode_queue.front().frame_id == frame_id;
+      });
+      if (!g_decode_queue.empty() && g_decode_queue.front().frame_id == frame_id) {
+        out = std::move(g_decode_queue.front());
+        g_decode_queue.pop_front();
+        g_decode_cv.notify_one();
+        return true;
+      }
+      return false;
+    }
+
+    // フレーム待ち
+    g_decode_cv.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::milliseconds(50));
+  }
+
+  return false;
 }
 
 // --- メイン ---
@@ -329,7 +353,6 @@ int main(int argc, char *argv[]) {
   size_t frames_sent = 0;
   bool vipc_ready = false;
   bool decode_thread_running = false;
-  bool waiting_for_decode = false;
 
   // 時間ベース同期の変数（Params読み取りを200ms間隔に削減し、
   // 間は時間補間でフレームを送信してスムーズな20FPSを実現）
@@ -412,7 +435,7 @@ int main(int argc, char *argv[]) {
       if (do_loop) {
         // ループリセット: デコードスレッドを停止してからリセット
         if (decode_thread_running) {
-          stopPredecode();
+          stopDecodeThread();
           decode_thread_running = false;
         }
         last_frame = -1;
@@ -431,19 +454,15 @@ int main(int argc, char *argv[]) {
     if (seg != cur_seg) {
       // 古いデコードスレッドを停止
       if (decode_thread_running) {
-        stopPredecode();
+        stopDecodeThread();
         decode_thread_running = false;
       }
-      waiting_for_decode = false;
 
       // Check if we already pre-loaded this segment's file
       if (next_reader && seg == cur_seg + 1) {
         reader = std::move(next_reader);
         next_reader.reset();
         fprintf(stderr, "[video_player] Segment %d: using pre-loaded segment, starting decode\n", seg);
-        startPredecode(reader.get());
-        decode_thread_running = true;
-        waiting_for_decode = true;
       } else {
         std::string hevc = (fs::path(segments[seg]) / "fcamera.hevc").string();
         auto new_reader = std::make_unique<FrameReader>();
@@ -456,33 +475,15 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "[video_player] Segment %d: %zu frames, %dx%d\n",
                 seg, new_reader->getFrameCount(), new_reader->width, new_reader->height);
         reader = std::move(new_reader);
-        startPredecode(reader.get());
-        decode_thread_running = true;
-        waiting_for_decode = true;
       }
 
+      // デコードスレッドを開始（全フレームのデコード完了を待たずに再生開始）
+      startDecodeThread(reader.get());
+      decode_thread_running = true;
       cur_seg = seg;
     }
 
-    // デコード完了待ち
-    if (waiting_for_decode && !g_decode_complete) {
-      // 進捗をParamsに書き込み
-      int progress = g_decode_progress;
-      int total = g_decode_total;
-      if (total > 0) {
-        fprintf(stderr, "[video_player] Loading segment %d: %d/%d frames (%d%%)\r",
-                seg, progress * total / 100, total, progress);
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
-      continue;
-    }
-    if (waiting_for_decode && g_decode_complete) {
-      waiting_for_decode = false;
-      fprintf(stderr, "\n[video_player] Segment %d decode complete, starting playback\n", seg);
-    }
-
     // Pre-load next segment file when approaching end of current segment
-    // (decode happens at segment switch to avoid overwriting current g_all_frames)
     if (!next_reader && seg + 1 < static_cast<int>(segments.size())) {
       int frames_in_seg = reader ? static_cast<int>(reader->getFrameCount()) : (SEGMENT_SEC * FPS);
       int frames_remaining = frames_in_seg - frame_in_seg;
@@ -526,9 +527,9 @@ int main(int argc, char *argv[]) {
               vipc_w, vipc_h, stride, buf_size);
     }
 
-    // キャッシュからフレームを直接取得
+    // デコードキューからフレームを取得
     CachedFrame frame;
-    if (getCachedFrame(frame_in_seg, frame)) {
+    if (getDecodedFrame(frame_in_seg, frame)) {
       // VisionIPCバッファを取得
       VisionBuf *buf = vipc->get_buffer(VISION_STREAM_ROAD);
       if (!buf) {
@@ -556,7 +557,7 @@ int main(int argc, char *argv[]) {
 
   // デコードスレッドを停止
   if (decode_thread_running) {
-    stopPredecode();
+    stopDecodeThread();
   }
 
   fprintf(stderr, "[video_player] Exiting. Sent %zu frames total.\n", frames_sent);
