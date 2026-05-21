@@ -227,26 +227,33 @@ void FrogPilotCanLogPanel::refreshFileList() {
     return;
   }
 
+  // 各ルートエントリを収集（rlogがあるもののみ）
+  QList<QFileInfo> validRoutes;
+  for (const QFileInfo &routeInfo : routes) {
+    QDir routeDir(routeInfo.absoluteFilePath());
+    QDirIterator it(routeInfo.absoluteFilePath(), QStringList() << "rlog" << "rlog.bz2", QDir::Files, QDirIterator::Subdirectories);
+    if (it.hasNext()) {
+      validRoutes.append(routeInfo);
+    }
+  }
+
+  // 有効なルートがない場合はステータスメッセージを表示
+  if (validRoutes.isEmpty()) {
+    statusLabel = new QLabel(tr("No driving logs with CAN data found.\nDrive with openpilot to generate logs."), this);
+    statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
+    statusLabel->setAlignment(Qt::AlignCenter);
+    statusLabel->setWordWrap(true);
+    fileListLayout->addWidget(statusLabel);
+    return;
+  }
+
   // ヘッダーラベル
-  QLabel *headerLabel = new QLabel(tr("Driving Logs (%1 routes)").arg(routes.size()), this);
+  QLabel *headerLabel = new QLabel(tr("Driving Logs (%1 routes)").arg(validRoutes.size()), this);
   headerLabel->setStyleSheet("QLabel { color: #E0E879; font-size: 40px; font-weight: bold; padding: 15px 20px; }");
   fileListLayout->addWidget(headerLabel);
 
   // 各ルートエントリを追加
-  for (const QFileInfo &routeInfo : routes) {
-    // rlogが存在するか確認
-    bool hasRlog = false;
-    QDir routeDir(routeInfo.absoluteFilePath());
-    QDirIterator it(routeInfo.absoluteFilePath(), QStringList() << "rlog" << "rlog.bz2", QDir::Files, QDirIterator::Subdirectories);
-    if (it.hasNext()) {
-      hasRlog = true;
-    }
-
-    // rlogがないルートはスキップ（CAN再生に使用できないため）
-    if (!hasRlog) {
-      continue;
-    }
-
+  for (const QFileInfo &routeInfo : validRoutes) {
     CanLogRouteItem *item = new CanLogRouteItem(routeInfo.absoluteFilePath(), this);
 
     QObject::connect(item, &CanLogRouteItem::playClicked, [this](const QString &routePath) {
