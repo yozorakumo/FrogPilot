@@ -3,6 +3,10 @@
 // can_player.pyとParams経由で同期し、fcamera.hevcをFrameReaderで
 // デコードしてVisionIpcServerでUIに配信する。
 //
+// デコード専用スレッドが常時数フレーム先をデコードしてキューに保持し、
+// メインスレッドはキューからデコード済みフレームを取得してVisionIPCに送信する。
+// デコードが遅れた場合は最新のデコード済みフレームを再利用（フレームドロップ）。
+//
 // 使用例:
 //   video_player /data/media/0/realdata/2026-05-19--14-30-25--33243391ae
 //   video_player /data/media/0/realdata/2026-05-19--14-30-25--33243391ae --loop
@@ -10,10 +14,13 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <cstring>
+#include <deque>
 #include <filesystem>
 #include <memory>
+#include <mutex>
 #include <csignal>
 #include <cstdarg>
 #include <string>
@@ -122,6 +129,165 @@ static std::tuple<size_t, size_t, size_t> calc_nv12_info(int w, int h) {
 #endif
 }
 
+// --- デコードスレッド + プリフェッチキュー ---
+// CameraServer (tools/replay/camera.cc) と同じパターン:
+// デコード専用スレッドが常に数フレーム先をデコードしてキューに保持する。
+// VisionBuf* のデータは次の get() 呼び出しで上書きされるため、
+// デコード直後にデータを CachedFrame にコピーする。
+
+struct CachedFrame {
+  std::vector<uint8_t> y_data;
+  std::vector<uint8_t> uv_data;
+  size_t stride;
+  int width;
+  int height;
+  int frame_id;  // セグメント内のフレームインデックス
+};
+
+static std::mutex g_decode_mutex;
+static std::condition_variable g_decode_cv;
+static std::deque<CachedFrame> g_decode_queue;
+static std::atomic<bool> g_decode_abort{false};
+static int g_decode_seek_target = -1;  // -1 = シークなし
+static FrameReader* g_decode_reader = nullptr;
+static std::thread g_decode_thread;
+static constexpr int MAX_QUEUE_SIZE = 5;  // 5フレーム先読み（約7.5MB）
+
+// デコードスレッドのメイン関数
+// g_decode_reader から順次フレームをデコードし、キューにプッシュする
+static void decodeThreadFunc() {
+  // リーダーが設定されるまで待機
+  while (!g_decode_reader && !g_decode_abort) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
+  if (g_decode_abort || !g_decode_reader) return;
+
+  // デコード用の一時バッファを確保
+  auto [stride, scanlines, buf_size] = calc_nv12_info(g_decode_reader->width, g_decode_reader->height);
+  std::vector<uint8_t> y_buf(stride * g_decode_reader->height);
+  std::vector<uint8_t> uv_buf(stride * g_decode_reader->height / 2);
+
+  VisionBuf tmp_buf = {};
+  tmp_buf.width = g_decode_reader->width;
+  tmp_buf.height = g_decode_reader->height;
+  tmp_buf.stride = stride;
+  tmp_buf.y = y_buf.data();
+  tmp_buf.uv = uv_buf.data();
+
+  int next_id = 0;
+  fprintf(stderr, "[video_player::decode] Thread started: %dx%d, stride=%zu\n",
+          g_decode_reader->width, g_decode_reader->height, stride);
+
+  while (!g_decode_abort) {
+    // シーク要求をチェック
+    {
+      std::lock_guard<std::mutex> lock(g_decode_mutex);
+      if (g_decode_seek_target >= 0) {
+        fprintf(stderr, "[video_player::decode] Seeking to frame %d (was at %d)\n",
+                g_decode_seek_target, next_id);
+        g_decode_queue.clear();
+        next_id = g_decode_seek_target;
+        g_decode_seek_target = -1;
+      }
+    }
+
+    // セグメント終端チェック
+    if (next_id >= static_cast<int>(g_decode_reader->getFrameCount())) {
+      // 全フレームデコード済み - シークや中止を待機
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      continue;
+    }
+
+    // フレームをデコード
+    if (!g_decode_reader->get(next_id, &tmp_buf)) {
+      fprintf(stderr, "[video_player::decode] Failed to decode frame %d\n", next_id);
+      next_id++;
+      continue;
+    }
+
+    // デコード直後にデータをコピー（次の get() で上書きされるため）
+    CachedFrame frame;
+    frame.frame_id = next_id;
+    frame.stride = stride;
+    frame.width = g_decode_reader->width;
+    frame.height = g_decode_reader->height;
+    frame.y_data.assign(tmp_buf.y, tmp_buf.y + stride * g_decode_reader->height);
+    frame.uv_data.assign(tmp_buf.uv, tmp_buf.uv + stride * g_decode_reader->height / 2);
+
+    // キューにプッシュ（満杯なら待機）
+    {
+      std::unique_lock<std::mutex> lock(g_decode_mutex);
+      while (g_decode_queue.size() >= static_cast<size_t>(MAX_QUEUE_SIZE) &&
+             !g_decode_abort && g_decode_seek_target < 0) {
+        g_decode_cv.wait_for(lock, std::chrono::milliseconds(10));
+      }
+      if (g_decode_abort) break;
+      if (g_decode_seek_target >= 0) continue;  // シーク要求が来たので破棄して再ループ
+      g_decode_queue.push_back(std::move(frame));
+    }
+    g_decode_cv.notify_one();
+
+    next_id++;
+  }
+
+  fprintf(stderr, "[video_player::decode] Thread exiting at frame %d\n", next_id);
+}
+
+// デコードスレッドを開始
+static void startDecodeThread(FrameReader* reader) {
+  g_decode_abort = false;
+  g_decode_seek_target = -1;
+  g_decode_queue.clear();
+  g_decode_reader = reader;
+  g_decode_thread = std::thread(decodeThreadFunc);
+}
+
+// デコードスレッドを停止
+static void stopDecodeThread() {
+  g_decode_abort = true;
+  g_decode_cv.notify_all();
+  if (g_decode_thread.joinable()) {
+    g_decode_thread.join();
+  }
+  g_decode_queue.clear();
+  g_decode_reader = nullptr;
+}
+
+// キューからデコード済みフレームを取得
+// requested_id に一致するフレーム、またはそれに最も近い過去フレームを返す
+// 戻り値: フレーム取得成功ならtrue、キューが空ならfalse
+static bool getDecodedFrame(int requested_id, CachedFrame& out) {
+  std::unique_lock<std::mutex> lock(g_decode_mutex);
+
+  if (g_decode_queue.empty()) return false;
+
+  // 要求されたフレームIDに一致するもの、または直近の過去フレームを探す
+  auto use_it = g_decode_queue.end();
+  for (auto it = g_decode_queue.begin(); it != g_decode_queue.end(); ++it) {
+    if (it->frame_id <= requested_id) {
+      use_it = it;
+    } else {
+      break;  // キューは順序通りなのでこれ以上探す必要なし
+    }
+  }
+
+  if (use_it != g_decode_queue.end()) {
+    out = std::move(*use_it);
+    // 使用したフレームとそれより前のフレームをキューから削除
+    g_decode_queue.erase(g_decode_queue.begin(), use_it + 1);
+    // デコードスレッドを起床（キューに空きができた）
+    g_decode_cv.notify_one();
+    return true;
+  }
+
+  // キュー内の全フレームが要求より未来（後方シークが必要）
+  g_decode_queue.clear();
+  g_decode_seek_target = requested_id;
+  lock.unlock();
+  g_decode_cv.notify_all();
+  return false;
+}
+
 // --- メイン ---
 
 int main(int argc, char *argv[]) {
@@ -169,6 +335,7 @@ int main(int argc, char *argv[]) {
   int vipc_w = 0, vipc_h = 0;
   size_t frames_sent = 0;
   bool vipc_ready = false;
+  bool decode_thread_running = false;
 
   // 時間ベース同期の変数（Params読み取りを200ms間隔に削減し、
   // 間は時間補間でフレームを送信してスムーズな20FPSを実現）
@@ -196,7 +363,7 @@ int main(int argc, char *argv[]) {
     auto now = std::chrono::steady_clock::now();
     double time_since_read = std::chrono::duration<double>(now - last_params_read).count();
 
-    // Paramsから定期的に状態を読み取り（200ms間隔）
+    // Paramsから定期的に状態を読み取り
     // 毎フレームParamsを読むとファイルシステムI/OでFPSが低下するため
     if (time_since_read >= PARAMS_READ_INTERVAL) {
       std::string pos_str = params.get("CanPlaybackPosition");
@@ -249,6 +416,11 @@ int main(int argc, char *argv[]) {
     // セグメント範囲チェック
     if (seg >= static_cast<int>(segments.size())) {
       if (do_loop) {
+        // ループリセット: デコードスレッドを停止してからリセット
+        if (decode_thread_running) {
+          stopDecodeThread();
+          decode_thread_running = false;
+        }
         last_frame = -1;
         cur_seg = -1;
         reader.reset();
@@ -263,6 +435,12 @@ int main(int argc, char *argv[]) {
 
     // セグメント切替え
     if (seg != cur_seg) {
+      // 古いデコードスレッドを停止
+      if (decode_thread_running) {
+        stopDecodeThread();
+        decode_thread_running = false;
+      }
+
       // Check if we already pre-loaded this segment
       if (next_reader && seg == cur_seg + 1) {
         reader = std::move(next_reader);
@@ -283,6 +461,12 @@ int main(int argc, char *argv[]) {
       }
 
       cur_seg = seg;
+
+      // 新しいリーダーでデコードスレッドを開始
+      if (reader) {
+        startDecodeThread(reader.get());
+        decode_thread_running = true;
+      }
     }
 
     // Pre-load next segment when approaching end of current segment
@@ -329,14 +513,20 @@ int main(int argc, char *argv[]) {
               vipc_w, vipc_h, stride, buf_size);
     }
 
-    // バッファ取得＆フレームデコード
-    VisionBuf *buf = vipc->get_buffer(VISION_STREAM_ROAD);
-    if (!buf) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(5));
-      continue;
-    }
+    // デコード済みフレームをキューから取得
+    CachedFrame frame;
+    if (getDecodedFrame(frame_in_seg, frame)) {
+      // VisionIPCバッファを取得
+      VisionBuf *buf = vipc->get_buffer(VISION_STREAM_ROAD);
+      if (!buf) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        continue;
+      }
 
-    if (reader->get(frame_in_seg, buf)) {
+      // キャッシュからVisionIPCバッファにコピー
+      memcpy(buf->y, frame.y_data.data(), frame.stride * frame.height);
+      memcpy(buf->uv, frame.uv_data.data(), frame.stride * frame.height / 2);
+
       VisionIpcBufExtra extra = {};
       extra.frame_id = static_cast<uint64_t>(total_frame);
       extra.timestamp_sof = static_cast<uint64_t>(current_pos * 1e9);
@@ -344,8 +534,16 @@ int main(int argc, char *argv[]) {
       vipc->send(buf, &extra, false);
       frames_sent++;
       last_frame = total_frame;
-      last_frame_time = std::chrono::steady_clock::now();  // Update after actual send
+      last_frame_time = std::chrono::steady_clock::now();
+    } else {
+      // フレームがまだデコードされていない - 短く待機してリトライ
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
+  }
+
+  // デコードスレッドを停止
+  if (decode_thread_running) {
+    stopDecodeThread();
   }
 
   fprintf(stderr, "[video_player] Exiting. Sent %zu frames total.\n", frames_sent);
