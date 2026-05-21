@@ -196,7 +196,7 @@ static void decodeThreadFunc() {
     {
       std::unique_lock<std::mutex> lock(g_decode_mutex);
       while (g_decode_queue.size() >= MAX_QUEUE_SIZE && !g_decode_abort) {
-        g_decode_cv.wait_for(g_decode_mutex, std::chrono::milliseconds(10));
+        g_decode_cv.wait_for(lock, std::chrono::milliseconds(10));
       }
       if (g_decode_abort) break;
     }
