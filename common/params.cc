@@ -630,6 +630,7 @@ std::unordered_map<std::string, uint32_t> keys = {
 
     // CAN Playback parameters
     {"CAN_PLAYBACK", CLEAR_ON_MANAGER_START},
+    {"CanPlaybackDecodeProgress", CLEAR_ON_MANAGER_START},
     {"CanPlaybackDuration", CLEAR_ON_MANAGER_START},
     {"CanPlaybackFile", CLEAR_ON_MANAGER_START},
     {"CanPlaybackLoadingProgress", CLEAR_ON_MANAGER_START},

@@ -124,10 +124,16 @@ void FrogPilotOnroadWindow::updatePlaybackPosition() {
   QString realtime_str = QString::fromStdString(params.get("CanPlaybackRealTime"));
   QString speed_str = QString::fromStdString(params.get("CanPlaybackSpeed"));
 
-  // Read loading progress (0-100%)
+  // Read loading progress (0-100%) - rlog loading from can_player.py
   QString loading_str = QString::fromStdString(params.get("CanPlaybackLoadingProgress"));
   if (!loading_str.isEmpty()) {
     loading_progress_ = loading_str.toInt();
+  }
+
+  // Read decode progress (0-100%) - video decode from video_player
+  QString decode_str = QString::fromStdString(params.get("CanPlaybackDecodeProgress"));
+  if (!decode_str.isEmpty()) {
+    decode_progress_ = decode_str.toInt();
   }
 
   if (!position_str.isEmpty()) {
@@ -182,10 +188,17 @@ void FrogPilotOnroadWindow::paintEvent(QPaintEvent *event) {
   QRect rect = this->rect();
 
   // CAN Playback loading overlay
-  if (isCanPlayback && loading_progress_ < 100) {
+  // Phase 1: rlog loading (CanPlaybackLoadingProgress by can_player.py)
+  // Phase 2: video decode (CanPlaybackDecodeProgress by video_player)
+  if (isCanPlayback && (loading_progress_ < 100 || decode_progress_ < 100)) {
     p.fillRect(rect, QColor(0, 0, 0, 180));
 
-    QString loadingText = QString("Loading %1%").arg(loading_progress_);
+    QString loadingText;
+    if (loading_progress_ < 100) {
+      loadingText = QString("Loading %1%").arg(loading_progress_);
+    } else {
+      loadingText = QString("Decoding %1%").arg(decode_progress_);
+    }
     p.setFont(InterFont(72, QFont::Bold));
     p.setPen(Qt::white);
 

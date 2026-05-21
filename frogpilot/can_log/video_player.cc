@@ -219,7 +219,7 @@ static void predecodeThreadFunc() {
 
     // Paramsに進捗を書き込み（20フレームごと、I/O削減）
     if (i % 20 == 0 || i == total_frames - 1) {
-      params.put("CanPlaybackLoadingProgress", std::to_string(progress));
+      params.put("CanPlaybackDecodeProgress", std::to_string(progress));
     }
   }
 
@@ -229,7 +229,7 @@ static void predecodeThreadFunc() {
     fprintf(stderr, "[video_player::predecode] Complete: %zu frames in %.1fs, ~%zuMB cached\n",
             total_frames, elapsed, mem_mb);
     g_decode_progress = 100;
-    params.put("CanPlaybackLoadingProgress", "100");
+    params.put("CanPlaybackDecodeProgress", "100");
     g_decode_complete = true;
   } else {
     fprintf(stderr, "[video_player::predecode] Aborted at frame %zu/%zu\n",

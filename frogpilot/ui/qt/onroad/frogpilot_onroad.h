@@ -48,4 +48,5 @@ private:
   double playback_duration_ = 0.0;
   QString playback_start_time_;
   int loading_progress_ = 0;
+  int decode_progress_ = 0;
 };
