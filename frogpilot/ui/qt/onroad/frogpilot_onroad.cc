@@ -5,36 +5,6 @@
 #include "common/params.h"
 #include "frogpilot/ui/qt/onroad/frogpilot_onroad.h"
 
-namespace {
-// Simple JSON value extraction helper (same approach as video_player.cc).
-// Extracts a value for a key from a flat JSON object string.
-// Does not support nested objects or arrays.
-static std::string json_get_value(const std::string &json, const std::string &key) {
-  std::string search = "\"" + key + "\":";
-  auto pos = json.find(search);
-  if (pos == std::string::npos) return "";
-  pos += search.size();
-  // Skip whitespace
-  while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t' || json[pos] == '\n' || json[pos] == '\r')) {
-    pos++;
-  }
-  if (pos >= json.size()) return "";
-
-  if (json[pos] == '"') {
-    // String value: extract "..."
-    pos++;
-    auto end = json.find('"', pos);
-    if (end == std::string::npos) return "";
-    return json.substr(pos, end - pos);
-  } else {
-    // Numeric or boolean value: extract until , or }
-    auto end = json.find_first_of(",} \t\n\r", pos);
-    if (end == std::string::npos) end = json.size();
-    return json.substr(pos, end - pos);
-  }
-}
-} // namespace
-
 FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) {
   signalTimer = new QTimer(this);
 
@@ -58,37 +28,24 @@ void FrogPilotOnroadWindow::initPlaybackOverlay() {
   if (playback_overlay_ != nullptr) return;
 
   // Read initial playback state from Params (written by can_player.py)
-  // Try JSON bulk read first, then fallback to individual keys
   Params params;
-  double init_duration = 0.0;
-  bool init_playing = false;
+  QString duration_str = QString::fromStdString(params.get("CanPlaybackDuration"));
+  QString realtime_str = QString::fromStdString(params.get("CanPlaybackRealTime"));
+  QString playing_str = QString::fromStdString(params.get("CanPlaybackPlaying"));
 
-  std::string state_json = params.get("CanPlaybackState");
-  if (!state_json.empty()) {
-    std::string dur_str = json_get_value(state_json, "duration");
-    std::string play_str = json_get_value(state_json, "playing");
-    if (!dur_str.empty()) {
-      try { init_duration = std::stod(dur_str); } catch (...) {}
-    }
-    init_playing = (play_str == "true" || play_str == "1");
-  } else {
-    // Fallback: individual keys (backward compatibility)
-    QString duration_str = QString::fromStdString(params.get("CanPlaybackDuration"));
-    if (!duration_str.isEmpty()) {
-      init_duration = duration_str.toDouble();
-    }
-    QString playing_str = QString::fromStdString(params.get("CanPlaybackPlaying"));
-    init_playing = !playing_str.isEmpty() && playing_str != "0";
+  if (!duration_str.isEmpty()) {
+    playback_duration_ = duration_str.toDouble();
   }
-
-  playback_duration_ = init_duration;
+  if (!realtime_str.isEmpty()) {
+    playback_start_time_ = realtime_str;
+  }
 
   // Enable mouse events for this widget and its children during CAN playback
   setAttribute(Qt::WA_TransparentForMouseEvents, false);
 
   playback_overlay_ = new PlaybackOverlay(this);
   playback_overlay_->setDuration(playback_duration_);
-  playback_overlay_->setPlaying(init_playing);
+  playback_overlay_->setPlaying(!playing_str.isEmpty() && playing_str != "0");
   playback_overlay_->showOverlay();
 
   // Start background Params reader thread
@@ -204,50 +161,25 @@ void FrogPilotOnroadWindow::readPlaybackParams() {
   while (params_thread_running_) {
     PlaybackState new_state;
 
-    // 1) Try JSON bulk read from CanPlaybackState
-    std::string state_json = params.get("CanPlaybackState");
-    bool json_parsed = false;
-
-    if (!state_json.empty()) {
-      std::string pos_str = json_get_value(state_json, "position");
-      if (!pos_str.empty()) {
-        std::string dur_str = json_get_value(state_json, "duration");
-        std::string spd_str = json_get_value(state_json, "speed");
-        std::string play_str = json_get_value(state_json, "playing");
-        std::string rt_str = json_get_value(state_json, "real_time");
-        std::string lp_str = json_get_value(state_json, "loading_progress");
-
-        try { new_state.position = std::stod(pos_str); } catch (...) {}
-        try { new_state.duration = std::stod(dur_str); } catch (...) {}
-        try { new_state.speed = std::stod(spd_str); } catch (...) {}
-        new_state.playing = (play_str == "true" || play_str == "1");
-        new_state.real_time = QString::fromStdString(rt_str);
-        try { new_state.loading_progress = std::stoi(lp_str); } catch (...) {}
-        json_parsed = true;
-      }
+    // Read individual Params keys
+    std::string pos_str = params.get("CanPlaybackPosition");
+    if (!pos_str.empty()) {
+      try { new_state.position = std::stod(pos_str); } catch (...) {}
     }
-
-    // 2) Fallback: read individual keys (backward compatibility)
-    if (!json_parsed) {
-      std::string pos_str = params.get("CanPlaybackPosition");
-      if (!pos_str.empty()) {
-        try { new_state.position = std::stod(pos_str); } catch (...) {}
-      }
-      std::string dur_str = params.get("CanPlaybackDuration");
-      if (!dur_str.empty()) {
-        try { new_state.duration = std::stod(dur_str); } catch (...) {}
-      }
-      std::string spd_str = params.get("CanPlaybackSpeed");
-      if (!spd_str.empty()) {
-        try { new_state.speed = std::stod(spd_str); } catch (...) {}
-      }
-      std::string playing_str = params.get("CanPlaybackPlaying");
-      new_state.playing = (playing_str == "1");
-      new_state.real_time = QString::fromStdString(params.get("CanPlaybackRealTime"));
-      std::string lp_str = params.get("CanPlaybackLoadingProgress");
-      if (!lp_str.empty()) {
-        try { new_state.loading_progress = std::stoi(lp_str); } catch (...) {}
-      }
+    std::string dur_str = params.get("CanPlaybackDuration");
+    if (!dur_str.empty()) {
+      try { new_state.duration = std::stod(dur_str); } catch (...) {}
+    }
+    std::string spd_str = params.get("CanPlaybackSpeed");
+    if (!spd_str.empty()) {
+      try { new_state.speed = std::stod(spd_str); } catch (...) {}
+    }
+    std::string playing_str = params.get("CanPlaybackPlaying");
+    new_state.playing = (playing_str == "1");
+    new_state.real_time = QString::fromStdString(params.get("CanPlaybackRealTime"));
+    std::string lp_str = params.get("CanPlaybackLoadingProgress");
+    if (!lp_str.empty()) {
+      try { new_state.loading_progress = std::stoi(lp_str); } catch (...) {}
     }
 
     // Check if playback is still active

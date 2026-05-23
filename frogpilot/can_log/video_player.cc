@@ -3,10 +3,9 @@
 // can_player.pyとParams経由で同期し、fcamera.hevcをFrameReaderで
 // デコードしてVisionIpcServerでUIに配信する。
 //
-// 同期デコード + JSON集約読み込み:
+// シンプルな同期的デコード:
 // - 再生中に毎フレーム reader->get() でデコードする
-// - JSON集約読み込み: CanPlaybackState から一括で再生状態を取得
-// - フォールバック: JSON取得失敗時は個別キーから読み取り
+// - 個別Paramsキーから再生状態を読み取り
 //
 // 使用例:
 //   video_player /data/media/0/realdata/2026-05-19--14-30-25--33243391ae
@@ -47,35 +46,6 @@ static std::atomic<bool> g_exit{false};
 // シグナルハンドラ
 static void on_signal(int sig) { g_exit = true; }
 
-// --- 簡易JSON値抽出ヘルパー ---
-// フラットなJSONオブジェクトからキーに対応する値を文字列として抽出する。
-// ネストされたオブジェクトや配列はサポートしない。
-
-static std::string json_get_value(const std::string &json, const std::string &key) {
-  std::string search = "\"" + key + "\":";
-  auto pos = json.find(search);
-  if (pos == std::string::npos) return "";
-  pos += search.size();
-  // 空白をスキップ
-  while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t' || json[pos] == '\n' || json[pos] == '\r')) {
-    pos++;
-  }
-  if (pos >= json.size()) return "";
-
-  if (json[pos] == '"') {
-    // 文字列値: "..." を抽出
-    pos++;
-    auto end = json.find('"', pos);
-    if (end == std::string::npos) return "";
-    return json.substr(pos, end - pos);
-  } else {
-    // 数値またはブール値: カンマまたは } までを抽出
-    auto end = json.find_first_of(",} \t\n\r", pos);
-    if (end == std::string::npos) end = json.size();
-    return json.substr(pos, end - pos);
-  }
-}
-
 // --- 再生状態構造体 ---
 
 struct PlaybackState {
@@ -87,33 +57,10 @@ struct PlaybackState {
   int loading_progress = 0;
 };
 
-/// CanPlaybackState JSON から再生状態をパース。失敗時は個別キーにフォールバック。
+/// 個別Paramsキーから再生状態を読み取り
 static PlaybackState read_playback_state(Params &params) {
   PlaybackState state;
 
-  // 1) JSON集約読み取りを試行
-  std::string state_json = params.get("CanPlaybackState");
-  if (!state_json.empty()) {
-    std::string pos_str = json_get_value(state_json, "position");
-    std::string dur_str = json_get_value(state_json, "duration");
-    std::string spd_str = json_get_value(state_json, "speed");
-    std::string play_str = json_get_value(state_json, "playing");
-    std::string rt_str = json_get_value(state_json, "real_time");
-    std::string lp_str = json_get_value(state_json, "loading_progress");
-
-    if (!pos_str.empty()) {
-      try { state.position = std::stod(pos_str); } catch (...) {}
-      try { state.duration = std::stod(dur_str); } catch (...) {}
-      try { state.speed = std::stod(spd_str); } catch (...) {}
-      state.playing = (play_str == "true" || play_str == "1");
-      state.real_time = rt_str;
-      try { state.loading_progress = std::stoi(lp_str); } catch (...) {}
-      return state;
-    }
-    // JSONは存在したがパース失敗 → フォールバックへ
-  }
-
-  // 2) フォールバック: 個別キーから読み取り（後方互換）
   std::string pos_str = params.get("CanPlaybackPosition");
   if (!pos_str.empty()) {
     try { state.position = std::stod(pos_str); } catch (...) {}
@@ -243,10 +190,9 @@ int main(int argc, char *argv[]) {
 
   Params params;
 
-  // 前回の実行からの古いParamsをリセット（JSON集約 + 個別キー）
+  // 前回の実行からの古いParamsをリセット
   params.put("CanPlaybackPlaying", "0");
   params.put("CanPlaybackPosition", "0");
-  params.remove("CanPlaybackState");
   fprintf(stderr, "[video_player] Reset playback params\n");
 
   // 全セグメントのFrameReaderを作成（no_hw_decoder=true）
@@ -338,7 +284,7 @@ int main(int argc, char *argv[]) {
     auto now = std::chrono::steady_clock::now();
     double time_since_read = std::chrono::duration<double>(now - last_params_read).count();
 
-    // Paramsから定期的に状態を読み取り（JSON集約 + フォールバック）
+    // Paramsから定期的に状態を読み取り
     if (time_since_read >= PARAMS_READ_INTERVAL) {
       PlaybackState state = read_playback_state(params);
       synced_position = state.position;
