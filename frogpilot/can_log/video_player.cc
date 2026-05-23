@@ -153,8 +153,8 @@ struct PrefetchedFrame {
 
 class PrefetchBuffer {
 public:
-  PrefetchBuffer(size_t capacity, size_t frame_data_size)
-    : capacity_(capacity), frame_data_size_(frame_data_size), buffer_(capacity) {}
+  PrefetchBuffer(size_t capacity, size_t /*frame_data_size*/)
+    : capacity_(capacity), buffer_(capacity) {}
 
   /// 指定フレームがバッファに存在すれば NV12 データを取得
   bool get(int total_frame, std::vector<uint8_t> &out_data) {
@@ -205,7 +205,6 @@ public:
 
 private:
   size_t capacity_;
-  size_t frame_data_size_;
   std::vector<PrefetchedFrame> buffer_;
   size_t write_idx_ = 0;
   std::mutex mutex_;
@@ -371,7 +370,10 @@ int main(int argc, char *argv[]) {
           static_cast<double>(PREFETCH_BUFFER_SIZE * nv12_data_size) / (1024.0 * 1024.0));
 
   // NV12レイアウト情報（プリフェッチ用）
-  auto [stride, scanlines, buf_size] = calc_nv12_info(vipc_w, vipc_h);
+  auto nv12_info = calc_nv12_info(vipc_w, vipc_h);
+  size_t stride = std::get<0>(nv12_info);
+  size_t scanlines = std::get<1>(nv12_info);
+  size_t buf_size = std::get<2>(nv12_info);
   size_t uv_offset = stride * scanlines;
 
   // プリフェッチスレッド用の共有状態
