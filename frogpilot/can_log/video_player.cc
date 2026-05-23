@@ -5,7 +5,10 @@
 //
 // 事前デコードモード: 再生開始前に全セグメントの全フレームをデコードして
 // メモリにキャッシュする。再生時はキャッシュからコピーするのみで高パフォーマンス。
-// 進捗はrlog読み込み(0-50%)とフレームデコード(50-100%)を統合して表示。
+// 進捗管理:
+// - CanPlaybackLoadingProgress: rlog読み込み進捗 (0-100%, can_player.pyが管理)
+// - CanPlaybackDecodeProgress: フレームデコード進捗 (0-100%, video_playerが管理)
+// - 両方が100%になったら再生開始
 //
 // 使用例:
 //   video_player /data/media/0/realdata/2026-05-19--14-30-25--33243391ae
@@ -43,6 +46,7 @@ namespace fs = std::filesystem;
 static const int FPS = 20;
 static const int SEGMENT_SEC = 60;
 static const int BUFFER_COUNT = 40;
+static const size_t MAX_FRAMES_PER_SEGMENT = 600;  // 30秒分 (20fps × 30秒)
 static std::atomic<bool> g_exit{false};
 
 // シグナルハンドラ
@@ -143,16 +147,22 @@ static std::tuple<size_t, size_t, size_t> calc_nv12_info(int w, int h) {
 
 // --- 全フレーム事前デコード ---
 // 全セグメントのフレームをシーケンシャルにデコードしてメモリにキャッシュする。
-// 進捗はCanPlaybackLoadingProgressに50-100%の範囲で書き込む。
-// can_player.pyのrlog読み込み(0-50%)と統合して単一のパーセンテージで表示。
+// 進捗はCanPlaybackDecodeProgress (0-100%) に書き込む。
+// can_player.pyのrlog読み込み(CanPlaybackLoadingProgress)とは独立して動作。
 
 static void predecodeAllFrames(const std::vector<std::string> &segments, Params &params) {
   g_cached_segments.clear();
   g_cached_segments.resize(segments.size());
 
+  fprintf(stderr, "[video_player] === Pre-decode starting ===\n");
+  fprintf(stderr, "[video_player] Scanning %zu segments...\n", segments.size());
+
+  params.put("CanPlaybackDecodeProgress", "0");
+
   // セグメントごとにFrameReaderを作成してフレーム数を計上
   size_t total_frames = 0;
   size_t decoded_frames = 0;
+  int decode_errors = 0;
 
   std::vector<std::unique_ptr<FrameReader>> readers(segments.size());
   for (size_t i = 0; i < segments.size(); i++) {
@@ -162,32 +172,46 @@ static void predecodeAllFrames(const std::vector<std::string> &segments, Params 
       fprintf(stderr, "[video_player] Failed to load segment %zu: %s\n", i, hevc.c_str());
       continue;
     }
-    total_frames += reader->getFrameCount();
-    fprintf(stderr, "[video_player] Segment %zu: %zu frames, %dx%d\n",
-            i, reader->getFrameCount(), reader->width, reader->height);
+    size_t fc = reader->getFrameCount();
+    size_t capped = std::min(fc, MAX_FRAMES_PER_SEGMENT);
+    total_frames += capped;
+    fprintf(stderr, "[video_player] Segment %zu: %zu frames (capped to %zu), %dx%d\n",
+            i, fc, capped, reader->width, reader->height);
     readers[i] = std::move(reader);
   }
 
   if (total_frames == 0) {
-    params.put("CanPlaybackLoadingProgress", "100");
+    params.put("CanPlaybackDecodeProgress", "100");
+    fprintf(stderr, "[video_player] No frames to decode\n");
     return;
   }
 
-  fprintf(stderr, "[video_player] Decoding %zu total frames...\n", total_frames);
+  // メモリ使用量の推定
+  int w = 0, h = 0;
+  for (const auto &r : readers) {
+    if (r && r->width > 0) { w = r->width; h = r->height; break; }
+  }
+  size_t est_bytes = static_cast<size_t>(w) * h * 3 / 2 * total_frames;
+  fprintf(stderr, "[video_player] Decoding %zu total frames (est %.1f MB)...\n",
+          total_frames, est_bytes / (1024.0 * 1024.0));
 
-  // 全フレームをシーケンシャルにデコード（シーク不要で高速）
+  auto decode_start = std::chrono::steady_clock::now();
+
+  // 全フレームをシーケンシャルにデコード
   for (size_t seg = 0; seg < readers.size(); seg++) {
     if (!readers[seg] || g_exit) continue;
 
     auto &reader = readers[seg];
-    size_t frame_count = reader->getFrameCount();
+    size_t frame_count = std::min(reader->getFrameCount(), MAX_FRAMES_PER_SEGMENT);
     g_cached_segments[seg].frames.resize(frame_count);
 
     // 一時VisionBufを準備（デコード出力先）
-    size_t y_size = reader->width * reader->height;
-    size_t uv_size = reader->width * (reader->height / 2);
+    size_t y_size = static_cast<size_t>(reader->width) * reader->height;
+    size_t uv_size = static_cast<size_t>(reader->width) * (reader->height / 2);
     std::vector<uint8_t> y_tmp(y_size);
     std::vector<uint8_t> uv_tmp(uv_size);
+
+    fprintf(stderr, "[video_player] Segment %zu: decoding %zu frames...\n", seg, frame_count);
 
     for (size_t f = 0; f < frame_count && !g_exit; f++) {
       VisionBuf tmp_buf = {};
@@ -197,7 +221,8 @@ static void predecodeAllFrames(const std::vector<std::string> &segments, Params 
       tmp_buf.width = reader->width;
       tmp_buf.height = reader->height;
 
-      if (reader->get(static_cast<int>(f), &tmp_buf)) {
+      bool ok = reader->get(static_cast<int>(f), &tmp_buf);
+      if (ok) {
         CachedFrame &cf = g_cached_segments[seg].frames[f];
         cf.width = reader->width;
         cf.height = reader->height;
@@ -205,18 +230,55 @@ static void predecodeAllFrames(const std::vector<std::string> &segments, Params 
         cf.uv_stride = reader->width;
         cf.y_data.assign(tmp_buf.y, tmp_buf.y + y_size);
         cf.uv_data.assign(tmp_buf.uv, tmp_buf.uv + uv_size);
+      } else {
+        decode_errors++;
+        if (decode_errors <= 20) {
+          fprintf(stderr, "[video_player] WARNING: decode failed seg=%zu frame=%zu (error #%d)\n",
+                  seg, f, decode_errors);
+        }
       }
 
       decoded_frames++;
-      // 進捗: 50% + (decoded / total) * 50%
-      int progress = 50 + static_cast<int>((decoded_frames * 50) / total_frames);
-      if (progress > 99) progress = 99;  // 100%は完了時のみ
-      params.put("CanPlaybackLoadingProgress", std::to_string(progress));
+
+      // 進捗: 0-99% (100%は完了時のみ)
+      int progress = static_cast<int>((decoded_frames * 99) / total_frames);
+      params.put("CanPlaybackDecodeProgress", std::to_string(progress));
+
+      // 100フレームごとにログ出力
+      if (decoded_frames % 100 == 0) {
+        auto now = std::chrono::steady_clock::now();
+        double elapsed = std::chrono::duration<double>(now - decode_start).count();
+        double fps = elapsed > 0 ? decoded_frames / elapsed : 0;
+        fprintf(stderr, "[video_player] Progress: %zu/%zu frames (%.1f fps, %d errors)\n",
+                decoded_frames, total_frames, fps, decode_errors);
+      }
     }
+
+    fprintf(stderr, "[video_player] Segment %zu: done (total decoded=%zu, errors=%d)\n",
+            seg, decoded_frames, decode_errors);
   }
 
-  params.put("CanPlaybackLoadingProgress", "100");
-  fprintf(stderr, "[video_player] Pre-decode complete: %zu frames cached\n", decoded_frames);
+  params.put("CanPlaybackDecodeProgress", "100");
+
+  auto decode_end = std::chrono::steady_clock::now();
+  double total_time = std::chrono::duration<double>(decode_end - decode_start).count();
+
+  fprintf(stderr, "[video_player] === Pre-decode complete ===\n");
+  fprintf(stderr, "[video_player]   Frames cached: %zu / %zu\n", decoded_frames, total_frames);
+  fprintf(stderr, "[video_player]   Decode errors: %d\n", decode_errors);
+  fprintf(stderr, "[video_player]   Total time: %.1f sec\n", total_time);
+  if (total_time > 0) {
+    fprintf(stderr, "[video_player]   Avg decode rate: %.1f fps\n", decoded_frames / total_time);
+  }
+
+  // 実際のメモリ使用量
+  size_t total_bytes = 0;
+  for (const auto &cs : g_cached_segments) {
+    for (const auto &f : cs.frames) {
+      total_bytes += f.y_data.size() + f.uv_data.size();
+    }
+  }
+  fprintf(stderr, "[video_player]   Memory used: %.1f MB\n", total_bytes / (1024.0 * 1024.0));
 }
 
 // --- メイン ---
@@ -248,33 +310,12 @@ int main(int argc, char *argv[]) {
 
   Params params;
 
-  // rlog読み込み完了を待機 (can_playerがCanPlaybackLoadingProgressを50%に設定するまで)
-  fprintf(stderr, "[video_player] Waiting for rlog loading to complete...\n");
-  auto wait_start = std::chrono::steady_clock::now();
-  while (!g_exit) {
-    if (!params.getBool("CAN_PLAYBACK")) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
-      continue;
-    }
-    std::string prog = params.get("CanPlaybackLoadingProgress");
-    int p = 0;
-    if (!prog.empty()) {
-      try { p = std::stoi(prog); } catch (...) {}
-    }
-    if (p >= 50) break;
+  // 50%待機を削除: rlog読み込みを待たずに即座にデコード開始
+  // (以前はcan_playerのrlog読み込み50%を待機していたが、デッドロックの原因のため削除)
+  // 進捗はCanPlaybackDecodeProgress (0-100%) で独立管理
+  fprintf(stderr, "[video_player] Starting pre-decode immediately (no rlog wait)\n");
 
-    // タイムアウト: 5分
-    double elapsed = std::chrono::duration<double>(
-        std::chrono::steady_clock::now() - wait_start).count();
-    if (elapsed > 300.0) {
-      fprintf(stderr, "[video_player] Timeout waiting for rlog loading, starting decode anyway\n");
-      break;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-  }
-  if (g_exit) return 0;
-
-  // 全フレーム事前デコード (進捗: 50-100%)
+  // 全フレーム事前デコード (進捗: CanPlaybackDecodeProgress 0-100%)
   predecodeAllFrames(segments, params);
   if (g_exit) return 0;
 
