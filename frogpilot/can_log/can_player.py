@@ -19,6 +19,7 @@ can_playerがrlog内のほぼ全イベントを安全にパブリッシュでき
   python -m frogpilot.can_log.can_player --loop /data/media/0/realdata/000001a3--c20ba54385
 """
 
+import json
 import os
 import sys
 import time
@@ -395,9 +396,26 @@ class CanPlayer:
     self.params.remove("CAN_PLAYBACK")
 
   def _update_params_state(self) -> None:
-    """Paramsに現在の再生状態を書き込む"""
+    """Paramsに現在の再生状態を書き込む
+
+    JSON集約書き込み（CanPlaybackState）と個別キー書き込みを併用。
+    個別キーは後方互換性のため維持（移行期間中）。
+    """
     with self._lock:
       position = (self._current_time_ns - self._start_time_ns) / 1e9 if self._start_time_ns else 0.0
+
+    # JSON集約書き込み（新しい方式）- 単一キーで全状態を一括書き込み
+    state = {
+      "position": position,
+      "duration": self._duration,
+      "speed": self.speed,
+      "playing": not self._paused,
+      "real_time": self._recording_time_str,
+      "loading_progress": 100,  # 再生中はロード完了済み
+    }
+    self.params.put("CanPlaybackState", json.dumps(state))
+
+    # 個別キー書き込み（後方互換性のため併記）
     self.params.put("CanPlaybackPosition", str(position))
     self.params.put("CanPlaybackDuration", str(self._duration))
     self.params.put("CanPlaybackSpeed", str(self.speed))

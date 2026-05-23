@@ -1,7 +1,39 @@
 #include <QDateTime>
+#include <chrono>
+#include <string>
 
 #include "common/params.h"
 #include "frogpilot/ui/qt/onroad/frogpilot_onroad.h"
+
+namespace {
+// Simple JSON value extraction helper (same approach as video_player.cc).
+// Extracts a value for a key from a flat JSON object string.
+// Does not support nested objects or arrays.
+static std::string json_get_value(const std::string &json, const std::string &key) {
+  std::string search = "\"" + key + "\":";
+  auto pos = json.find(search);
+  if (pos == std::string::npos) return "";
+  pos += search.size();
+  // Skip whitespace
+  while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t' || json[pos] == '\n' || json[pos] == '\r')) {
+    pos++;
+  }
+  if (pos >= json.size()) return "";
+
+  if (json[pos] == '"') {
+    // String value: extract "..."
+    pos++;
+    auto end = json.find('"', pos);
+    if (end == std::string::npos) return "";
+    return json.substr(pos, end - pos);
+  } else {
+    // Numeric or boolean value: extract until , or }
+    auto end = json.find_first_of(",} \t\n\r", pos);
+    if (end == std::string::npos) end = json.size();
+    return json.substr(pos, end - pos);
+  }
+}
+} // namespace
 
 FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) {
   signalTimer = new QTimer(this);
@@ -18,33 +50,52 @@ FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) 
   playback_timer_ = nullptr;
 }
 
+FrogPilotOnroadWindow::~FrogPilotOnroadWindow() {
+  stopParamsThread();
+}
+
 void FrogPilotOnroadWindow::initPlaybackOverlay() {
   if (playback_overlay_ != nullptr) return;
 
   // Read initial playback state from Params (written by can_player.py)
+  // Try JSON bulk read first, then fallback to individual keys
   Params params;
-  QString duration_str = QString::fromStdString(params.get("CanPlaybackDuration"));
-  QString realtime_str = QString::fromStdString(params.get("CanPlaybackRealTime"));
-  QString playing_str = QString::fromStdString(params.get("CanPlaybackPlaying"));
+  double init_duration = 0.0;
+  bool init_playing = false;
 
-  if (!duration_str.isEmpty()) {
-    playback_duration_ = duration_str.toDouble();
+  std::string state_json = params.get("CanPlaybackState");
+  if (!state_json.empty()) {
+    std::string dur_str = json_get_value(state_json, "duration");
+    std::string play_str = json_get_value(state_json, "playing");
+    if (!dur_str.empty()) {
+      try { init_duration = std::stod(dur_str); } catch (...) {}
+    }
+    init_playing = (play_str == "true" || play_str == "1");
+  } else {
+    // Fallback: individual keys (backward compatibility)
+    QString duration_str = QString::fromStdString(params.get("CanPlaybackDuration"));
+    if (!duration_str.isEmpty()) {
+      init_duration = duration_str.toDouble();
+    }
+    QString playing_str = QString::fromStdString(params.get("CanPlaybackPlaying"));
+    init_playing = !playing_str.isEmpty() && playing_str != "0";
   }
-  if (!realtime_str.isEmpty()) {
-    // Parse real time to get start time: real_time = start_time + position
-    // Store the raw real time string for display
-    playback_start_time_ = realtime_str;
-  }
+
+  playback_duration_ = init_duration;
 
   playback_overlay_ = new PlaybackOverlay(this);
   playback_overlay_->setDuration(playback_duration_);
-  playback_overlay_->setPlaying(playing_str != "0");
+  playback_overlay_->setPlaying(init_playing);
   playback_overlay_->showOverlay();
 
-  // Timer to update playback position from Params
+  // Start background Params reader thread
+  params_thread_running_ = true;
+  params_thread_ = std::thread(&FrogPilotOnroadWindow::readPlaybackParams, this);
+
+  // Timer to apply cached state to UI (runs on UI thread, no file I/O)
   playback_timer_ = new QTimer(this);
   QObject::connect(playback_timer_, &QTimer::timeout, [this]() {
-    updatePlaybackPosition();
+    applyPlaybackState();
   });
   playback_timer_->start(100);  // Update every 100ms
 
@@ -143,50 +194,85 @@ void FrogPilotOnroadWindow::resizeEvent(QResizeEvent *event) {
   }
 }
 
-void FrogPilotOnroadWindow::updatePlaybackPosition() {
+void FrogPilotOnroadWindow::readPlaybackParams() {
+  // Use a separate Params instance for the background thread
+  Params params;
+
+  while (params_thread_running_) {
+    PlaybackState new_state;
+
+    // 1) Try JSON bulk read from CanPlaybackState
+    std::string state_json = params.get("CanPlaybackState");
+    bool json_parsed = false;
+
+    if (!state_json.empty()) {
+      std::string pos_str = json_get_value(state_json, "position");
+      if (!pos_str.empty()) {
+        std::string dur_str = json_get_value(state_json, "duration");
+        std::string spd_str = json_get_value(state_json, "speed");
+        std::string play_str = json_get_value(state_json, "playing");
+        std::string rt_str = json_get_value(state_json, "real_time");
+        std::string lp_str = json_get_value(state_json, "loading_progress");
+
+        try { new_state.position = std::stod(pos_str); } catch (...) {}
+        try { new_state.duration = std::stod(dur_str); } catch (...) {}
+        try { new_state.speed = std::stod(spd_str); } catch (...) {}
+        new_state.playing = (play_str == "true" || play_str == "1");
+        new_state.real_time = QString::fromStdString(rt_str);
+        try { new_state.loading_progress = std::stoi(lp_str); } catch (...) {}
+        json_parsed = true;
+      }
+    }
+
+    // 2) Fallback: read individual keys (backward compatibility)
+    if (!json_parsed) {
+      std::string pos_str = params.get("CanPlaybackPosition");
+      if (!pos_str.empty()) {
+        try { new_state.position = std::stod(pos_str); } catch (...) {}
+      }
+      std::string dur_str = params.get("CanPlaybackDuration");
+      if (!dur_str.empty()) {
+        try { new_state.duration = std::stod(dur_str); } catch (...) {}
+      }
+      std::string spd_str = params.get("CanPlaybackSpeed");
+      if (!spd_str.empty()) {
+        try { new_state.speed = std::stod(spd_str); } catch (...) {}
+      }
+      std::string playing_str = params.get("CanPlaybackPlaying");
+      new_state.playing = (playing_str == "1");
+      new_state.real_time = QString::fromStdString(params.get("CanPlaybackRealTime"));
+      std::string lp_str = params.get("CanPlaybackLoadingProgress");
+      if (!lp_str.empty()) {
+        try { new_state.loading_progress = std::stoi(lp_str); } catch (...) {}
+      }
+    }
+
+    // Check if playback is still active
+    new_state.can_playback = params.getBool("CAN_PLAYBACK");
+
+    // Store to cached state (protected by mutex)
+    {
+      std::lock_guard<std::mutex> lock(state_mutex_);
+      cached_state_ = new_state;
+    }
+
+    // Sleep for 100ms
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+}
+
+void FrogPilotOnroadWindow::applyPlaybackState() {
   if (!isCanPlayback || !playback_overlay_) return;
 
-  // Read playback state from Params (written by can_player.py)
-  Params params;
-  QString position_str = QString::fromStdString(params.get("CanPlaybackPosition"));
-  QString duration_str = QString::fromStdString(params.get("CanPlaybackDuration"));
-  QString playing_str = QString::fromStdString(params.get("CanPlaybackPlaying"));
-  QString realtime_str = QString::fromStdString(params.get("CanPlaybackRealTime"));
-  QString speed_str = QString::fromStdString(params.get("CanPlaybackSpeed"));
-
-  // Read loading progress (0-100%) - rlog loading from can_player.py
-  QString loading_str = QString::fromStdString(params.get("CanPlaybackLoadingProgress"));
-  if (!loading_str.isEmpty()) {
-    loading_progress_ = loading_str.toInt();
+  // Read cached state from background thread
+  PlaybackState state;
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    state = cached_state_;
   }
 
-  if (!position_str.isEmpty()) {
-    playback_position_ = position_str.toDouble();
-    playback_overlay_->setPosition(playback_position_);
-  }
-
-  if (!duration_str.isEmpty()) {
-    double duration = duration_str.toDouble();
-    if (duration != playback_duration_) {
-      playback_duration_ = duration;
-      playback_overlay_->setDuration(playback_duration_);
-    }
-  }
-
-  if (!playing_str.isEmpty()) {
-    playback_overlay_->setPlaying(playing_str != "0");
-  }
-
-  if (!realtime_str.isEmpty()) {
-    playback_overlay_->setRealTime(realtime_str);
-  }
-
-  if (!speed_str.isEmpty()) {
-    playback_overlay_->setPlaybackSpeed(speed_str.toDouble());
-  }
-
-  // Check if playback has ended (CAN_PLAYBACK removed)
-  if (!params.getBool("CAN_PLAYBACK")) {
+  // Check if playback has ended
+  if (!state.can_playback) {
     isCanPlayback = false;
     if (playback_overlay_) {
       playback_overlay_->hideOverlay();
@@ -197,7 +283,36 @@ void FrogPilotOnroadWindow::updatePlaybackPosition() {
     if (playback_timer_) {
       playback_timer_->stop();
     }
+    return;
   }
+
+  // Diff detection: only update UI elements when values change
+  if (state.position != last_applied_state_.position) {
+    playback_position_ = state.position;
+    playback_overlay_->setPosition(state.position);
+  }
+
+  if (state.duration != last_applied_state_.duration) {
+    playback_duration_ = state.duration;
+    playback_overlay_->setDuration(state.duration);
+  }
+
+  if (state.playing != last_applied_state_.playing) {
+    playback_overlay_->setPlaying(state.playing);
+  }
+
+  if (state.real_time != last_applied_state_.real_time) {
+    playback_overlay_->setRealTime(state.real_time);
+  }
+
+  if (state.speed != last_applied_state_.speed) {
+    playback_overlay_->setPlaybackSpeed(state.speed);
+  }
+
+  // Loading progress is used in paintEvent
+  loading_progress_ = state.loading_progress;
+
+  last_applied_state_ = state;
 }
 
 void FrogPilotOnroadWindow::updatePlaybackRealTime() {
@@ -205,7 +320,7 @@ void FrogPilotOnroadWindow::updatePlaybackRealTime() {
 
   // CanPlaybackRealTimeには録画日時（YYYY-MM-DD HH:MM）が設定される
   // （can_player.pyがセグメントディレクトリのmtimeから取得）
-  // そのまま表示する（updatePlaybackPositionで既にrealtime_strを読み取っている）
+  // そのまま表示する（readPlaybackParamsで既にrealtimeを読み取っている）
 }
 
 void FrogPilotOnroadWindow::stopPlayback() {
@@ -215,6 +330,8 @@ void FrogPilotOnroadWindow::stopPlayback() {
 
   isCanPlayback = false;
 
+  stopParamsThread();
+
   if (playback_overlay_) {
     playback_overlay_->hideOverlay();
   }
@@ -223,6 +340,13 @@ void FrogPilotOnroadWindow::stopPlayback() {
   }
   if (playback_timer_) {
     playback_timer_->stop();
+  }
+}
+
+void FrogPilotOnroadWindow::stopParamsThread() {
+  params_thread_running_ = false;
+  if (params_thread_.joinable()) {
+    params_thread_.join();
   }
 }
 

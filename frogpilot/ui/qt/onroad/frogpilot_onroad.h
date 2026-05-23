@@ -1,16 +1,31 @@
 #pragma once
 
 #include <QPushButton>
+#include <atomic>
+#include <mutex>
+#include <thread>
 
 #include "selfdrive/ui/qt/onroad/annotated_camera.h"
 
 #include "frogpilot/ui/qt/onroad/playback_overlay.h"
+
+// Cached playback state shared between background Params reader and UI thread
+struct PlaybackState {
+  double position = 0.0;
+  double duration = 0.0;
+  double speed = 1.0;
+  bool playing = false;
+  bool can_playback = true;
+  int loading_progress = 0;
+  QString real_time;
+};
 
 class FrogPilotOnroadWindow : public QWidget {
   Q_OBJECT
 
 public:
   FrogPilotOnroadWindow(QWidget* parent = 0);
+  ~FrogPilotOnroadWindow();
 
   void updateState(const UIState &s, const FrogPilotUIState &fs);
   void resizeEvent(QResizeEvent *event) override;
@@ -25,9 +40,11 @@ private:
   void paintSteeringTorqueBorder(QPainter &p, const QRect &rect);
   void paintTurnSignalBorder(QPainter &p, const QRect &rect);
   void initPlaybackOverlay();
-  void updatePlaybackPosition();
+  void readPlaybackParams();       // Runs on background thread
+  void applyPlaybackState();       // Runs on UI thread via QTimer
   void updatePlaybackRealTime();
   void stopPlayback();
+  void stopParamsThread();
 
   bool blindSpotLeft;
   bool blindSpotRight;
@@ -52,4 +69,13 @@ private:
   double playback_duration_ = 0.0;
   QString playback_start_time_;
   int loading_progress_ = 0;
+
+  // Background Params reader thread
+  std::thread params_thread_;
+  std::atomic<bool> params_thread_running_{false};
+  std::mutex state_mutex_;
+  PlaybackState cached_state_;
+
+  // Last applied state for diff detection in applyPlaybackState()
+  PlaybackState last_applied_state_;
 };

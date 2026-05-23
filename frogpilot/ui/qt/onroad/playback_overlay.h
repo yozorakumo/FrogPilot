@@ -57,4 +57,7 @@ private:
   int bg_alpha_ = 128;
 
   static constexpr int kHideTimeoutMs = 3000;
+
+  // Previous values for diff detection
+  int prev_displayed_secs_ = -1;
 };

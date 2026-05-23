@@ -142,6 +142,7 @@ PlaybackOverlay::PlaybackOverlay(QWidget *parent) : QWidget(parent) {
 }
 
 void PlaybackOverlay::setDuration(double seconds) {
+  if (duration_seconds_ == seconds) return;
   duration_seconds_ = seconds;
   updateDisplay();
 }
@@ -152,22 +153,33 @@ void PlaybackOverlay::setPosition(double seconds) {
     int slider_value = (duration_seconds_ > 0)
                            ? static_cast<int>((position_seconds_ / duration_seconds_) * 1000)
                            : 0;
-    seek_slider_->setValue(std::clamp(slider_value, 0, 1000));
+    int new_value = std::clamp(slider_value, 0, 1000);
+    if (seek_slider_->value() != new_value) {
+      seek_slider_->setValue(new_value);
+    }
   }
-  updateDisplay();
+  // Only update time display when whole seconds change
+  int new_secs = static_cast<int>(seconds);
+  if (new_secs != prev_displayed_secs_) {
+    prev_displayed_secs_ = new_secs;
+    updateDisplay();
+  }
 }
 
 void PlaybackOverlay::setRealTime(const QString &time_str) {
+  if (real_time_str_ == time_str) return;
   real_time_str_ = time_str;
   real_time_label_->setText(time_str);
 }
 
 void PlaybackOverlay::setPlaybackSpeed(double speed) {
+  if (playback_speed_ == speed) return;
   playback_speed_ = speed;
   speed_btn_->setText(QString::number(speed, 'f', 1) + "x");
 }
 
 void PlaybackOverlay::setPlaying(bool playing) {
+  if (is_playing_ == playing) return;
   is_playing_ = playing;
   play_pause_btn_->setText(playing ? "⏸" : "▶");
 }
