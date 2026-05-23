@@ -279,15 +279,29 @@ void FrogPilotOnroadWindow::applyPlaybackState() {
     isCanPlayback = false;
     // Restore mouse transparency when playback ends
     setAttribute(Qt::WA_TransparentForMouseEvents, true);
+
+    if (playback_timer_) {
+      playback_timer_->stop();
+      delete playback_timer_;
+      playback_timer_ = nullptr;
+    }
     if (playback_overlay_) {
       playback_overlay_->hideOverlay();
+      delete playback_overlay_;
+      playback_overlay_ = nullptr;
     }
     if (stop_playback_btn_) {
       stop_playback_btn_->hide();
+      delete stop_playback_btn_;
+      stop_playback_btn_ = nullptr;
     }
-    if (playback_timer_) {
-      playback_timer_->stop();
-    }
+
+    // Reset state so initPlaybackOverlay() can recreate everything on next playback
+    last_applied_state_ = PlaybackState();
+    cached_state_ = PlaybackState();
+    playback_position_ = 0.0;
+    playback_duration_ = 0.0;
+    loading_progress_ = 0;
     return;
   }
 
@@ -340,15 +354,30 @@ void FrogPilotOnroadWindow::stopPlayback() {
 
   stopParamsThread();
 
-  if (playback_overlay_) {
-    playback_overlay_->hideOverlay();
-  }
-  if (stop_playback_btn_) {
-    stop_playback_btn_->hide();
-  }
   if (playback_timer_) {
     playback_timer_->stop();
+    delete playback_timer_;
+    playback_timer_ = nullptr;
   }
+
+  if (playback_overlay_) {
+    playback_overlay_->hideOverlay();
+    delete playback_overlay_;
+    playback_overlay_ = nullptr;
+  }
+
+  if (stop_playback_btn_) {
+    stop_playback_btn_->hide();
+    delete stop_playback_btn_;
+    stop_playback_btn_ = nullptr;
+  }
+
+  // Reset state so initPlaybackOverlay() can recreate everything on next playback
+  last_applied_state_ = PlaybackState();
+  cached_state_ = PlaybackState();
+  playback_position_ = 0.0;
+  playback_duration_ = 0.0;
+  loading_progress_ = 0;
 }
 
 void FrogPilotOnroadWindow::stopParamsThread() {
