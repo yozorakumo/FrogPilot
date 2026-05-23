@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QPushButton>
-#include <QMouseEvent>
 #include <atomic>
 #include <mutex>
 #include <thread>
@@ -46,9 +45,6 @@ private:
   void updatePlaybackRealTime();
   void stopPlayback();
   void stopParamsThread();
-
-  void mousePressEvent(QMouseEvent *event) override;
-  void mouseReleaseEvent(QMouseEvent *event) override;
 
   bool blindSpotLeft;
   bool blindSpotRight;

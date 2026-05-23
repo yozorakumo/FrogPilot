@@ -40,8 +40,10 @@ void FrogPilotOnroadWindow::initPlaybackOverlay() {
     playback_start_time_ = realtime_str;
   }
 
-  // Enable mouse events for this widget and its children during CAN playback
-  setAttribute(Qt::WA_TransparentForMouseEvents, false);
+  // WA_TransparentForMouseEvents stays true on FrogPilotOnroadWindow.
+  // Child widgets (PlaybackOverlay, stop button) have WA_TransparentForMouseEvents=false,
+  // so they receive mouse events directly. Events on empty areas pass through to OnroadWindow
+  // (enabling sidebar toggle and long-press UI edit mode).
 
   playback_overlay_ = new PlaybackOverlay(this);
   playback_overlay_->setDuration(playback_duration_);
@@ -209,8 +211,6 @@ void FrogPilotOnroadWindow::applyPlaybackState() {
   // Check if playback has ended
   if (!state.can_playback) {
     isCanPlayback = false;
-    // Restore mouse transparency when playback ends
-    setAttribute(Qt::WA_TransparentForMouseEvents, true);
 
     if (playback_timer_) {
       playback_timer_->stop();
@@ -281,9 +281,6 @@ void FrogPilotOnroadWindow::stopPlayback() {
 
   isCanPlayback = false;
 
-  // Restore mouse transparency when playback stops
-  setAttribute(Qt::WA_TransparentForMouseEvents, true);
-
   stopParamsThread();
 
   if (playback_timer_) {
@@ -316,47 +313,6 @@ void FrogPilotOnroadWindow::stopParamsThread() {
   params_thread_running_ = false;
   if (params_thread_.joinable()) {
     params_thread_.join();
-  }
-}
-
-void FrogPilotOnroadWindow::mousePressEvent(QMouseEvent *event) {
-  // During CAN playback, accept clicks on child widget areas (PlaybackOverlay, stop button)
-  // to prevent propagation to parent (OnroadWindow sidebar toggle).
-  // Ignore clicks on empty areas to allow normal event propagation.
-  if (!isCanPlayback) {
-    event->ignore();
-    return;
-  }
-
-  QPoint pos = event->pos();
-  bool on_child = (playback_overlay_ && playback_overlay_->isVisible() &&
-                   playback_overlay_->geometry().contains(pos)) ||
-                  (stop_playback_btn_ && stop_playback_btn_->isVisible() &&
-                   stop_playback_btn_->geometry().contains(pos));
-
-  if (on_child) {
-    event->accept();
-  } else {
-    event->ignore();
-  }
-}
-
-void FrogPilotOnroadWindow::mouseReleaseEvent(QMouseEvent *event) {
-  if (!isCanPlayback) {
-    event->ignore();
-    return;
-  }
-
-  QPoint pos = event->pos();
-  bool on_child = (playback_overlay_ && playback_overlay_->isVisible() &&
-                   playback_overlay_->geometry().contains(pos)) ||
-                  (stop_playback_btn_ && stop_playback_btn_->isVisible() &&
-                   stop_playback_btn_->geometry().contains(pos));
-
-  if (on_child) {
-    event->accept();
-  } else {
-    event->ignore();
   }
 }
 

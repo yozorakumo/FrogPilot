@@ -326,14 +326,14 @@ class CanPlayer:
     # 1. clocks.wallTimeNanosから取得（最も正確）
     # 2. フォールバック: ファイルのmtime
     if self._recording_time_ns is not None:
-      recording_dt = datetime.fromtimestamp(self._recording_time_ns / 1e9, tz=timezone.utc)
+      recording_dt = datetime.fromtimestamp(self._recording_time_ns / 1e9)
       self._recording_time_str = recording_dt.strftime('%Y-%m-%d %H:%M')
     else:
       # フォールバック: セグメントディレクトリの変更日時
       segments = discover_segments(route_path)
       if segments:
         recording_timestamp = os.path.getmtime(segments[0])
-        recording_dt = datetime.fromtimestamp(recording_timestamp, tz=timezone.utc)
+        recording_dt = datetime.fromtimestamp(recording_timestamp)
         self._recording_time_str = recording_dt.strftime('%Y-%m-%d %H:%M')
       else:
         self._recording_time_str = ""
