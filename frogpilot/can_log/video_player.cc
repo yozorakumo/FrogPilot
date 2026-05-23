@@ -3,10 +3,10 @@
 // can_player.pyとParams経由で同期し、fcamera.hevcをFrameReaderで
 // デコードしてVisionIpcServerでUIに配信する。
 //
-// リファクタリング版:
+// 同期デコード + JSON集約読み込み:
+// - 再生中に毎フレーム reader->get() でデコードする
 // - JSON集約読み込み: CanPlaybackState から一括で再生状態を取得
 // - フォールバック: JSON取得失敗時は個別キーから読み取り
-// - フレームプリフェッチ: 別スレッドで先読みデコード、リングバッファでキャッシュ
 //
 // 使用例:
 //   video_player /data/media/0/realdata/2026-05-19--14-30-25--33243391ae
@@ -15,15 +15,12 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <condition_variable>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <memory>
-#include <mutex>
 #include <csignal>
 #include <string>
-#include <thread>
 #include <vector>
 
 #include <unistd.h>
@@ -45,7 +42,6 @@ namespace fs = std::filesystem;
 static const int FPS = 20;
 static const int SEGMENT_SEC = 60;
 static const int BUFFER_COUNT = 40;
-static const int PREFETCH_BUFFER_SIZE = 8;  // プリフェッチリングバッファサイズ
 static std::atomic<bool> g_exit{false};
 
 // シグナルハンドラ
@@ -141,75 +137,6 @@ static PlaybackState read_playback_state(Params &params) {
   return state;
 }
 
-// --- プリフェッチフレームエントリ ---
-
-struct PrefetchedFrame {
-  int total_frame = -1;          // グローバルフレームインデックス
-  std::vector<uint8_t> nv12_data;  // NV12 データ (Y + UV)
-  bool valid = false;
-};
-
-// --- プリフェッチバッファ管理クラス ---
-
-class PrefetchBuffer {
-public:
-  PrefetchBuffer(size_t capacity, size_t /*frame_data_size*/)
-    : capacity_(capacity), buffer_(capacity) {}
-
-  /// 指定フレームがバッファに存在すれば NV12 データを取得
-  bool get(int total_frame, std::vector<uint8_t> &out_data) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (auto &entry : buffer_) {
-      if (entry.valid && entry.total_frame == total_frame) {
-        out_data = entry.nv12_data;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /// プリフェッチスレッドがデコード結果を格納
-  void put(int total_frame, const uint8_t *data, size_t size) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    // 既に存在するか確認（重複防止）
-    for (auto &entry : buffer_) {
-      if (entry.valid && entry.total_frame == total_frame) return;
-    }
-    // 最も古いエントリ（write_idx_）を上書き
-    auto &entry = buffer_[write_idx_];
-    entry.total_frame = total_frame;
-    entry.nv12_data.assign(data, data + size);
-    entry.valid = true;
-    write_idx_ = (write_idx_ + 1) % capacity_;
-  }
-
-  /// バッファを全クリア（シーク時等に呼び出し）
-  void clear() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (auto &entry : buffer_) {
-      entry.valid = false;
-      entry.total_frame = -1;
-      entry.nv12_data.clear();
-    }
-    write_idx_ = 0;
-  }
-
-  /// 指定フレームがバッファに存在するか確認
-  bool has(int total_frame) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (auto &entry : buffer_) {
-      if (entry.valid && entry.total_frame == total_frame) return true;
-    }
-    return false;
-  }
-
-private:
-  size_t capacity_;
-  std::vector<PrefetchedFrame> buffer_;
-  size_t write_idx_ = 0;
-  std::mutex mutex_;
-};
-
 // --- セグメント探索 ---
 // can_player.pyのdiscover_segments()と同じロジック
 // フラット構造: /data/media/0/realdata/<route>--<dongle>--<segment>/fcamera.hevc
@@ -287,18 +214,6 @@ static std::tuple<size_t, size_t, size_t> calc_nv12_info(int w, int h) {
 #endif
 }
 
-/// NV12データサイズを計算（プリフェッチバッファ用）
-static size_t calc_nv12_data_size(int w, int h) {
-#ifdef QCOM2
-  int stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, w);
-  int scanlines = VENUS_Y_SCANLINES(COLOR_FMT_NV12, h);
-  // NV12: Y平面(stride * scanlines) + UV平面(stride * scanlines/2)
-  return static_cast<size_t>(stride) * scanlines * 3 / 2;
-#else
-  return static_cast<size_t>(w) * h * 3 / 2;
-#endif
-}
-
 // --- メイン ---
 
 int main(int argc, char *argv[]) {
@@ -328,9 +243,10 @@ int main(int argc, char *argv[]) {
 
   Params params;
 
-  // 前回の実行からの古いParamsをリセット
+  // 前回の実行からの古いParamsをリセット（JSON集約 + 個別キー）
   params.put("CanPlaybackPlaying", "0");
   params.put("CanPlaybackPosition", "0");
+  params.remove("CanPlaybackState");
   fprintf(stderr, "[video_player] Reset playback params\n");
 
   // 全セグメントのFrameReaderを作成（no_hw_decoder=true）
@@ -362,98 +278,11 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // プリフェッチバッファの初期化
-  size_t nv12_data_size = calc_nv12_data_size(vipc_w, vipc_h);
-  PrefetchBuffer prefetch_buf(PREFETCH_BUFFER_SIZE, nv12_data_size);
-  fprintf(stderr, "[video_player] Prefetch buffer: %d frames, %zu bytes/frame (~%.1f MB total)\n",
-          PREFETCH_BUFFER_SIZE, nv12_data_size,
-          static_cast<double>(PREFETCH_BUFFER_SIZE * nv12_data_size) / (1024.0 * 1024.0));
-
-  // NV12レイアウト情報（プリフェッチ用）
+  // NV12レイアウト情報
   auto nv12_info = calc_nv12_info(vipc_w, vipc_h);
   size_t stride = std::get<0>(nv12_info);
   size_t scanlines = std::get<1>(nv12_info);
   size_t buf_size = std::get<2>(nv12_info);
-  size_t uv_offset = stride * scanlines;
-
-  // プリフェッチスレッド用の共有状態
-  std::mutex prefetch_mutex;
-  std::condition_variable prefetch_cv;
-  std::atomic<int> prefetch_current_frame{-1};   // プリフェッチの基準フレーム
-  std::atomic<bool> prefetch_seek{false};         // シーク検出フラグ
-  std::atomic<double> prefetch_speed{1.0};        // 現在の再生速度
-
-  // プリフェッチスレッド
-  std::thread prefetch_thread([&]() {
-    fprintf(stderr, "[video_player] Prefetch thread started\n");
-
-    while (!g_exit) {
-      int base_frame = prefetch_current_frame.load();
-      double speed = prefetch_speed.load();
-
-      if (base_frame < 0) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        continue;
-      }
-
-      // シーク検出時はバッファをクリア
-      if (prefetch_seek.exchange(false)) {
-        prefetch_buf.clear();
-      }
-
-      // プリフェッチ対象フレームの計算
-      // 倍速時はスキップ間隔を考慮して必要なフレームをデコード
-      int frame_step = std::max(1, static_cast<int>(speed));
-      int seg_frames = SEGMENT_SEC * FPS;
-
-      for (int i = 1; i <= PREFETCH_BUFFER_SIZE; i++) {
-        if (g_exit) break;
-
-        int target_frame = base_frame + i * frame_step;
-        if (target_frame < 0) continue;
-
-        // 既にバッファにある場合はスキップ
-        if (prefetch_buf.has(target_frame)) continue;
-
-        // セグメントとフレームインデックス
-        int seg = target_frame / seg_frames;
-        int frame_in_seg = target_frame % seg_frames;
-
-        if (seg >= static_cast<int>(segments.size())) continue;
-        if (seg < 0 || !readers[seg]) continue;
-
-        FrameReader *reader = readers[seg].get();
-        if (frame_in_seg >= static_cast<int>(reader->getFrameCount())) continue;
-
-        // 一時バッファにデコード
-        std::vector<uint8_t> temp_data(nv12_data_size);
-        VisionBuf temp_buf = {};
-        temp_buf.addr = temp_data.data();
-        temp_buf.len = nv12_data_size;
-        temp_buf.y = temp_data.data();
-        temp_buf.uv = temp_data.data() + uv_offset;
-        temp_buf.stride = stride;
-        temp_buf.uv_offset = uv_offset;
-        temp_buf.width = static_cast<size_t>(vipc_w);
-        temp_buf.height = static_cast<size_t>(vipc_h);
-
-        bool ok = reader->get(frame_in_seg, &temp_buf);
-        if (ok) {
-          prefetch_buf.put(target_frame, temp_data.data(), nv12_data_size);
-        }
-      }
-
-      // 次のプリフェッチサイクルまで待機
-      {
-        std::unique_lock<std::mutex> lock(prefetch_mutex);
-        prefetch_cv.wait_for(lock, std::chrono::milliseconds(50), [&]() {
-          return g_exit.load() || prefetch_seek.load();
-        });
-      }
-    }
-
-    fprintf(stderr, "[video_player] Prefetch thread exiting\n");
-  });
 
   // 古いVisionIPCソケットをクリーンアップ (cameradとの競合回避)
   {
@@ -484,16 +313,11 @@ int main(int argc, char *argv[]) {
     if (init_state.playing) break;
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-  if (g_exit) {
-    prefetch_thread.join();
-    return 0;
-  }
+  if (g_exit) return 0;
 
-  // メイン再生ループ - プリフェッチバッファ + 同期デコードフォールバック
+  // メイン再生ループ - 同期デコード
   int last_frame = -1;
   size_t frames_sent = 0;
-  size_t frames_from_prefetch = 0;
-  size_t frames_from_sync = 0;
   double synced_position = 0.0;
   double synced_speed = 1.0;
   bool synced_paused = false;
@@ -502,7 +326,7 @@ int main(int argc, char *argv[]) {
   static constexpr double PARAMS_READ_INTERVAL = 0.1;  // Params読み取り間隔（秒）
   static constexpr double FRAME_INTERVAL = 1.0 / FPS;  // フレーム間隔（秒）
 
-  fprintf(stderr, "[video_player] Playback started (prefetch + sync fallback mode)\n");
+  fprintf(stderr, "[video_player] Playback started (synchronous decode mode)\n");
 
   while (!g_exit) {
     // CAN_PLAYBACKが有効か確認
@@ -520,12 +344,6 @@ int main(int argc, char *argv[]) {
       synced_position = state.position;
       synced_speed = state.speed;
       synced_paused = !state.playing;
-
-      // 速度変更をプリフェッチスレッドに通知
-      double old_speed = prefetch_speed.exchange(synced_speed);
-      if (old_speed != synced_speed) {
-        prefetch_speed.store(synced_speed);
-      }
 
       last_params_read = now;
       time_since_read = 0.0;
@@ -556,18 +374,6 @@ int main(int argc, char *argv[]) {
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
       continue;
     }
-
-    // シーク検出: フレームが大幅に飛んだ場合
-    if (last_frame >= 0 && std::abs(total_frame - last_frame) > FPS) {
-      prefetch_seek.store(true);
-      prefetch_buf.clear();
-      prefetch_cv.notify_one();
-      fprintf(stderr, "[video_player] Seek detected: %d -> %d, cleared prefetch buffer\n", last_frame, total_frame);
-    }
-
-    // プリフェッチスレッドに現在フレームを通知
-    prefetch_current_frame.store(total_frame);
-    prefetch_cv.notify_one();
 
     // セグメントとセグメント内フレームインデックス
     int seg = total_frame / (SEGMENT_SEC * FPS);
@@ -603,28 +409,9 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    // フレームデータ取得: プリフェッチバッファ → 同期デコードフォールバック
-    bool frame_ok = false;
-
-    // 1) プリフェッチバッファからの取得を試行
-    std::vector<uint8_t> cached_data;
-    if (prefetch_buf.get(total_frame, cached_data)) {
-      // バッファにデータがある → VisionIPCバッファにコピー
-      size_t copy_size = std::min(cached_data.size(), vipc_buf->len);
-      memcpy(vipc_buf->addr, cached_data.data(), copy_size);
-      frame_ok = true;
-      frames_from_prefetch++;
-    }
-
-    // 2) フォールバック: 同期デコード
-    if (!frame_ok) {
-      frame_ok = reader->get(frame_in_seg, vipc_buf);
-      if (frame_ok) {
-        frames_from_sync++;
-      }
-    }
-
-    if (!frame_ok) {
+    // 同期デコード: reader->get() で直接デコードしてVisionIPCバッファに書き込み
+    bool ok = reader->get(frame_in_seg, vipc_buf);
+    if (!ok) {
       // デコード失敗時はスキップ
       last_frame = total_frame;
       continue;
@@ -640,12 +427,7 @@ int main(int argc, char *argv[]) {
     last_frame_time = std::chrono::steady_clock::now();
   }
 
-  fprintf(stderr, "[video_player] Exiting. Sent %zu frames total (prefetch: %zu, sync: %zu).\n",
-          frames_sent, frames_from_prefetch, frames_from_sync);
-
-  // プリフェッチスレッドの停止
-  prefetch_cv.notify_one();
-  prefetch_thread.join();
+  fprintf(stderr, "[video_player] Exiting. Sent %zu frames total.\n", frames_sent);
 
   // VisionIPCサーバーのクリーンアップ
   vipc.reset();
