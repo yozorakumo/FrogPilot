@@ -241,13 +241,14 @@ def load_all_events(route_path: str) -> tuple[list[tuple], set[str], int | None]
   segments = discover_segments(route_path)
   if not segments:
     cloudlog.warning(f"No segments found in {route_path}")
-    params.put("CanPlaybackLoadingProgress", "100")
+    params.put("CanPlaybackLoadingProgress", "50")  # rlog完了=50%, デコードはスキップ
     return [], set(), None
 
   all_events = []
   total_segments = len(segments)
   for i, seg_path in enumerate(segments):
-    progress = int((i / total_segments) * 100)
+    # rlog読み込み進捗: 0-50%の範囲（残り50%はvideo_playerのデコード）
+    progress = int((i / total_segments) * 50)
     params.put("CanPlaybackLoadingProgress", str(progress))
 
     seg_dir = Path(seg_path)
@@ -273,7 +274,8 @@ def load_all_events(route_path: str) -> tuple[list[tuple], set[str], int | None]
   # 録画日時をclocksイベントから取得
   recording_time_ns = extract_recording_time(all_events)
 
-  params.put("CanPlaybackLoadingProgress", "100")
+  # rlog読み込み完了 = 50%（残り50%はvideo_playerのフレームデコード）
+  params.put("CanPlaybackLoadingProgress", "50")
 
   cloudlog.info(f"Loaded {len(all_events)} events, {len(service_names)} services to publish")
   cloudlog.info(f"Services: {sorted(service_names)}")
@@ -440,6 +442,19 @@ class CanPlayer:
     rlogから読み込んだ全イベントをオリジナルのタイミングでパブリッシュする。
     SKIP_SERVICESに含まれるイベントはパブリッシュしない。
     """
+    # video_playerのデコード完了を待機（CanPlaybackLoadingProgress == 100）
+    cloudlog.info("CAN playback: waiting for video decode to complete...")
+    while not self._stop:
+      progress = self.params.get("CanPlaybackLoadingProgress")
+      if progress is not None:
+        try:
+          if int(progress) >= 100:
+            break
+        except (ValueError, TypeError):
+          pass
+      time.sleep(0.2)
+    cloudlog.info("CAN playback: video decode complete, starting playback")
+
     # 初期状態をParamsに書き込む
     self._update_params_state()
 

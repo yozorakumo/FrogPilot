@@ -3,7 +3,9 @@
 // can_player.pyとParams経由で同期し、fcamera.hevcをFrameReaderで
 // デコードしてVisionIpcServerでUIに配信する。
 //
-// 同期デコード: 再生タイミングで直接フレームをデコードして配信する。
+// 事前デコードモード: 再生開始前に全セグメントの全フレームをデコードして
+// メモリにキャッシュする。再生時はキャッシュからコピーするのみで高パフォーマンス。
+// 進捗はrlog読み込み(0-50%)とフレームデコード(50-100%)を統合して表示。
 //
 // 使用例:
 //   video_player /data/media/0/realdata/2026-05-19--14-30-25--33243391ae
@@ -41,11 +43,26 @@ namespace fs = std::filesystem;
 static const int FPS = 20;
 static const int SEGMENT_SEC = 60;
 static const int BUFFER_COUNT = 40;
-static const int PRELOAD_THRESHOLD = 5 * FPS;  // Pre-load next segment when within 5 seconds of end
 static std::atomic<bool> g_exit{false};
 
 // シグナルハンドラ
 static void on_signal(int sig) { g_exit = true; }
+
+// --- 事前デコード用キャッシュ ---
+struct CachedFrame {
+  std::vector<uint8_t> y_data;
+  std::vector<uint8_t> uv_data;
+  int y_stride;
+  int uv_stride;
+  int width;
+  int height;
+};
+
+struct CachedSegment {
+  std::vector<CachedFrame> frames;
+};
+
+static std::vector<CachedSegment> g_cached_segments;
 
 // --- セグメント探索 ---
 // can_player.pyのdiscover_segments()と同じロジック
@@ -124,6 +141,84 @@ static std::tuple<size_t, size_t, size_t> calc_nv12_info(int w, int h) {
 #endif
 }
 
+// --- 全フレーム事前デコード ---
+// 全セグメントのフレームをシーケンシャルにデコードしてメモリにキャッシュする。
+// 進捗はCanPlaybackLoadingProgressに50-100%の範囲で書き込む。
+// can_player.pyのrlog読み込み(0-50%)と統合して単一のパーセンテージで表示。
+
+static void predecodeAllFrames(const std::vector<std::string> &segments, Params &params) {
+  g_cached_segments.clear();
+  g_cached_segments.resize(segments.size());
+
+  // セグメントごとにFrameReaderを作成してフレーム数を計上
+  size_t total_frames = 0;
+  size_t decoded_frames = 0;
+
+  std::vector<std::unique_ptr<FrameReader>> readers(segments.size());
+  for (size_t i = 0; i < segments.size(); i++) {
+    std::string hevc = (fs::path(segments[i]) / "fcamera.hevc").string();
+    auto reader = std::make_unique<FrameReader>();
+    if (!reader->loadFromFile(RoadCam, hevc, true)) {
+      fprintf(stderr, "[video_player] Failed to load segment %zu: %s\n", i, hevc.c_str());
+      continue;
+    }
+    total_frames += reader->getFrameCount();
+    fprintf(stderr, "[video_player] Segment %zu: %zu frames, %dx%d\n",
+            i, reader->getFrameCount(), reader->width, reader->height);
+    readers[i] = std::move(reader);
+  }
+
+  if (total_frames == 0) {
+    params.put("CanPlaybackLoadingProgress", "100");
+    return;
+  }
+
+  fprintf(stderr, "[video_player] Decoding %zu total frames...\n", total_frames);
+
+  // 全フレームをシーケンシャルにデコード（シーク不要で高速）
+  for (size_t seg = 0; seg < readers.size(); seg++) {
+    if (!readers[seg] || g_exit) continue;
+
+    auto &reader = readers[seg];
+    size_t frame_count = reader->getFrameCount();
+    g_cached_segments[seg].frames.resize(frame_count);
+
+    // 一時VisionBufを準備（デコード出力先）
+    size_t y_size = reader->width * reader->height;
+    size_t uv_size = reader->width * (reader->height / 2);
+    std::vector<uint8_t> y_tmp(y_size);
+    std::vector<uint8_t> uv_tmp(uv_size);
+
+    for (size_t f = 0; f < frame_count && !g_exit; f++) {
+      VisionBuf tmp_buf = {};
+      tmp_buf.y = y_tmp.data();
+      tmp_buf.uv = uv_tmp.data();
+      tmp_buf.stride = reader->width;
+      tmp_buf.width = reader->width;
+      tmp_buf.height = reader->height;
+
+      if (reader->get(static_cast<int>(f), &tmp_buf)) {
+        CachedFrame &cf = g_cached_segments[seg].frames[f];
+        cf.width = reader->width;
+        cf.height = reader->height;
+        cf.y_stride = reader->width;
+        cf.uv_stride = reader->width;
+        cf.y_data.assign(tmp_buf.y, tmp_buf.y + y_size);
+        cf.uv_data.assign(tmp_buf.uv, tmp_buf.uv + uv_size);
+      }
+
+      decoded_frames++;
+      // 進捗: 50% + (decoded / total) * 50%
+      int progress = 50 + static_cast<int>((decoded_frames * 50) / total_frames);
+      if (progress > 99) progress = 99;  // 100%は完了時のみ
+      params.put("CanPlaybackLoadingProgress", std::to_string(progress));
+    }
+  }
+
+  params.put("CanPlaybackLoadingProgress", "100");
+  fprintf(stderr, "[video_player] Pre-decode complete: %zu frames cached\n", decoded_frames);
+}
+
 // --- メイン ---
 
 int main(int argc, char *argv[]) {
@@ -151,6 +246,53 @@ int main(int argc, char *argv[]) {
   }
   fprintf(stderr, "[video_player] Found %zu segments\n", segments.size());
 
+  Params params;
+
+  // rlog読み込み完了を待機 (can_playerがCanPlaybackLoadingProgressを50%に設定するまで)
+  fprintf(stderr, "[video_player] Waiting for rlog loading to complete...\n");
+  auto wait_start = std::chrono::steady_clock::now();
+  while (!g_exit) {
+    if (!params.getBool("CAN_PLAYBACK")) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      continue;
+    }
+    std::string prog = params.get("CanPlaybackLoadingProgress");
+    int p = 0;
+    if (!prog.empty()) {
+      try { p = std::stoi(prog); } catch (...) {}
+    }
+    if (p >= 50) break;
+
+    // タイムアウト: 5分
+    double elapsed = std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - wait_start).count();
+    if (elapsed > 300.0) {
+      fprintf(stderr, "[video_player] Timeout waiting for rlog loading, starting decode anyway\n");
+      break;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  }
+  if (g_exit) return 0;
+
+  // 全フレーム事前デコード (進捗: 50-100%)
+  predecodeAllFrames(segments, params);
+  if (g_exit) return 0;
+
+  // 最初の有効セグメントから解像度を取得
+  int vipc_w = 0, vipc_h = 0;
+  for (const auto &cs : g_cached_segments) {
+    if (!cs.frames.empty()) {
+      vipc_w = cs.frames[0].width;
+      vipc_h = cs.frames[0].height;
+      break;
+    }
+  }
+
+  if (vipc_w == 0 || vipc_h == 0) {
+    fprintf(stderr, "[video_player] No valid frames found\n");
+    return 1;
+  }
+
   // 古いVisionIPCソケットをクリーンアップ (cameradとの競合回避)
   {
     std::string prefix;
@@ -161,19 +303,31 @@ int main(int argc, char *argv[]) {
     unlink(sock_path.c_str());
   }
 
-  // メインループ変数
-  Params params;
-  std::unique_ptr<VisionIpcServer> vipc;
-  std::unique_ptr<FrameReader> reader;
-  std::unique_ptr<FrameReader> next_reader;  // Pre-loaded next segment (file only)
-  int cur_seg = -1;
-  int last_frame = -1;
-  int vipc_w = 0, vipc_h = 0;
-  size_t frames_sent = 0;
-  bool vipc_ready = false;
+  // VisionIPC初期化
+  auto vipc = std::make_unique<VisionIpcServer>("camerad");
+  auto [stride, scanlines, buf_size] = calc_nv12_info(vipc_w, vipc_h);
+  vipc->create_buffers_with_sizes(VISION_STREAM_ROAD, BUFFER_COUNT, false,
+                                  vipc_w, vipc_h, buf_size, stride, stride * scanlines);
+  vipc->start_listener();
+  fprintf(stderr, "[video_player] VisionIPC started: %dx%d, stride=%zu, buf_size=%zu\n",
+          vipc_w, vipc_h, stride, buf_size);
 
-  // 時間ベース同期の変数（Params読み取りを200ms間隔に削減し、
-  // 間は時間補間でフレームを送信してスムーズな20FPSを実現）
+  // 再生開始を待機 (can_playerがCanPlaybackPlaying=1を設定するまで)
+  fprintf(stderr, "[video_player] Waiting for playback to start...\n");
+  while (!g_exit) {
+    if (!params.getBool("CAN_PLAYBACK")) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      continue;
+    }
+    std::string playing = params.get("CanPlaybackPlaying");
+    if (playing == "1") break;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  if (g_exit) return 0;
+
+  // メイン再生ループ - キャッシュからフレームを送信
+  int last_frame = -1;
+  size_t frames_sent = 0;
   double synced_position = 0.0;
   double synced_speed = 1.0;
   bool synced_paused = false;
@@ -182,24 +336,19 @@ int main(int argc, char *argv[]) {
   static constexpr double PARAMS_READ_INTERVAL = 0.1;  // Params読み取り間隔（秒）
   static constexpr double FRAME_INTERVAL = 1.0 / FPS;  // フレーム間隔（秒）
 
-  fprintf(stderr, "[video_player] Waiting for CAN playback to start...\n");
+  fprintf(stderr, "[video_player] Playback started\n");
 
   while (!g_exit) {
     // CAN_PLAYBACKが有効か確認
     if (!params.getBool("CAN_PLAYBACK")) {
-      if (frames_sent > 0) {
-        fprintf(stderr, "[video_player] CAN_PLAYBACK disabled, exiting\n");
-        break;
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
-      continue;
+      fprintf(stderr, "[video_player] CAN_PLAYBACK disabled, exiting\n");
+      break;
     }
 
     auto now = std::chrono::steady_clock::now();
     double time_since_read = std::chrono::duration<double>(now - last_params_read).count();
 
     // Paramsから定期的に状態を読み取り
-    // 毎フレームParamsを読むとファイルシステムI/OでFPSが低下するため
     if (time_since_read >= PARAMS_READ_INTERVAL) {
       std::string pos_str = params.get("CanPlaybackPosition");
       if (!pos_str.empty()) {
@@ -224,7 +373,7 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    // 時間補間で現在位置を計算（Params読み取り間の補間）
+    // 時間補間で現在位置を計算
     double current_pos = synced_position + time_since_read * synced_speed;
 
     // フレームタイミング制御（20FPS）
@@ -249,86 +398,24 @@ int main(int argc, char *argv[]) {
     int frame_in_seg = total_frame % (SEGMENT_SEC * FPS);
 
     // セグメント範囲チェック
-    if (seg >= static_cast<int>(segments.size())) {
-      if (do_loop) {
-        last_frame = -1;
-        cur_seg = -1;
-        reader.reset();
-        synced_position = 0.0;
-        last_params_read = std::chrono::steady_clock::now();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        continue;
-      }
+    if (seg >= static_cast<int>(g_cached_segments.size())) {
+      // ループ時: can_playerが位置をリセットするのを待つ
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      last_frame = -1;
       continue;
     }
 
-    // セグメント切替え
-    if (seg != cur_seg) {
-      // Check if we already pre-loaded this segment's file
-      if (next_reader && seg == cur_seg + 1) {
-        reader = std::move(next_reader);
-        next_reader.reset();
-        fprintf(stderr, "[video_player] Segment %d: using pre-loaded segment\n", seg);
-      } else {
-        std::string hevc = (fs::path(segments[seg]) / "fcamera.hevc").string();
-        auto new_reader = std::make_unique<FrameReader>();
-        if (!new_reader->loadFromFile(RoadCam, hevc, true)) {
-          fprintf(stderr, "[video_player] Failed to load segment %d: %s\n", seg, hevc.c_str());
-          cur_seg = seg;
-          std::this_thread::sleep_for(std::chrono::milliseconds(100));
-          continue;
-        }
-        fprintf(stderr, "[video_player] Segment %d: %zu frames, %dx%d\n",
-                seg, new_reader->getFrameCount(), new_reader->width, new_reader->height);
-        reader = std::move(new_reader);
-      }
-
-      cur_seg = seg;
-    }
-
-    // Pre-load next segment file when approaching end of current segment
-    if (!next_reader && seg + 1 < static_cast<int>(segments.size())) {
-      int frames_in_seg = reader ? static_cast<int>(reader->getFrameCount()) : (SEGMENT_SEC * FPS);
-      int frames_remaining = frames_in_seg - frame_in_seg;
-      if (frames_remaining < PRELOAD_THRESHOLD) {
-        int next_seg = seg + 1;
-        std::string next_hevc = (fs::path(segments[next_seg]) / "fcamera.hevc").string();
-        auto pre_reader = std::make_unique<FrameReader>();
-        if (pre_reader->loadFromFile(RoadCam, next_hevc, true)) {
-          fprintf(stderr, "[video_player] Pre-loaded segment %d: %zu frames\n",
-                  next_seg, pre_reader->getFrameCount());
-          next_reader = std::move(pre_reader);
-        }
-      }
-    }
-
-    if (!reader) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
-      continue;
-    }
-
-    // フレーム範囲チェック
-    if (frame_in_seg >= static_cast<int>(reader->getFrameCount())) {
+    // キャッシュからフレームを取得
+    auto &cached_seg = g_cached_segments[seg];
+    if (frame_in_seg >= static_cast<int>(cached_seg.frames.size())) {
       std::this_thread::sleep_for(std::chrono::milliseconds(20));
       continue;
     }
 
-    // VisionIPC初期化（初回または解像度変更時）
-    if (!vipc_ready || reader->width != vipc_w || reader->height != vipc_h) {
-      vipc_w = reader->width;
-      vipc_h = reader->height;
-
-      vipc.reset();
-
-      vipc = std::make_unique<VisionIpcServer>("camerad");
-      auto [stride, scanlines, buf_size] = calc_nv12_info(vipc_w, vipc_h);
-      vipc->create_buffers_with_sizes(VISION_STREAM_ROAD, BUFFER_COUNT, false,
-                                      vipc_w, vipc_h, buf_size, stride, stride * scanlines);
-      vipc->start_listener();
-      vipc_ready = true;
-      fprintf(stderr, "[video_player] VisionIPC started: %dx%d, stride=%zu, buf_size=%zu\n",
-              vipc_w, vipc_h, stride, buf_size);
+    CachedFrame &frame = cached_seg.frames[frame_in_seg];
+    if (frame.y_data.empty()) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      continue;
     }
 
     // VisionIPCバッファを取得
@@ -338,26 +425,23 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    // フレームを直接デコードしてVisionIPCバッファに書き込む
-    if (reader->get(frame_in_seg, buf)) {
-      VisionIpcBufExtra extra = {};
-      extra.frame_id = static_cast<uint64_t>(total_frame);
-      extra.timestamp_sof = static_cast<uint64_t>(current_pos * 1e9);
-      extra.timestamp_eof = static_cast<uint64_t>((current_pos + FRAME_INTERVAL) * 1e9);
-      vipc->send(buf, &extra, false);
-      frames_sent++;
-      last_frame = total_frame;
-      last_frame_time = std::chrono::steady_clock::now();
-    } else {
-      fprintf(stderr, "[video_player] Failed to decode frame %d (seg %d, frame_in_seg %d)\n",
-              total_frame, seg, frame_in_seg);
-    }
+    // キャッシュからVisionIPCバッファにコピー
+    memcpy(buf->y, frame.y_data.data(), frame.y_data.size());
+    memcpy(buf->uv, frame.uv_data.data(), frame.uv_data.size());
+
+    VisionIpcBufExtra extra = {};
+    extra.frame_id = static_cast<uint64_t>(total_frame);
+    extra.timestamp_sof = static_cast<uint64_t>(current_pos * 1e9);
+    extra.timestamp_eof = static_cast<uint64_t>((current_pos + FRAME_INTERVAL) * 1e9);
+    vipc->send(buf, &extra, false);
+    frames_sent++;
+    last_frame = total_frame;
+    last_frame_time = std::chrono::steady_clock::now();
   }
 
   fprintf(stderr, "[video_player] Exiting. Sent %zu frames total.\n", frames_sent);
 
   // VisionIPCサーバーのクリーンアップ
-  // (unique_ptrのデストラクタがリスナースレッドの終了を待機)
   vipc.reset();
 
   return 0;
