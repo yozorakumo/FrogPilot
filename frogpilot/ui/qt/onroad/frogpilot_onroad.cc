@@ -14,6 +14,7 @@ FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) 
   // when CAN_PLAYBACK is detected in Params (set by UI from can_log_settings)
   isCanPlayback = false;
   playback_overlay_ = nullptr;
+  stop_playback_btn_ = nullptr;
   playback_timer_ = nullptr;
 }
 
@@ -69,6 +70,29 @@ void FrogPilotOnroadWindow::initPlaybackOverlay() {
     Params params;
     params.put("CanPlaybackSpeedCmd", std::to_string(speed));
   });
+
+  // Stop playback button (top-left corner)
+  stop_playback_btn_ = new QPushButton("⏹ 停止", this);
+  stop_playback_btn_->setFixedSize(120, 60);
+  stop_playback_btn_->setStyleSheet(R"(
+    QPushButton {
+      background: rgba(180, 40, 40, 180);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    QPushButton:pressed {
+      background: rgba(220, 60, 60, 220);
+    }
+  )");
+  stop_playback_btn_->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+  QObject::connect(stop_playback_btn_, &QPushButton::clicked, [this]() {
+    stopPlayback();
+  });
+  stop_playback_btn_->raise();
+  stop_playback_btn_->show();
 }
 
 void FrogPilotOnroadWindow::updateState(const UIState &s, const FrogPilotUIState &fs) {
@@ -110,6 +134,12 @@ void FrogPilotOnroadWindow::resizeEvent(QResizeEvent *event) {
     int overlay_y = height() - PlaybackOverlay::kOverlayHeight;
     playback_overlay_->setGeometry(overlay_x, overlay_y, width(), PlaybackOverlay::kOverlayHeight);
     playback_overlay_->raise();
+  }
+
+  if (isCanPlayback && stop_playback_btn_) {
+    // Position stop button at top-left corner (below sidebar area)
+    stop_playback_btn_->setGeometry(20, 80, 120, 60);
+    stop_playback_btn_->raise();
   }
 }
 
@@ -161,6 +191,9 @@ void FrogPilotOnroadWindow::updatePlaybackPosition() {
     if (playback_overlay_) {
       playback_overlay_->hideOverlay();
     }
+    if (stop_playback_btn_) {
+      stop_playback_btn_->hide();
+    }
     if (playback_timer_) {
       playback_timer_->stop();
     }
@@ -173,6 +206,24 @@ void FrogPilotOnroadWindow::updatePlaybackRealTime() {
   // CanPlaybackRealTimeには録画日時（YYYY-MM-DD HH:MM）が設定される
   // （can_player.pyがセグメントディレクトリのmtimeから取得）
   // そのまま表示する（updatePlaybackPositionで既にrealtime_strを読み取っている）
+}
+
+void FrogPilotOnroadWindow::stopPlayback() {
+  Params params;
+  params.put("CanPlaybackPlaying", "0");
+  params.remove("CAN_PLAYBACK");
+
+  isCanPlayback = false;
+
+  if (playback_overlay_) {
+    playback_overlay_->hideOverlay();
+  }
+  if (stop_playback_btn_) {
+    stop_playback_btn_->hide();
+  }
+  if (playback_timer_) {
+    playback_timer_->stop();
+  }
 }
 
 void FrogPilotOnroadWindow::paintEvent(QPaintEvent *event) {

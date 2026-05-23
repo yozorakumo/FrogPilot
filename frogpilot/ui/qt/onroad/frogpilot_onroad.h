@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QPushButton>
+
 #include "selfdrive/ui/qt/onroad/annotated_camera.h"
 
 #include "frogpilot/ui/qt/onroad/playback_overlay.h"
@@ -25,6 +27,7 @@ private:
   void initPlaybackOverlay();
   void updatePlaybackPosition();
   void updatePlaybackRealTime();
+  void stopPlayback();
 
   bool blindSpotLeft;
   bool blindSpotRight;
@@ -43,6 +46,7 @@ private:
   QTimer *playback_timer_;
 
   PlaybackOverlay *playback_overlay_;
+  QPushButton *stop_playback_btn_;
 
   double playback_position_ = 0.0;
   double playback_duration_ = 0.0;
