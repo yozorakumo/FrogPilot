@@ -83,6 +83,9 @@ void FrogPilotOnroadWindow::initPlaybackOverlay() {
 
   playback_duration_ = init_duration;
 
+  // Enable mouse events for this widget and its children during CAN playback
+  setAttribute(Qt::WA_TransparentForMouseEvents, false);
+
   playback_overlay_ = new PlaybackOverlay(this);
   playback_overlay_->setDuration(playback_duration_);
   playback_overlay_->setPlaying(init_playing);
@@ -274,6 +277,8 @@ void FrogPilotOnroadWindow::applyPlaybackState() {
   // Check if playback has ended
   if (!state.can_playback) {
     isCanPlayback = false;
+    // Restore mouse transparency when playback ends
+    setAttribute(Qt::WA_TransparentForMouseEvents, true);
     if (playback_overlay_) {
       playback_overlay_->hideOverlay();
     }
@@ -330,6 +335,9 @@ void FrogPilotOnroadWindow::stopPlayback() {
 
   isCanPlayback = false;
 
+  // Restore mouse transparency when playback stops
+  setAttribute(Qt::WA_TransparentForMouseEvents, true);
+
   stopParamsThread();
 
   if (playback_overlay_) {
@@ -347,6 +355,47 @@ void FrogPilotOnroadWindow::stopParamsThread() {
   params_thread_running_ = false;
   if (params_thread_.joinable()) {
     params_thread_.join();
+  }
+}
+
+void FrogPilotOnroadWindow::mousePressEvent(QMouseEvent *event) {
+  // During CAN playback, accept clicks on child widget areas (PlaybackOverlay, stop button)
+  // to prevent propagation to parent (OnroadWindow sidebar toggle).
+  // Ignore clicks on empty areas to allow normal event propagation.
+  if (!isCanPlayback) {
+    event->ignore();
+    return;
+  }
+
+  QPoint pos = event->pos();
+  bool on_child = (playback_overlay_ && playback_overlay_->isVisible() &&
+                   playback_overlay_->geometry().contains(pos)) ||
+                  (stop_playback_btn_ && stop_playback_btn_->isVisible() &&
+                   stop_playback_btn_->geometry().contains(pos));
+
+  if (on_child) {
+    event->accept();
+  } else {
+    event->ignore();
+  }
+}
+
+void FrogPilotOnroadWindow::mouseReleaseEvent(QMouseEvent *event) {
+  if (!isCanPlayback) {
+    event->ignore();
+    return;
+  }
+
+  QPoint pos = event->pos();
+  bool on_child = (playback_overlay_ && playback_overlay_->isVisible() &&
+                   playback_overlay_->geometry().contains(pos)) ||
+                  (stop_playback_btn_ && stop_playback_btn_->isVisible() &&
+                   stop_playback_btn_->geometry().contains(pos));
+
+  if (on_child) {
+    event->accept();
+  } else {
+    event->ignore();
   }
 }
 
