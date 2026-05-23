@@ -4,8 +4,8 @@
 // デコードしてVisionIpcServerでUIに配信する。
 //
 // シンプルな同期的デコード:
-// - 再生中に毎フレーム reader->get() でデコードする
-// - 個別Paramsキーから再生状態を読み取り
+// 再生中に毎フレーム reader->get() でデコードする。
+// 事前デコード・キャッシュは一切行わない。
 //
 // 使用例:
 //   video_player /data/media/0/realdata/2026-05-19--14-30-25--33243391ae
@@ -45,44 +45,6 @@ static std::atomic<bool> g_exit{false};
 
 // シグナルハンドラ
 static void on_signal(int sig) { g_exit = true; }
-
-// --- 再生状態構造体 ---
-
-struct PlaybackState {
-  double position = 0.0;
-  double duration = 0.0;
-  double speed = 1.0;
-  bool playing = false;
-  std::string real_time;
-  int loading_progress = 0;
-};
-
-/// 個別Paramsキーから再生状態を読み取り
-static PlaybackState read_playback_state(Params &params) {
-  PlaybackState state;
-
-  std::string pos_str = params.get("CanPlaybackPosition");
-  if (!pos_str.empty()) {
-    try { state.position = std::stod(pos_str); } catch (...) {}
-  }
-  std::string dur_str = params.get("CanPlaybackDuration");
-  if (!dur_str.empty()) {
-    try { state.duration = std::stod(dur_str); } catch (...) {}
-  }
-  std::string spd_str = params.get("CanPlaybackSpeed");
-  if (!spd_str.empty()) {
-    try { state.speed = std::stod(spd_str); } catch (...) {}
-  }
-  std::string playing_str = params.get("CanPlaybackPlaying");
-  state.playing = (playing_str == "1");
-  state.real_time = params.get("CanPlaybackRealTime");
-  std::string lp_str = params.get("CanPlaybackLoadingProgress");
-  if (!lp_str.empty()) {
-    try { state.loading_progress = std::stoi(lp_str); } catch (...) {}
-  }
-
-  return state;
-}
 
 // --- セグメント探索 ---
 // can_player.pyのdiscover_segments()と同じロジック
@@ -224,12 +186,6 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // NV12レイアウト情報
-  auto nv12_info = calc_nv12_info(vipc_w, vipc_h);
-  size_t stride = std::get<0>(nv12_info);
-  size_t scanlines = std::get<1>(nv12_info);
-  size_t buf_size = std::get<2>(nv12_info);
-
   // 古いVisionIPCソケットをクリーンアップ (cameradとの競合回避)
   {
     std::string prefix;
@@ -242,6 +198,7 @@ int main(int argc, char *argv[]) {
 
   // VisionIPC初期化
   auto vipc = std::make_unique<VisionIpcServer>("camerad");
+  auto [stride, scanlines, buf_size] = calc_nv12_info(vipc_w, vipc_h);
   vipc->create_buffers_with_sizes(VISION_STREAM_ROAD, BUFFER_COUNT, false,
                                   vipc_w, vipc_h, buf_size, stride, stride * scanlines);
   vipc->start_listener();
@@ -255,8 +212,8 @@ int main(int argc, char *argv[]) {
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
       continue;
     }
-    PlaybackState init_state = read_playback_state(params);
-    if (init_state.playing) break;
+    std::string playing = params.get("CanPlaybackPlaying");
+    if (playing == "1") break;
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   if (g_exit) return 0;
@@ -286,10 +243,18 @@ int main(int argc, char *argv[]) {
 
     // Paramsから定期的に状態を読み取り
     if (time_since_read >= PARAMS_READ_INTERVAL) {
-      PlaybackState state = read_playback_state(params);
-      synced_position = state.position;
-      synced_speed = state.speed;
-      synced_paused = !state.playing;
+      std::string pos_str = params.get("CanPlaybackPosition");
+      if (!pos_str.empty()) {
+        try { synced_position = std::stod(pos_str); } catch (...) {}
+      }
+
+      std::string speed_str = params.get("CanPlaybackSpeed");
+      if (!speed_str.empty()) {
+        try { synced_speed = std::stod(speed_str); } catch (...) {}
+      }
+
+      std::string playing_str = params.get("CanPlaybackPlaying");
+      synced_paused = (playing_str == "0");
 
       last_params_read = now;
       time_since_read = 0.0;

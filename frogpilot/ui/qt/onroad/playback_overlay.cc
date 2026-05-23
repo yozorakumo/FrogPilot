@@ -3,7 +3,6 @@
 #include <QHBoxLayout>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QTouchEvent>
 #include <QStyle>
 #include <QStyleOptionSlider>
 
@@ -221,22 +220,18 @@ void PlaybackOverlay::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 bool PlaybackOverlay::event(QEvent *event) {
-  // タッチ開始イベントのみオーバーレイ背景で消費（サイドバー切り替え防止）
-  // マウスイベントはQWidget::event()を通して子ウィジェットに正しく配信する
-  if (event->type() == QEvent::TouchBegin) {
-    // タッチ座標が子ウィジェット上でなければ消費
-    QTouchEvent *touch = static_cast<QTouchEvent*>(event);
-    if (!touch->touchPoints().isEmpty()) {
-      QPointF pos = touch->touchPoints().first().pos();
-      QWidget *child = childAt(pos.toPoint());
-      if (!child) {
-        resetHideTimer();
-        event->accept();
-        return true;
-      }
-    }
+  // タッチイベントとマウスイベントを消費して親（サイドバー）への伝播を防ぐ
+  switch (event->type()) {
+    case QEvent::TouchBegin:
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonRelease:
+    case QEvent::MouseMove:
+      return true;
+    default:
+      return QWidget::event(event);
   }
-  return QWidget::event(event);
 }
 
 void PlaybackOverlay::updateDisplay() {
