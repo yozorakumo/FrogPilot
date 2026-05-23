@@ -157,12 +157,17 @@ int main(int argc, char *argv[]) {
   params.put("CanPlaybackPosition", "0");
   fprintf(stderr, "[video_player] Reset playback params\n");
 
-  // 全セグメントのFrameReaderを作成（no_hw_decoder=true）
+  // 全セグメントのFrameReaderを作成
+  // QCOM2(C3)ではV4L2 M2M HW デコーダを有効化、その他プラットフォームではCPUフォールバック
   std::vector<std::unique_ptr<FrameReader>> readers(segments.size());
   for (size_t i = 0; i < segments.size(); i++) {
     std::string hevc = (fs::path(segments[i]) / "fcamera.hevc").string();
     auto reader = std::make_unique<FrameReader>();
+#ifdef QCOM2
+    if (!reader->loadFromFile(RoadCam, hevc, false)) {
+#else
     if (!reader->loadFromFile(RoadCam, hevc, true)) {
+#endif
       fprintf(stderr, "[video_player] Failed to load segment %zu: %s\n", i, hevc.c_str());
       continue;
     }

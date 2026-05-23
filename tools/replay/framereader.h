@@ -58,4 +58,5 @@ private:
   AVCodecContext *decoder_ctx = nullptr;
   AVPixelFormat hw_pix_fmt = AV_PIX_FMT_NONE;
   AVBufferRef *hw_device_ctx = nullptr;
+  bool v4l2m2m_ = false;
 };

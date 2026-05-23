@@ -122,7 +122,23 @@ VideoDecoder::~VideoDecoder() {
 }
 
 bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
-  const AVCodec *decoder = avcodec_find_decoder(codecpar->codec_id);
+  const AVCodec *decoder = nullptr;
+
+#ifdef QCOM2
+  // On QCOM2 (Snapdragon Venus), try V4L2 M2M hardware decoder for HEVC.
+  // V4L2 M2M is a standalone codec that handles HW decoding internally
+  // via /dev/video32 (Venus). No separate HW device context is needed.
+  if (hw_decoder && codecpar->codec_id == AV_CODEC_ID_HEVC) {
+    decoder = avcodec_find_decoder_by_name("hevc_v4l2m2m");
+    if (decoder) {
+      fprintf(stderr, "[VideoDecoder] V4L2 M2M hardware decoder found\n");
+    }
+  }
+#endif
+
+  if (!decoder) {
+    decoder = avcodec_find_decoder(codecpar->codec_id);
+  }
   if (!decoder) return false;
 
   decoder_ctx = avcodec_alloc_context3(decoder);
@@ -133,13 +149,36 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
   width = (decoder_ctx->width + 3) & ~3;
   height = decoder_ctx->height;
 
-  if (hw_decoder && !initHardwareDecoder(HW_DEVICE_TYPE)) {
+  bool is_v4l2m2m = (strcmp(decoder->name, "hevc_v4l2m2m") == 0);
+
+  // Only try CUDA/VideoToolbox HW accel for non-V4L2M2M decoders.
+  // V4L2 M2M handles hardware access internally.
+  if (hw_decoder && !is_v4l2m2m && !initHardwareDecoder(HW_DEVICE_TYPE)) {
     rWarning("No device with hardware decoder found. fallback to CPU decoding.");
   }
 
   if (avcodec_open2(decoder_ctx, decoder, nullptr) < 0) {
-    rError("Failed to open codec");
-    return false;
+    // If V4L2 M2M failed to open, fall back to standard CPU decoder
+    if (is_v4l2m2m) {
+      rWarning("V4L2 M2M failed to open, falling back to CPU decoder");
+      avcodec_free_context(&decoder_ctx);
+      is_v4l2m2m = false;
+      decoder = avcodec_find_decoder(codecpar->codec_id);
+      if (!decoder) return false;
+      decoder_ctx = avcodec_alloc_context3(decoder);
+      if (!decoder_ctx || avcodec_parameters_to_context(decoder_ctx, codecpar) != 0) return false;
+      width = (decoder_ctx->width + 3) & ~3;
+      height = decoder_ctx->height;
+      if (avcodec_open2(decoder_ctx, decoder, nullptr) < 0) return false;
+    } else {
+      rError("Failed to open codec");
+      return false;
+    }
+  }
+
+  v4l2m2m_ = is_v4l2m2m;
+  if (v4l2m2m_) {
+    fprintf(stderr, "[VideoDecoder] V4L2 M2M hardware decoder active (%dx%d)\n", width, height);
   }
   return true;
 }
@@ -173,6 +212,9 @@ bool VideoDecoder::initHardwareDecoder(AVHWDeviceType hw_device_type) {
 bool VideoDecoder::decode(FrameReader *reader, int idx, VisionBuf *buf) {
   int from_idx = idx;
   if (idx != reader->prev_idx + 1) {
+    // Flush decoder on seek to avoid stale buffered frames (critical for V4L2 M2M)
+    avcodec_flush_buffers(decoder_ctx);
+
     // seeking to the nearest key frame
     for (int i = idx; i >= 0; --i) {
       if (reader->packets_info[i].flags & AV_PKT_FLAG_KEY) {
@@ -220,12 +262,22 @@ AVFrame *VideoDecoder::decodeFrame(AVPacket *pkt) {
 
 bool VideoDecoder::copyBuffer(AVFrame *f, VisionBuf *buf) {
   if (hw_pix_fmt == HW_PIX_FMT) {
+    // CUDA/VideoToolbox path - direct NV12 copy
     for (int i = 0; i < height/2; i++) {
       memcpy(buf->y + (i*2 + 0)*buf->stride, f->data[0] + (i*2 + 0)*f->linesize[0], width);
       memcpy(buf->y + (i*2 + 1)*buf->stride, f->data[0] + (i*2 + 1)*f->linesize[0], width);
       memcpy(buf->uv + i*buf->stride, f->data[1] + i*f->linesize[1], width);
     }
+  } else if (f->format == AV_PIX_FMT_NV12) {
+    // V4L2 M2M path - NV12 to NV12 with stride adjustment
+    for (int i = 0; i < height; i++) {
+      memcpy(buf->y + i * buf->stride, f->data[0] + i * f->linesize[0], width);
+    }
+    for (int i = 0; i < height / 2; i++) {
+      memcpy(buf->uv + i * buf->stride, f->data[1] + i * f->linesize[1], width);
+    }
   } else {
+    // Software decode path - I420 to NV12 conversion
     libyuv::I420ToNV12(f->data[0], f->linesize[0],
                        f->data[1], f->linesize[1],
                        f->data[2], f->linesize[2],
