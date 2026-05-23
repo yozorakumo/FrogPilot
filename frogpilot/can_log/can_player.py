@@ -445,19 +445,7 @@ class CanPlayer:
     """
     # 前回の実行からの古い状態をリセット
     self.params.put("CanPlaybackPlaying", "0")
-    cloudlog.info("CAN playback: reset CanPlaybackPlaying, waiting for video decode...")
-
-    # video_playerのデコード完了を待機（CanPlaybackDecodeProgress == 100）
-    while not self._stop:
-      decode_progress = self.params.get("CanPlaybackDecodeProgress")
-      if decode_progress is not None:
-        try:
-          if int(decode_progress) >= 100:
-            break
-        except (ValueError, TypeError):
-          pass
-      time.sleep(0.2)
-    cloudlog.info("CAN playback: video decode complete (100%%), starting playback")
+    cloudlog.info("CAN playback: reset CanPlaybackPlaying, starting immediately")
 
     # 初期状態をParamsに書き込む
     self._update_params_state()
