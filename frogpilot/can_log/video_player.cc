@@ -275,6 +275,12 @@ int main(int argc, char *argv[]) {
 
   Params params;
 
+  // 前回の実行からの古いParamsをリセット（同期ズレ・セグメント誤検出を防止）
+  params.put("CanPlaybackDecodeProgress", "0");
+  params.put("CanPlaybackPlaying", "0");
+  params.put("CanPlaybackPosition", "0");
+  fprintf(stderr, "[video_player] Reset playback params (clearing stale state)\n");
+
   // 全セグメントのFrameReaderを作成（ファイルハンドルのみ、軽量）
   std::vector<std::unique_ptr<FrameReader>> readers(segments.size());
   for (size_t i = 0; i < segments.size(); i++) {
@@ -339,8 +345,8 @@ int main(int argc, char *argv[]) {
   fprintf(stderr, "[video_player] VisionIPC started: %dx%d, stride=%zu, buf_size=%zu\n",
           vipc_w, vipc_h, stride, buf_size);
 
-  // 再生開始を待機 (can_playerがCanPlaybackPlaying=1を設定するまで)
-  fprintf(stderr, "[video_player] Waiting for playback to start...\n");
+  // デコード完了。can_playerの再生開始を待機
+  fprintf(stderr, "[video_player] Decode complete. Waiting for can_player to start...\n");
   while (!g_exit) {
     if (!params.getBool("CAN_PLAYBACK")) {
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -363,7 +369,7 @@ int main(int argc, char *argv[]) {
   static constexpr double PARAMS_READ_INTERVAL = 0.1;  // Params読み取り間隔（秒）
   static constexpr double FRAME_INTERVAL = 1.0 / FPS;  // フレーム間隔（秒）
 
-  fprintf(stderr, "[video_player] Playback started (segment-based sliding cache)\n");
+  fprintf(stderr, "[video_player] Segment %d playback started (segment-based sliding cache)\n", g_cached_segment_idx);
 
   while (!g_exit) {
     // CAN_PLAYBACKが有効か確認
@@ -433,14 +439,23 @@ int main(int argc, char *argv[]) {
     }
 
     // セグメント切替え検出 → スライディングキャッシュ更新
+    // 同一セグメントの再デコードを防止するため、segが有効範囲内か確認
     if (seg != g_cached_segment_idx) {
-      fprintf(stderr, "[video_player] Segment transition: %d -> %d\n", g_cached_segment_idx, seg);
+      // 範囲外セグメントはスキップ（can_playerの位置が進んでいる場合）
+      if (seg < 0 || seg >= static_cast<int>(segments.size())) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        last_frame = -1;
+        continue;
+      }
+
+      fprintf(stderr, "[video_player] Segment transition: %d -> %d (position=%.2fs)\n",
+              g_cached_segment_idx, seg, current_pos);
 
       // 古いキャッシュを破棄して新しいセグメントをデコード
-      if (seg >= 0 && seg < static_cast<int>(readers.size()) && readers[seg]) {
+      if (readers[seg]) {
         predecodeSegment(readers[seg].get(), seg, params);
       } else {
-        fprintf(stderr, "[video_player] Segment %d: no valid reader\n", seg);
+        fprintf(stderr, "[video_player] Segment %d: no valid reader, skipping\n", seg);
         g_cached_frames.clear();
         g_cached_frames.shrink_to_fit();
         g_cached_segment_idx = seg;
@@ -448,6 +463,8 @@ int main(int argc, char *argv[]) {
       }
 
       if (g_exit) break;
+
+      fprintf(stderr, "[video_player] Segment %d decode complete, resuming playback\n", seg);
 
       // デコード直後は現在位置を再計算（デコード中に時間が経過している可能性）
       now = std::chrono::steady_clock::now();
@@ -461,6 +478,7 @@ int main(int argc, char *argv[]) {
       // 再計算後のセグメントがまだ一致しない場合は次のイテレーションで処理
       int new_seg = total_frame / (SEGMENT_SEC * FPS);
       if (new_seg != seg) {
+        fprintf(stderr, "[video_player] Position advanced to segment %d during decode, will switch\n", new_seg);
         continue;
       }
     }

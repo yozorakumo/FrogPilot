@@ -317,6 +317,7 @@ class CanPlayer:
     self.pm = messaging.PubMaster(sorted(self._service_names))
 
     self._start_time_ns = self._events[0][0]
+    self._current_time_ns = self._start_time_ns  # 初期位置を開始時刻に同期（負のposition防止）
     self._end_time_ns = self._events[-1][0]
     self._event_count = len(self._events)
     self._duration = (self._end_time_ns - self._start_time_ns) / 1e9
@@ -442,8 +443,11 @@ class CanPlayer:
     rlogから読み込んだ全イベントをオリジナルのタイミングでパブリッシュする。
     SKIP_SERVICESに含まれるイベントはパブリッシュしない。
     """
+    # 前回の実行からの古い状態をリセット
+    self.params.put("CanPlaybackPlaying", "0")
+    cloudlog.info("CAN playback: reset CanPlaybackPlaying, waiting for video decode...")
+
     # video_playerのデコード完了を待機（CanPlaybackDecodeProgress == 100）
-    cloudlog.info("CAN playback: waiting for video decode to complete...")
     while not self._stop:
       decode_progress = self.params.get("CanPlaybackDecodeProgress")
       if decode_progress is not None:
@@ -453,7 +457,7 @@ class CanPlayer:
         except (ValueError, TypeError):
           pass
       time.sleep(0.2)
-    cloudlog.info("CAN playback: video decode complete, starting playback")
+    cloudlog.info("CAN playback: video decode complete (100%%), starting playback")
 
     # 初期状態をParamsに書き込む
     self._update_params_state()
