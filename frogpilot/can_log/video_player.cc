@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
 
   // 全セグメントのFrameReaderを作成（no_hw_decoder=true）
   std::vector<std::unique_ptr<FrameReader>> readers(segments.size());
-  for (size_t i =  0; i < segments.size(); i++) {
+  for (size_t i = 0; i < segments.size(); i++) {
     std::string hevc = (fs::path(segments[i]) / "fcamera.hevc").string();
     auto reader = std::make_unique<FrameReader>();
     if (!reader->loadFromFile(RoadCam, hevc, true)) {
