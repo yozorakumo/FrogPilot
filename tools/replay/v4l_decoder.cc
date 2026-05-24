@@ -261,7 +261,7 @@ bool V4LDecoder::waitForSourceChange() {
         struct v4l2_event_src_change *sc = (struct v4l2_event_src_change *)ev.u.data;
         fprintf(stderr, "[V4LDecoder] SOURCE_CHANGE event: changes=0x%x\n", sc->changes);
 
-        if (sc->changes & V4L2_EVENT_SRC_CH_RESOLUTION_CHANGED) {
+        if (sc->changes & V4L2_EVENT_SRC_CH_RESOLUTION) {
           fprintf(stderr, "[V4LDecoder] Resolution changed detected, configuring CAPTURE stream\n");
 
           // Get CAPTURE format from driver (driver knows the real resolution now)
