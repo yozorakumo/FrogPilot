@@ -96,6 +96,10 @@ bool V4LDecoder::open(int in_width, int in_height) {
 
   // Declare all variables upfront to avoid C++ goto-bypasses-initialization errors
   struct v4l2_capability cap = {};
+  struct v4l2_format fmt_cap = {};
+  struct v4l2_format fmt_out = {};
+  v4l2_buf_type buf_type = (v4l2_buf_type)0;
+  int scanlines = 0;
   bool ion_allocated_in = false;
   bool ion_allocated_out = false;
 
@@ -122,10 +126,10 @@ bool V4LDecoder::open(int in_width, int in_height) {
   // Step 1: Set CAPTURE format (decoded NV12 output) - same pattern as encoder sets CAPTURE first
   // Use Venus-aligned stride and buffer size
   decoded_stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, width);
-  int scanlines = VENUS_Y_SCANLINES(COLOR_FMT_NV12, height);
+  scanlines = VENUS_Y_SCANLINES(COLOR_FMT_NV12, height);
   output_buf_size = (size_t)VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
 
-  struct v4l2_format fmt_cap = {};
+  fmt_cap = {};
   fmt_cap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
   fmt_cap.fmt.pix_mp.width = (unsigned int)width;
   fmt_cap.fmt.pix_mp.height = (unsigned int)height;
@@ -144,7 +148,7 @@ bool V4LDecoder::open(int in_width, int in_height) {
           fmt_cap.fmt.pix_mp.plane_fmt[0].sizeimage);
 
   // Step 2: Set OUTPUT format (compressed HEVC input)
-  struct v4l2_format fmt_out = {};
+  fmt_out = {};
   fmt_out.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
   fmt_out.fmt.pix_mp.width = (unsigned int)width;
   fmt_out.fmt.pix_mp.height = (unsigned int)height;
@@ -188,7 +192,7 @@ bool V4LDecoder::open(int in_width, int in_height) {
   fprintf(stderr, "[V4LDecoder] OUTPUT REQBUFS: %d buffers\n", V4L_DEC_BUF_IN_COUNT);
 
   // Step 5: Start streaming - CAPTURE first, then OUTPUT (same as encoder)
-  v4l2_buf_type buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+  buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
   if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) {
     fprintf(stderr, "[V4LDecoder] Failed to start CAPTURE streaming\n");
     goto fail_free_ion;
