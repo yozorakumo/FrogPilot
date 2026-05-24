@@ -3,9 +3,11 @@
 // can_player.pyとParams経由で同期し、fcamera.hevcをFrameReaderで
 // デコードしてVisionIpcServerでUIに配信する。
 //
-// シンプルな同期的デコード:
-// 再生中に毎フレーム reader->get() でデコードする。
-// 事前デコード・キャッシュは一切行わない。
+// プリデコード非同期モード:
+// 別スレッドでフレームを事前デコードしてキューに入れ、
+// メインスレッドはキューから取り出してVisionIPCで配信する。
+// VisionIpcServerはリングバッファ方式のため、send()しなかった
+// バッファは次のget_buffer()で上書きされる（明示的な解放不要）。
 //
 // 使用例:
 //   video_player /data/media/0/realdata/2026-05-19--14-30-25--33243391ae
@@ -175,14 +177,13 @@ int main(int argc, char *argv[]) {
   fprintf(stderr, "[video_player] Reset playback params\n");
 
   // 全セグメントのFrameReaderを作成
-  // no_hw_decoder=false → Venus V4L2 HWデコーダーを使用（SDM845）
-  // フォールバック: V4L2デコード失敗時は自動的にCPUデコードに切り替え
+  // no_hw_decoder=true → CPU デコーダーを使用（安定動作優先）
   std::vector<std::unique_ptr<FrameReader>> readers(segments.size());
   for (size_t i = 0; i < segments.size(); i++) {
     std::string hevc = (fs::path(segments[i]) / "fcamera.hevc").string();
     auto reader = std::make_unique<FrameReader>();
-    // no_hw_decoder=false → Venus HWデコーダーを優先使用、失敗時はCPUフォールバック
-    if (!reader->loadFromFile(RoadCam, hevc, false)) {
+    // no_hw_decoder=true → CPUデコード（HWデコーダーの不安定性を回避）
+    if (!reader->loadFromFile(RoadCam, hevc, true)) {
       fprintf(stderr, "[video_player] Failed to load segment %zu: %s\n", i, hevc.c_str());
       continue;
     }
@@ -272,9 +273,24 @@ int main(int argc, char *argv[]) {
       int seg = decode_frame / (SEGMENT_SEC * FPS);
       int frame_in_seg = decode_frame % (SEGMENT_SEC * FPS);
 
-      // 範囲チェック
+      // 範囲チェック - 無効フレームをスキップして次に進む
+      // （next_frame_to_decodeを更新しないと同じ無効フレームを永遠にリトライする）
       if (seg < 0 || seg >= static_cast<int>(segments.size()) ||
           !readers[seg] || frame_in_seg >= static_cast<int>(readers[seg]->getFrameCount())) {
+        // BUG FIX: next_frame_to_decodeを更新して進捗させる
+        // 無効なフレームをスキップし、次のセグメントの先頭または適切な位置に進む
+        if (seg >= static_cast<int>(segments.size())) {
+          // 全セグメント超過 → 最初に戻る（ループなし場合は待機）
+          next_frame_to_decode = -1;  // リセットして位置から再計算
+        } else if (!readers[seg] || seg + 1 >= static_cast<int>(segments.size())) {
+          // 現在セグメントが無効 or 最終セグメントの末尾 → 次セグメント先頭に進む
+          next_frame_to_decode = decode_frame;  // 更新して次は decode_frame + 1
+        } else {
+          // 次のセグメントの先頭にジャンプ
+          next_frame_to_decode = (seg + 1) * SEGMENT_SEC * FPS - 1;  // -1して次に+1される
+        }
+        fprintf(stderr, "[video_player] Predecode: skipping out-of-range frame %d (seg=%d, frame_in_seg=%d)\n",
+                decode_frame, seg, frame_in_seg);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         continue;
       }
@@ -368,17 +384,20 @@ int main(int argc, char *argv[]) {
     // セグメント範囲チェック
     int seg = total_frame / (SEGMENT_SEC * FPS);
     if (seg >= static_cast<int>(segments.size())) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      last_frame = -1;
-      // キューをクリア
+      // キューをクリア（VisionIpcServerはリングバッファのため、
+      // 未送信バッファは次のget_buffer()で上書きされる）
       {
         std::lock_guard<std::mutex> lock(g_queue_mutex);
         while (!g_decoded_queue.empty()) g_decoded_queue.pop();
       }
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      last_frame = -1;
       continue;
     }
 
     // キューからフレームを取得
+    // NOTE: VisionIpcServerはリングバッファ方式のため、send()されなかった
+    // バッファは次のget_buffer()呼び出しで上書きされる。明示的な解放は不要。
     DecodedFrame frame_to_send;
     bool found = false;
     {
@@ -409,6 +428,10 @@ int main(int argc, char *argv[]) {
     }
 
     if (!frame_to_send.valid || !frame_to_send.vipc_buf) {
+      // デコード失敗フレーム - バッファはリングバッファで再利用される
+      if (frames_sent == 0 && total_frame > 10) {
+        fprintf(stderr, "[video_player] WARNING: No frames sent yet, decode may be failing (frame=%d)\n", total_frame);
+      }
       last_frame = total_frame;
       continue;
     }
@@ -421,6 +444,12 @@ int main(int argc, char *argv[]) {
     frames_sent++;
     last_frame = total_frame;
     last_frame_time = std::chrono::steady_clock::now();
+
+    // 定期的な進捗ログ（100フレームごと）
+    if (frames_sent % 100 == 1) {
+      fprintf(stderr, "[video_player] Progress: sent=%zu, skipped=%zu, frame=%d, pos=%.2fs\n",
+              frames_sent, frames_skipped, total_frame, current_pos);
+    }
   }
 
   // プリデコードスレッドの終了待ち
