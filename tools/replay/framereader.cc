@@ -343,9 +343,15 @@ bool VideoDecoder::decodeV4L(FrameReader *reader, int idx, VisionBuf *buf) {
       }
       av_packet_unref(&pkt);
     }
+    // Drain intermediate CAPTURE buffers to prevent buffer starvation.
+    // Non-blocking: re-queues decoded frames we don't need (only intermediate).
+    // The target frame (i == idx) is NOT drained - getFrame() retrieves it.
+    if (i < idx) {
+      v4l_decoder_.drainCapture();
+    }
   }
 
-  // Get decoded NV12 frame
+  // Get decoded NV12 frame for the target (blocking with 500ms timeout)
   return v4l_decoder_.getFrame(buf);
 #else
   return false;
