@@ -11,7 +11,11 @@
 #define V4L_DEC_BUF_OUT_COUNT 6  // CAPTURE (decoded NV12 output)
 
 // V4L2 hardware decoder for Qualcomm Venus (msm_vidc_vdec)
-// Uses the same ION USERPTR pattern as V4LEncoder
+// Uses SOURCE_CHANGE event flow for dynamic resolution negotiation:
+//   1. OUTPUT stream started immediately
+//   2. First compressed frame triggers SOURCE_CHANGE event
+//   3. CAPTURE stream configured from driver-reported resolution
+//   4. Normal decode operation begins
 class V4LDecoder {
 public:
   V4LDecoder();
@@ -20,6 +24,7 @@ public:
   bool open(int width, int height);
 
   // Feed compressed HEVC data (non-blocking, drains completed CAPTURE buffers)
+  // On first call, triggers SOURCE_CHANGE negotiation to set up CAPTURE stream
   bool feed(const uint8_t *data, size_t size);
 
   // Get decoded NV12 frame (blocking with timeout)
@@ -35,6 +40,7 @@ public:
 private:
   int fd = -1;
   bool is_open = false;
+  bool capture_ready = false;  // true after SOURCE_CHANGE received and CAPTURE configured
 
   VisionBuf buf_in[V4L_DEC_BUF_IN_COUNT];   // OUTPUT (compressed HEVC)
   VisionBuf buf_out[V4L_DEC_BUF_OUT_COUNT]; // CAPTURE (decoded NV12)
@@ -46,8 +52,12 @@ private:
   int decoded_stride = 0;
 
   void drainCapture();
+  void drainOutput();
   void queueOutputBuffer(int index, uint32_t bytesused);
   void queueCaptureBuffer(int index);
+
+  // Wait for SOURCE_CHANGE event after first frame, then set up CAPTURE stream
+  bool waitForSourceChange();
 };
 
 #endif // QCOM2
