@@ -58,6 +58,7 @@ private:
   AVFrame *decodeFrame(AVPacket *pkt);
   bool copyBuffer(AVFrame *f, VisionBuf *buf);
   bool decodeV4L(FrameReader *reader, int idx, VisionBuf *buf);
+  bool initCPUFallback();
 
   AVFrame *av_frame_, *hw_frame_;
   AVCodecContext *decoder_ctx = nullptr;
@@ -65,6 +66,8 @@ private:
   AVBufferRef *hw_device_ctx = nullptr;
   bool v4l2m2m_ = false;
   bool use_v4l_direct_ = false;
+  bool v4l_fallback_to_cpu_ = false;
+  AVCodecParameters *stored_codecpar_ = nullptr;
 
 #ifdef QCOM2
   V4LDecoder v4l_decoder_;

@@ -117,6 +117,7 @@ VideoDecoder::VideoDecoder() {
 VideoDecoder::~VideoDecoder() {
   if (hw_device_ctx) av_buffer_unref(&hw_device_ctx);
   if (decoder_ctx) avcodec_free_context(&decoder_ctx);
+  if (stored_codecpar_) avcodec_parameters_free(&stored_codecpar_);
   av_frame_free(&av_frame_);
   av_frame_free(&hw_frame_);
 }
@@ -134,6 +135,11 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
     fprintf(stderr, "[VideoDecoder] Trying direct V4L2 ION decoder (%dx%d)...\n", w, h);
     if (v4l_decoder_.open(w, h)) {
       use_v4l_direct_ = true;
+      // Store codecpar for potential CPU fallback if V4L2 decode fails at runtime
+      stored_codecpar_ = avcodec_parameters_alloc();
+      if (stored_codecpar_) {
+        avcodec_parameters_copy(stored_codecpar_, codecpar);
+      }
       width = w;
       height = h;
       fprintf(stderr, "[VideoDecoder] Direct V4L2 ION decoder active (%dx%d)\n", width, height);
@@ -235,8 +241,19 @@ bool VideoDecoder::initHardwareDecoder(AVHWDeviceType hw_device_type) {
 
 bool VideoDecoder::decode(FrameReader *reader, int idx, VisionBuf *buf) {
 #ifdef QCOM2
-  if (use_v4l_direct_) {
-    return decodeV4L(reader, idx, buf);
+  if (use_v4l_direct_ && !v4l_fallback_to_cpu_) {
+    bool result = decodeV4L(reader, idx, buf);
+    if (!result && !v4l_fallback_to_cpu_) {
+      fprintf(stderr, "[VideoDecoder] V4L2 decode failed, falling back to CPU decoder\n");
+      if (initCPUFallback()) {
+        v4l_fallback_to_cpu_ = true;
+        use_v4l_direct_ = false;
+        // Reset prev_idx so seek logic works correctly with new decoder
+        reader->prev_idx = -1;
+        result = decode(reader, idx, buf);
+      }
+    }
+    return result;
   }
 #endif
 
@@ -325,6 +342,50 @@ bool VideoDecoder::decodeV4L(FrameReader *reader, int idx, VisionBuf *buf) {
 
   // Get decoded NV12 frame
   return v4l_decoder_.getFrame(buf);
+#else
+  return false;
+#endif
+}
+
+bool VideoDecoder::initCPUFallback() {
+#ifdef QCOM2
+  if (!stored_codecpar_) {
+    fprintf(stderr, "[VideoDecoder] No stored codecpar for CPU fallback\n");
+    return false;
+  }
+
+  // Close V4L decoder
+  v4l_decoder_.close();
+  use_v4l_direct_ = false;
+
+  const AVCodec *decoder = avcodec_find_decoder(stored_codecpar_->codec_id);
+  if (!decoder) {
+    fprintf(stderr, "[VideoDecoder] CPU fallback: codec not found\n");
+    return false;
+  }
+
+  decoder_ctx = avcodec_alloc_context3(decoder);
+  if (!decoder_ctx || avcodec_parameters_to_context(decoder_ctx, stored_codecpar_) != 0) {
+    fprintf(stderr, "[VideoDecoder] CPU fallback: failed to allocate codec context\n");
+    return false;
+  }
+
+  width = (decoder_ctx->width + 3) & ~3;
+  height = decoder_ctx->height;
+
+  // Multi-threaded CPU decoding
+  int cpu_cores = std::max(1, (int)sysconf(_SC_NPROCESSORS_ONLN));
+  decoder_ctx->thread_count = std::min(cpu_cores, 4);
+  decoder_ctx->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
+
+  if (avcodec_open2(decoder_ctx, decoder, nullptr) < 0) {
+    fprintf(stderr, "[VideoDecoder] CPU fallback: failed to open codec\n");
+    return false;
+  }
+
+  fprintf(stderr, "[VideoDecoder] CPU fallback active: %d threads, %dx%d\n",
+          decoder_ctx->thread_count, width, height);
+  return true;
 #else
   return false;
 #endif
