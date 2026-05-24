@@ -125,14 +125,21 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
   const AVCodec *decoder = nullptr;
 
 #ifdef QCOM2
-  // On QCOM2 (Snapdragon Venus), try V4L2 M2M hardware decoder for HEVC.
-  // V4L2 M2M is a standalone codec that handles HW decoding internally
-  // via /dev/video32 (Venus). No separate HW device context is needed.
+  // On QCOM2 (Snapdragon Venus), try direct V4L2 ION decoder for HEVC.
+  // This uses the same ION USERPTR pattern as V4LEncoder, bypassing FFmpeg's
+  // broken V4L2 M2M wrapper that doesn't handle Qualcomm ION buffers correctly.
   if (hw_decoder && codecpar->codec_id == AV_CODEC_ID_HEVC) {
-    decoder = avcodec_find_decoder_by_name("hevc_v4l2m2m");
-    if (decoder) {
-      fprintf(stderr, "[VideoDecoder] V4L2 M2M hardware decoder found\n");
+    int w = (codecpar->width + 3) & ~3;
+    int h = codecpar->height;
+    fprintf(stderr, "[VideoDecoder] Trying direct V4L2 ION decoder (%dx%d)...\n", w, h);
+    if (v4l_decoder_.open(w, h)) {
+      use_v4l_direct_ = true;
+      width = w;
+      height = h;
+      fprintf(stderr, "[VideoDecoder] Direct V4L2 ION decoder active (%dx%d)\n", width, height);
+      return true;
     }
+    fprintf(stderr, "[VideoDecoder] Direct V4L2 ION decoder failed, falling back to FFmpeg\n");
   }
 #endif
 
@@ -227,6 +234,12 @@ bool VideoDecoder::initHardwareDecoder(AVHWDeviceType hw_device_type) {
 }
 
 bool VideoDecoder::decode(FrameReader *reader, int idx, VisionBuf *buf) {
+#ifdef QCOM2
+  if (use_v4l_direct_) {
+    return decodeV4L(reader, idx, buf);
+  }
+#endif
+
   int from_idx = idx;
   if (idx != reader->prev_idx + 1) {
     // Flush decoder on seek to avoid stale buffered frames (critical for V4L2 M2M)
@@ -275,6 +288,46 @@ AVFrame *VideoDecoder::decodeFrame(AVPacket *pkt) {
     return nullptr;
   }
   return (av_frame_->format == hw_pix_fmt) ? hw_frame_ : av_frame_;
+}
+
+bool VideoDecoder::decodeV4L(FrameReader *reader, int idx, VisionBuf *buf) {
+#ifdef QCOM2
+  int from_idx = idx;
+
+  // Flush V4L decoder on seek
+  if (idx != reader->prev_idx + 1) {
+    v4l_decoder_.flush();
+
+    // Find nearest key frame
+    for (int i = idx; i >= 0; --i) {
+      if (reader->packets_info[i].flags & AV_PKT_FLAG_KEY) {
+        from_idx = i;
+        break;
+      }
+    }
+    avio_seek(reader->input_ctx->pb, reader->packets_info[from_idx].pos, SEEK_SET);
+  }
+  reader->prev_idx = idx;
+
+  // Feed compressed packets to V4L decoder
+  AVPacket pkt;
+  for (int i = from_idx; i <= idx; ++i) {
+    if (av_read_frame(reader->input_ctx, &pkt) == 0) {
+      if (pkt.size > 0) {
+        if (!v4l_decoder_.feed(pkt.data, pkt.size)) {
+          av_packet_unref(&pkt);
+          return false;
+        }
+      }
+      av_packet_unref(&pkt);
+    }
+  }
+
+  // Get decoded NV12 frame
+  return v4l_decoder_.getFrame(buf);
+#else
+  return false;
+#endif
 }
 
 bool VideoDecoder::copyBuffer(AVFrame *f, VisionBuf *buf) {

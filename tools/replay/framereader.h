@@ -14,6 +14,10 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
+#ifdef QCOM2
+#include "tools/replay/v4l_decoder.h"
+#endif
+
 class VideoDecoder;
 
 class FrameReader {
@@ -53,10 +57,16 @@ private:
   bool initHardwareDecoder(AVHWDeviceType hw_device_type);
   AVFrame *decodeFrame(AVPacket *pkt);
   bool copyBuffer(AVFrame *f, VisionBuf *buf);
+  bool decodeV4L(FrameReader *reader, int idx, VisionBuf *buf);
 
   AVFrame *av_frame_, *hw_frame_;
   AVCodecContext *decoder_ctx = nullptr;
   AVPixelFormat hw_pix_fmt = AV_PIX_FMT_NONE;
   AVBufferRef *hw_device_ctx = nullptr;
   bool v4l2m2m_ = false;
+  bool use_v4l_direct_ = false;
+
+#ifdef QCOM2
+  V4LDecoder v4l_decoder_;
+#endif
 };

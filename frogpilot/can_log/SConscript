@@ -28,6 +28,7 @@ else:
 env.Program('video_player',
             ['video_player.cc',
              '../../tools/replay/framereader.cc',
+             '../../tools/replay/v4l_decoder.cc',
              '../../tools/replay/filereader.cc',
              '../../tools/replay/util.cc'],
             LIBS=video_player_libs,
