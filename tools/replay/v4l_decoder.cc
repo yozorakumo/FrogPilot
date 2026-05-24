@@ -226,7 +226,9 @@ fail_free_ion:
     for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
       buf_out[i].free();
     }
-    free_input_bufs = SafeQueue<int>();
+    while (!free_input_bufs.empty()) {
+      free_input_bufs.pop();
+    }
   }
 fail_close_fd:
   ::close(fd);
