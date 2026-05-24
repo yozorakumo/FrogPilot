@@ -248,8 +248,9 @@ bool VideoDecoder::decode(FrameReader *reader, int idx, VisionBuf *buf) {
       if (initCPUFallback()) {
         v4l_fallback_to_cpu_ = true;
         use_v4l_direct_ = false;
-        // Reset prev_idx so seek logic works correctly with new decoder
-        reader->prev_idx = -1;
+        // Force seek on next decode (V4L2 consumed packets, file position is wrong)
+        // prev_idx = -2 ensures idx != prev_idx + 1 for any idx >= 0
+        reader->prev_idx = -2;
         result = decode(reader, idx, buf);
       }
     }
@@ -289,13 +290,17 @@ bool VideoDecoder::decode(FrameReader *reader, int idx, VisionBuf *buf) {
 
 AVFrame *VideoDecoder::decodeFrame(AVPacket *pkt) {
   int ret = avcodec_send_packet(decoder_ctx, pkt);
-  if (ret < 0) {
+  if (ret < 0 && ret != AVERROR(EAGAIN)) {
     rError("Error sending a packet for decoding: %d", ret);
     return nullptr;
   }
 
   ret = avcodec_receive_frame(decoder_ctx, av_frame_);
-  if (ret != 0) {
+  if (ret == AVERROR(EAGAIN)) {
+    // Decoder needs more packets before outputting a frame (normal for threaded decoding)
+    return nullptr;
+  }
+  if (ret < 0) {
     rError("avcodec_receive_frame error: %d", ret);
     return nullptr;
   }
@@ -373,10 +378,12 @@ bool VideoDecoder::initCPUFallback() {
   width = (decoder_ctx->width + 3) & ~3;
   height = decoder_ctx->height;
 
-  // Multi-threaded CPU decoding
+  // Multi-threaded CPU decoding - use SLICE only to avoid frame reordering delay
+  // FF_THREAD_FRAME causes output delay (thread_count-1 frames), which breaks
+  // sequential decode-and-copy pattern used in video_player
   int cpu_cores = std::max(1, (int)sysconf(_SC_NPROCESSORS_ONLN));
   decoder_ctx->thread_count = std::min(cpu_cores, 4);
-  decoder_ctx->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
+  decoder_ctx->thread_type = FF_THREAD_SLICE;
 
   if (avcodec_open2(decoder_ctx, decoder, nullptr) < 0) {
     fprintf(stderr, "[VideoDecoder] CPU fallback: failed to open codec\n");
