@@ -175,14 +175,14 @@ int main(int argc, char *argv[]) {
   fprintf(stderr, "[video_player] Reset playback params\n");
 
   // 全セグメントのFrameReaderを作成
-  // C3のmsm_vidc_vdecで直接V4L2 ION デコードを使用（エンコーダーと同じパターン）
-  // FFmpegのV4L2 M2MラッパーはQualcomm IONバッファに非対応のため、直接ioctlを使用
+  // no_hw_decoder=true → V4L2 HWデコーダーをスキップし、CPUマルチスレッドデコードを使用
+  // V4L2フォールバックロジックの複雑さにより映像が表示されない問題を回避
   std::vector<std::unique_ptr<FrameReader>> readers(segments.size());
   for (size_t i = 0; i < segments.size(); i++) {
     std::string hevc = (fs::path(segments[i]) / "fcamera.hevc").string();
     auto reader = std::make_unique<FrameReader>();
-    // no_hw_decoder=false → HW decodeを試行、失敗時はCPUマルチスレッドにフォールバック
-    if (!reader->loadFromFile(RoadCam, hevc, false)) {
+    // no_hw_decoder=true → V4L2デコーダーを完全にスキップ、CPUデコードのみ使用
+    if (!reader->loadFromFile(RoadCam, hevc, true)) {
       fprintf(stderr, "[video_player] Failed to load segment %zu: %s\n", i, hevc.c_str());
       continue;
     }
