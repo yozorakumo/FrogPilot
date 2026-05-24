@@ -1,13 +1,14 @@
 // v4l_decoder.cc - V4L2 hardware decoder for Qualcomm Venus (msm_vidc_vdec)
 //
-// Uses the same initialization pattern as V4LEncoder:
-//   1. Set CAPTURE format (NV12 output) with expected resolution
-//   2. Set OUTPUT format (HEVC compressed input)
-//   3. REQBUFS for both CAPTURE and OUTPUT
-//   4. Allocate ION buffers for both
-//   5. STREAMON CAPTURE, then OUTPUT
-//   6. Queue empty CAPTURE buffers
-//   7. Feed compressed data to OUTPUT, dequeue decoded frames from CAPTURE
+// Initialization flow for Venus decoder:
+//   1. Set OUTPUT format (HEVC compressed input)
+//   2. REQBUFS OUTPUT, allocate ION buffers, STREAMON OUTPUT
+//   3. Feed first keyframe to OUTPUT
+//   4. Try G_FMT on CAPTURE (driver may auto-configure after parsing header)
+//   5. If G_FMT returns valid resolution, set up CAPTURE
+//   6. REQBUFS CAPTURE, allocate ION buffers, STREAMON CAPTURE
+//   7. Queue empty CAPTURE buffers
+//   8. Normal decode loop: feed OUTPUT, getFrame from CAPTURE
 //
 // Device: /dev/v4l/by-path/platform-aa00000.qcom_vidc-video-index0
 // Driver: msm_vidc_driver, Card: msm_vidc_vdec
@@ -96,10 +97,8 @@ bool V4LDecoder::open(int in_width, int in_height) {
 
   // Declare all variables upfront to avoid C++ goto-bypasses-initialization errors
   struct v4l2_capability cap = {};
-  struct v4l2_format fmt_cap = {};
-  struct v4l2_format fmt_out = {};
+  struct v4l2_format fmt = {};
   v4l2_buf_type buf_type = (v4l2_buf_type)0;
-  int scanlines = 0;
   bool ion_allocated_in = false;
   bool ion_allocated_out = false;
 
@@ -121,83 +120,49 @@ bool V4LDecoder::open(int in_width, int in_height) {
   }
   fprintf(stderr, "[V4LDecoder] Opened decoder: %s %s fd=%d\n", cap.driver, cap.card, fd);
 
-  // --- Follow the same initialization pattern as V4LEncoder ---
-
-  // Step 1: Set CAPTURE format (decoded NV12 output) - same pattern as encoder sets CAPTURE first
-  // Use Venus-aligned stride and buffer size
-  decoded_stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, width);
-  scanlines = VENUS_Y_SCANLINES(COLOR_FMT_NV12, height);
-  output_buf_size = (size_t)VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
-
-  fmt_cap = {};
-  fmt_cap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-  fmt_cap.fmt.pix_mp.width = (unsigned int)width;
-  fmt_cap.fmt.pix_mp.height = (unsigned int)height;
-  fmt_cap.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
-  fmt_cap.fmt.pix_mp.field = V4L2_FIELD_ANY;
-  fmt_cap.fmt.pix_mp.colorspace = V4L2_COLORSPACE_DEFAULT;
-  fmt_cap.fmt.pix_mp.num_planes = 1;
-  fmt_cap.fmt.pix_mp.plane_fmt[0].sizeimage = (unsigned int)output_buf_size;
-
-  if (!checked_ioctl(fd, VIDIOC_S_FMT, &fmt_cap)) {
-    fprintf(stderr, "[V4LDecoder] Failed to set CAPTURE format\n");
-    goto fail_close_fd;
+  // Subscribe to SOURCE_CHANGE event
+  {
+    struct v4l2_event_subscription sub = {};
+    sub.type = V4L2_EVENT_SOURCE_CHANGE;
+    if (!checked_ioctl(fd, VIDIOC_SUBSCRIBE_EVENT, &sub)) {
+      fprintf(stderr, "[V4LDecoder] Warning: Failed to subscribe to SOURCE_CHANGE event\n");
+    } else {
+      fprintf(stderr, "[V4LDecoder] Subscribed to V4L2_EVENT_SOURCE_CHANGE\n");
+    }
   }
-  fprintf(stderr, "[V4LDecoder] CAPTURE format: NV12 %dx%d, sizeimage=%d\n",
-          fmt_cap.fmt.pix_mp.width, fmt_cap.fmt.pix_mp.height,
-          fmt_cap.fmt.pix_mp.plane_fmt[0].sizeimage);
 
-  // Step 2: Set OUTPUT format (compressed HEVC input)
-  fmt_out = {};
-  fmt_out.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
-  fmt_out.fmt.pix_mp.width = (unsigned int)width;
-  fmt_out.fmt.pix_mp.height = (unsigned int)height;
-  fmt_out.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_HEVC;
-  fmt_out.fmt.pix_mp.field = V4L2_FIELD_ANY;
-  fmt_out.fmt.pix_mp.colorspace = V4L2_COLORSPACE_DEFAULT;
-  fmt_out.fmt.pix_mp.num_planes = 1;
-  fmt_out.fmt.pix_mp.plane_fmt[0].sizeimage = 2 * 1024 * 1024;  // max compressed frame size
+  // Step 1: Set OUTPUT format (compressed HEVC input)
+  fmt = {};
+  fmt.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
+  fmt.fmt.pix_mp.width = (unsigned int)width;
+  fmt.fmt.pix_mp.height = (unsigned int)height;
+  fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_HEVC;
+  fmt.fmt.pix_mp.field = V4L2_FIELD_ANY;
+  fmt.fmt.pix_mp.colorspace = V4L2_COLORSPACE_DEFAULT;
+  fmt.fmt.pix_mp.num_planes = 1;
+  fmt.fmt.pix_mp.plane_fmt[0].sizeimage = 2 * 1024 * 1024;
 
-  if (!checked_ioctl(fd, VIDIOC_S_FMT, &fmt_out)) {
+  if (!checked_ioctl(fd, VIDIOC_S_FMT, &fmt)) {
     fprintf(stderr, "[V4LDecoder] Failed to set OUTPUT format\n");
     goto fail_close_fd;
   }
-  input_buf_size = fmt_out.fmt.pix_mp.plane_fmt[0].sizeimage;
+  input_buf_size = fmt.fmt.pix_mp.plane_fmt[0].sizeimage;
   fprintf(stderr, "[V4LDecoder] OUTPUT format: HEVC %dx%d, sizeimage=%zu\n",
-          fmt_out.fmt.pix_mp.width, fmt_out.fmt.pix_mp.height, input_buf_size);
+          fmt.fmt.pix_mp.width, fmt.fmt.pix_mp.height, input_buf_size);
 
-  // Step 3: Allocate ION buffers
+  // Step 2: Allocate ION buffers for OUTPUT
   for (int i = 0; i < V4L_DEC_BUF_IN_COUNT; i++) {
     buf_in[i].allocate(input_buf_size);
     free_input_bufs.push(i);
   }
   ion_allocated_in = true;
 
-  for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
-    buf_out[i].allocate(output_buf_size);
-  }
-  ion_allocated_out = true;
-
-  // Step 4: Request buffers for both OUTPUT and CAPTURE (same as encoder)
-  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L_DEC_BUF_OUT_COUNT)) {
-    fprintf(stderr, "[V4LDecoder] Failed to request CAPTURE buffers\n");
-    goto fail_free_ion;
-  }
-  fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS: %d buffers\n", V4L_DEC_BUF_OUT_COUNT);
-
+  // Step 3: Request OUTPUT buffers and start streaming
   if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, V4L_DEC_BUF_IN_COUNT)) {
     fprintf(stderr, "[V4LDecoder] Failed to request OUTPUT buffers\n");
     goto fail_free_ion;
   }
   fprintf(stderr, "[V4LDecoder] OUTPUT REQBUFS: %d buffers\n", V4L_DEC_BUF_IN_COUNT);
-
-  // Step 5: Start streaming - CAPTURE first, then OUTPUT (same as encoder)
-  buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-  if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) {
-    fprintf(stderr, "[V4LDecoder] Failed to start CAPTURE streaming\n");
-    goto fail_free_ion;
-  }
-  fprintf(stderr, "[V4LDecoder] CAPTURE STREAMON successful\n");
 
   buf_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
   if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) {
@@ -206,14 +171,65 @@ bool V4LDecoder::open(int in_width, int in_height) {
   }
   fprintf(stderr, "[V4LDecoder] OUTPUT STREAMON successful\n");
 
-  // Step 6: Queue empty CAPTURE buffers (to be filled by decoder)
+  // Step 4: Pre-configure CAPTURE with expected format
+  // Venus decoder may reject S_FMT on CAPTURE, so we use G_FMT after feeding first frame.
+  // But first, try TRY_FMT to see if NV12 is supported.
+  fmt = {};
+  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+  fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
+  fmt.fmt.pix_mp.width = (unsigned int)width;
+  fmt.fmt.pix_mp.height = (unsigned int)height;
+  fmt.fmt.pix_mp.num_planes = 1;
+
+  // Use TRY_FMT first (non-destructive)
+  if (util::safe_ioctl(fd, VIDIOC_TRY_FMT, &fmt) == 0) {
+    fprintf(stderr, "[V4LDecoder] TRY_FMT CAPTURE: NV12 supported, %dx%d sizeimage=%d\n",
+            fmt.fmt.pix_mp.width, fmt.fmt.pix_mp.height,
+            fmt.fmt.pix_mp.plane_fmt[0].sizeimage);
+
+    // Try S_FMT (may fail on some Venus versions, that's OK)
+    if (util::safe_ioctl(fd, VIDIOC_S_FMT, &fmt) == 0) {
+      fprintf(stderr, "[V4LDecoder] CAPTURE S_FMT successful\n");
+    } else {
+      fprintf(stderr, "[V4LDecoder] CAPTURE S_FMT failed (will configure after first frame)\n");
+    }
+  } else {
+    fprintf(stderr, "[V4LDecoder] TRY_FMT CAPTURE failed (will configure after first frame)\n");
+  }
+
+  // Calculate expected buffer sizes using Venus macros
+  decoded_stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, width);
+  output_buf_size = (size_t)VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
+
+  // Allocate CAPTURE ION buffers upfront
+  for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
+    buf_out[i].allocate(output_buf_size);
+  }
+  ion_allocated_out = true;
+
+  // Request CAPTURE buffers
+  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L_DEC_BUF_OUT_COUNT)) {
+    fprintf(stderr, "[V4LDecoder] Failed to request CAPTURE buffers\n");
+    goto fail_free_ion;
+  }
+  fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS: %d buffers\n", V4L_DEC_BUF_OUT_COUNT);
+
+  // Start CAPTURE streaming
+  buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+  if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) {
+    fprintf(stderr, "[V4LDecoder] Failed to start CAPTURE streaming\n");
+    goto fail_free_ion;
+  }
+  fprintf(stderr, "[V4LDecoder] CAPTURE STREAMON successful\n");
+
+  // Queue all CAPTURE buffers (empty, to be filled by decoder)
   for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
     queueCaptureBuffer(i);
   }
   fprintf(stderr, "[V4LDecoder] Queued %d CAPTURE buffers\n", V4L_DEC_BUF_OUT_COUNT);
 
   is_open = true;
-  capture_ready = true;  // CAPTURE is ready from the start
+  capture_ready = true;
   fprintf(stderr, "[V4LDecoder] Decoder ready: %dx%d, stride=%d, buf_size=%zu\n",
           width, height, decoded_stride, output_buf_size);
   return true;
@@ -259,7 +275,6 @@ void V4LDecoder::drainOutput() {
 }
 
 void V4LDecoder::queueCaptureBuffer(int index) {
-  // Queue empty CAPTURE buffer for decoder to fill
   queue_buffer(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, index, &buf_out[index], (uint32_t)buf_out[index].len);
 }
 
@@ -278,19 +293,17 @@ void V4LDecoder::drainCapture() {
     int rc = poll(&pfd, 1, 0);  // 0 = non-blocking
     if (rc <= 0) break;
 
-    // Handle events (e.g., resolution change during playback)
     if (pfd.revents & POLLPRI) {
       struct v4l2_event ev = {};
       if (util::safe_ioctl(fd, VIDIOC_DQEVENT, &ev) == 0) {
         if (ev.type == V4L2_EVENT_SOURCE_CHANGE) {
           struct v4l2_event_src_change *sc = (struct v4l2_event_src_change *)ev.u.data;
-          fprintf(stderr, "[V4LDecoder] SOURCE_CHANGE during playback: changes=0x%x\n", sc->changes);
+          fprintf(stderr, "[V4LDecoder] SOURCE_CHANGE during drain: changes=0x%x\n", sc->changes);
         }
       }
     }
 
     if (pfd.revents & POLLIN) {
-      // Dequeue CAPTURE buffer (decoded frame)
       v4l2_plane plane = {};
       v4l2_buffer v4l_buf = {
         .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
@@ -306,12 +319,10 @@ void V4LDecoder::drainCapture() {
                v4l_buf.index, v4l_buf.m.planes[0].bytesused, v4l_buf.flags);
       }
 
-      // Re-queue the CAPTURE buffer
       queueCaptureBuffer(v4l_buf.index);
     }
 
     if (pfd.revents & POLLOUT) {
-      // Dequeue OUTPUT buffer (consumed compressed data)
       v4l2_plane plane = {};
       v4l2_buffer v4l_buf = {
         .type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
@@ -321,11 +332,7 @@ void V4LDecoder::drainCapture() {
       };
       int ret = try_ioctl(fd, VIDIOC_DQBUF, &v4l_buf);
       if (ret != 0) break;
-
       free_input_bufs.push(v4l_buf.index);
-      if (env_debug_decoder) {
-        printf("[V4LDecoder] OUTPUT DQBUF: idx=%d (freed)\n", v4l_buf.index);
-      }
     }
   }
 }
@@ -339,16 +346,13 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
   // Get a free input buffer
   int buf_idx = -1;
   {
-    // Try non-blocking first
     if (free_input_bufs.empty()) {
-      // Wait for a buffer to become available
       struct pollfd pfd = {.fd = fd, .events = POLLOUT, .revents = 0};
-      int rc = poll(&pfd, 1, 100);  // 100ms timeout
+      int rc = poll(&pfd, 1, 100);
       if (rc <= 0) {
         fprintf(stderr, "[V4LDecoder] feed: no OUTPUT buffers available\n");
         return false;
       }
-      // Drain OUTPUT DQBUF
       v4l2_plane plane = {};
       v4l2_buffer v4l_buf = {
         .type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
@@ -412,7 +416,7 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
     }
   }
 
-  // Also drain OUTPUT buffers while we're here
+  // Drain OUTPUT buffers
   if (pfd.revents & POLLOUT) {
     v4l2_plane plane = {};
     v4l2_buffer v4l_buf = {
@@ -502,7 +506,6 @@ void V4LDecoder::flush() {
     .cmd = V4L2_DEC_CMD_STOP,
     .flags = 0,
   };
-  // Try to send stop command, but don't fail if not supported
   util::safe_ioctl(fd, VIDIOC_DECODER_CMD, &cmd);
 
   // Drain remaining CAPTURE buffers
@@ -536,7 +539,7 @@ void V4LDecoder::flush() {
     }
   }
 
-  // Now restart: send START command
+  // Restart
   cmd.cmd = V4L2_DEC_CMD_START;
   util::safe_ioctl(fd, VIDIOC_DECODER_CMD, &cmd);
 }
@@ -544,8 +547,7 @@ void V4LDecoder::flush() {
 void V4LDecoder::close() {
   if (!is_open) return;
 
-  // Stop streaming
-  v4l2_buf_type buf_type;
+  v4l2_buf_type buf_type = {};
   if (capture_ready) {
     buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     checked_ioctl(fd, VIDIOC_STREAMOFF, &buf_type);
@@ -553,13 +555,11 @@ void V4LDecoder::close() {
   buf_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
   checked_ioctl(fd, VIDIOC_STREAMOFF, &buf_type);
 
-  // Release buffers
   request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, 0);
   if (capture_ready) {
     request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, 0);
   }
 
-  // Free ION buffers
   for (int i = 0; i < V4L_DEC_BUF_IN_COUNT; i++) {
     buf_in[i].free();
   }
