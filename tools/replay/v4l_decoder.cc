@@ -91,6 +91,14 @@ bool V4LDecoder::open(int in_width, int in_height) {
   width = in_width;
   height = in_height;
 
+  // Declare all variables upfront to avoid C++ goto-bypasses-initialization errors
+  struct v4l2_capability cap = {};
+  struct v4l2_format fmt_out = {};
+  struct v4l2_format fmt_cap = {};
+  uint32_t nv12_size = 0;
+  v4l2_buf_type buf_type = (v4l2_buf_type)0;
+  bool ion_allocated = false;
+
   fd = ::open("/dev/v4l/by-path/platform-aa00000.qcom_vidc-video-index0", O_RDWR | O_NONBLOCK);
   if (fd < 0) {
     fprintf(stderr, "[V4LDecoder] Failed to open decoder device: %s\n", strerror(errno));
@@ -98,7 +106,6 @@ bool V4LDecoder::open(int in_width, int in_height) {
   }
 
   // Verify device
-  struct v4l2_capability cap;
   if (!checked_ioctl(fd, VIDIOC_QUERYCAP, &cap)) {
     fprintf(stderr, "[V4LDecoder] QUERYCAP failed\n");
     goto fail_close_fd;
@@ -111,7 +118,7 @@ bool V4LDecoder::open(int in_width, int in_height) {
   fprintf(stderr, "[V4LDecoder] Opened decoder: %s %s fd=%d\n", cap.driver, cap.card, fd);
 
   // Set OUTPUT format (compressed HEVC input)
-  struct v4l2_format fmt_out = {
+  fmt_out = {
     .type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
     .fmt = {
       .pix_mp = {
@@ -137,9 +144,9 @@ bool V4LDecoder::open(int in_width, int in_height) {
 
   // Set CAPTURE format (decoded NV12 output)
   decoded_stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, width);
-  uint32_t nv12_size = (uint32_t)VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
+  nv12_size = (uint32_t)VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
 
-  struct v4l2_format fmt_cap = {
+  fmt_cap = {
     .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
     .fmt = {
       .pix_mp = {
@@ -173,6 +180,7 @@ bool V4LDecoder::open(int in_width, int in_height) {
   for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
     buf_out[i].allocate(output_buf_size);
   }
+  ion_allocated = true;
 
   // Request buffers
   if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, V4L_DEC_BUF_IN_COUNT)) {
@@ -187,7 +195,6 @@ bool V4LDecoder::open(int in_width, int in_height) {
   // Start streaming - OUTPUT first, then CAPTURE (Venus/msm_vidc requirement)
   // The encoder uses the same order: OUTPUT STREAMON before CAPTURE STREAMON.
   // Reversing this order causes "STREAMON failed on capability" errors.
-  v4l2_buf_type buf_type;
   buf_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
   if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) {
     fprintf(stderr, "[V4LDecoder] Failed to start OUTPUT streaming\n");
@@ -212,13 +219,15 @@ fail_streamoff_output:
   buf_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
   util::safe_ioctl(fd, VIDIOC_STREAMOFF, &buf_type);
 fail_free_ion:
-  for (int i = 0; i < V4L_DEC_BUF_IN_COUNT; i++) {
-    buf_in[i].free();
+  if (ion_allocated) {
+    for (int i = 0; i < V4L_DEC_BUF_IN_COUNT; i++) {
+      buf_in[i].free();
+    }
+    for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
+      buf_out[i].free();
+    }
+    free_input_bufs = SafeQueue<int>();
   }
-  for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
-    buf_out[i].free();
-  }
-  free_input_bufs = SafeQueue<int>();
 fail_close_fd:
   ::close(fd);
   fd = -1;
