@@ -157,6 +157,15 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
     rWarning("No device with hardware decoder found. fallback to CPU decoding.");
   }
 
+  // Enable multi-threaded software decoding for better performance on multi-core CPUs
+  if (!is_v4l2m2m && hw_pix_fmt == AV_PIX_FMT_NONE) {
+    int cpu_cores = std::max(1, (int)sysconf(_SC_NPROCESSORS_ONLN));
+    decoder_ctx->thread_count = std::min(cpu_cores, 4);
+    decoder_ctx->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
+    fprintf(stderr, "[VideoDecoder] CPU decoder: %d threads, %dx%d\n",
+            decoder_ctx->thread_count, width, height);
+  }
+
   if (avcodec_open2(decoder_ctx, decoder, nullptr) < 0) {
     // If V4L2 M2M failed to open, fall back to standard CPU decoder
     if (is_v4l2m2m) {
@@ -169,6 +178,14 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
       if (!decoder_ctx || avcodec_parameters_to_context(decoder_ctx, codecpar) != 0) return false;
       width = (decoder_ctx->width + 3) & ~3;
       height = decoder_ctx->height;
+
+      // Enable multi-threaded CPU decoding for fallback path too
+      int cpu_cores = std::max(1, (int)sysconf(_SC_NPROCESSORS_ONLN));
+      decoder_ctx->thread_count = std::min(cpu_cores, 4);
+      decoder_ctx->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
+      fprintf(stderr, "[VideoDecoder] CPU fallback decoder: %d threads, %dx%d\n",
+              decoder_ctx->thread_count, width, height);
+
       if (avcodec_open2(decoder_ctx, decoder, nullptr) < 0) return false;
     } else {
       rError("Failed to open codec");

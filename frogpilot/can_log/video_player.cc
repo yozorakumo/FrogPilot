@@ -14,12 +14,16 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <memory>
+#include <mutex>
+#include <queue>
 #include <csignal>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <unistd.h>
@@ -41,7 +45,20 @@ namespace fs = std::filesystem;
 static const int FPS = 20;
 static const int SEGMENT_SEC = 60;
 static const int BUFFER_COUNT = 40;
+static const int PREDECODE_QUEUE_SIZE = 3;  // 先読みフレーム数
 static std::atomic<bool> g_exit{false};
+
+// --- プリデコードフレームバッファ ---
+struct DecodedFrame {
+  int frame_id = -1;
+  VisionBuf *vipc_buf = nullptr;
+  bool valid = false;
+};
+
+static std::queue<DecodedFrame> g_decoded_queue;
+static std::mutex g_queue_mutex;
+static std::condition_variable g_queue_cv;
+static constexpr int MAX_QUEUE_SIZE = PREDECODE_QUEUE_SIZE;
 
 // シグナルハンドラ
 static void on_signal(int sig) { g_exit = true; }
@@ -158,16 +175,13 @@ int main(int argc, char *argv[]) {
   fprintf(stderr, "[video_player] Reset playback params\n");
 
   // 全セグメントのFrameReaderを作成
-  // QCOM2(C3)ではV4L2 M2M HW デコーダを有効化、その他プラットフォームではCPUフォールバック
+  // QCOM2(C3)ではV4L2 M2M HW デコーダを試行、フォールバックでCPUマルチスレッド
   std::vector<std::unique_ptr<FrameReader>> readers(segments.size());
   for (size_t i = 0; i < segments.size(); i++) {
     std::string hevc = (fs::path(segments[i]) / "fcamera.hevc").string();
     auto reader = std::make_unique<FrameReader>();
-#ifdef QCOM2
+    // no_hw_decoder=false → HW試行、失敗時はCPUマルチスレッドにフォールバック
     if (!reader->loadFromFile(RoadCam, hevc, false)) {
-#else
-    if (!reader->loadFromFile(RoadCam, hevc, true)) {
-#endif
       fprintf(stderr, "[video_player] Failed to load segment %zu: %s\n", i, hevc.c_str());
       continue;
     }
@@ -223,21 +237,88 @@ int main(int argc, char *argv[]) {
   }
   if (g_exit) return 0;
 
-  // メイン再生ループ - 同期デコード
+  // --- プリデコードスレッド関数 ---
+  // 別スレッドでフレームを事前デコードしてキューに入れる
+  std::thread predecode_thread([&]() {
+    int next_frame_to_decode = -1;
+    while (!g_exit) {
+      // キューに空きがあるまで待機
+      {
+        std::unique_lock<std::mutex> lock(g_queue_mutex);
+        g_queue_cv.wait_for(lock, std::chrono::milliseconds(10), [&] {
+          return g_exit || static_cast<int>(g_decoded_queue.size()) < MAX_QUEUE_SIZE;
+        });
+        if (g_exit) break;
+        if (static_cast<int>(g_decoded_queue.size()) >= MAX_QUEUE_SIZE) continue;
+      }
+
+      // 次にデコードすべきフレームを特定（last_frame + 1から）
+      int decode_frame = next_frame_to_decode;
+      if (decode_frame < 0) {
+        // 最初は現在位置から開始
+        std::string pos_str = params.get("CanPlaybackPosition");
+        double pos = 0.0;
+        if (!pos_str.empty()) {
+          try { pos = std::stod(pos_str); } catch (...) {}
+        }
+        decode_frame = static_cast<int>(pos * FPS);
+        if (decode_frame < 0) decode_frame = 0;
+      } else {
+        decode_frame = next_frame_to_decode + 1;
+      }
+
+      // セグメントとフレームインデックス計算
+      int seg = decode_frame / (SEGMENT_SEC * FPS);
+      int frame_in_seg = decode_frame % (SEGMENT_SEC * FPS);
+
+      // 範囲チェック
+      if (seg < 0 || seg >= static_cast<int>(segments.size()) ||
+          !readers[seg] || frame_in_seg >= static_cast<int>(readers[seg]->getFrameCount())) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        continue;
+      }
+
+      // VisionIPCバッファを取得
+      VisionBuf *vipc_buf = vipc->get_buffer(VISION_STREAM_ROAD);
+      if (!vipc_buf) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        continue;
+      }
+
+      // デコード
+      FrameReader *reader = readers[seg].get();
+      bool ok = reader->get(frame_in_seg, vipc_buf);
+
+      DecodedFrame df;
+      df.frame_id = decode_frame;
+      df.vipc_buf = vipc_buf;
+      df.valid = ok;
+
+      {
+        std::lock_guard<std::mutex> lock(g_queue_mutex);
+        g_decoded_queue.push(df);
+      }
+      g_queue_cv.notify_one();
+
+      next_frame_to_decode = decode_frame;
+    }
+  });
+
+  // メイン再生ループ - プリデコードバッファから送信
   int last_frame = -1;
   size_t frames_sent = 0;
+  size_t frames_skipped = 0;
   double synced_position = 0.0;
   double synced_speed = 1.0;
   bool synced_paused = false;
   auto last_params_read = std::chrono::steady_clock::now();
   auto last_frame_time = std::chrono::steady_clock::now();
-  static constexpr double PARAMS_READ_INTERVAL = 0.1;  // Params読み取り間隔（秒）
-  static constexpr double FRAME_INTERVAL = 1.0 / FPS;  // フレーム間隔（秒）
+  static constexpr double PARAMS_READ_INTERVAL = 0.1;
+  static constexpr double FRAME_INTERVAL = 1.0 / FPS;
 
-  fprintf(stderr, "[video_player] Playback started (synchronous decode mode)\n");
+  fprintf(stderr, "[video_player] Playback started (async pre-decode mode)\n");
 
   while (!g_exit) {
-    // CAN_PLAYBACKが有効か確認
     if (!params.getBool("CAN_PLAYBACK")) {
       fprintf(stderr, "[video_player] CAN_PLAYBACK disabled, exiting\n");
       break;
@@ -246,89 +327,87 @@ int main(int argc, char *argv[]) {
     auto now = std::chrono::steady_clock::now();
     double time_since_read = std::chrono::duration<double>(now - last_params_read).count();
 
-    // Paramsから定期的に状態を読み取り
     if (time_since_read >= PARAMS_READ_INTERVAL) {
       std::string pos_str = params.get("CanPlaybackPosition");
       if (!pos_str.empty()) {
         try { synced_position = std::stod(pos_str); } catch (...) {}
       }
-
       std::string speed_str = params.get("CanPlaybackSpeed");
       if (!speed_str.empty()) {
         try { synced_speed = std::stod(speed_str); } catch (...) {}
       }
-
       std::string playing_str = params.get("CanPlaybackPlaying");
       synced_paused = (playing_str == "0");
-
       last_params_read = now;
       time_since_read = 0.0;
     }
 
-    // 一時停止中はフレームを送信しない
     if (synced_paused) {
       std::this_thread::sleep_for(std::chrono::milliseconds(20));
       continue;
     }
 
-    // 時間補間で現在位置を計算
     double current_pos = synced_position + time_since_read * synced_speed;
 
-    // フレームタイミング制御（20FPS）
+    // フレームタイミング制御
     double time_since_frame = std::chrono::duration<double>(now - last_frame_time).count();
     if (time_since_frame < FRAME_INTERVAL * 0.9) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       continue;
     }
 
-    // フレームインデックス計算 (20fps)
     int total_frame = static_cast<int>(current_pos * FPS);
     if (total_frame < 0) total_frame = 0;
 
-    // 既に送信済みのフレームはスキップ
     if (total_frame == last_frame) {
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
       continue;
     }
 
-    // セグメントとセグメント内フレームインデックス
-    int seg = total_frame / (SEGMENT_SEC * FPS);
-    int frame_in_seg = total_frame % (SEGMENT_SEC * FPS);
-
     // セグメント範囲チェック
+    int seg = total_frame / (SEGMENT_SEC * FPS);
     if (seg >= static_cast<int>(segments.size())) {
-      // ループ時: can_playerが位置をリセットするのを待つ
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       last_frame = -1;
+      // キューをクリア
+      {
+        std::lock_guard<std::mutex> lock(g_queue_mutex);
+        while (!g_decoded_queue.empty()) g_decoded_queue.pop();
+      }
       continue;
     }
 
-    // セグメント範囲チェック（無効セグメント）
-    if (seg < 0 || !readers[seg]) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(20));
-      last_frame = total_frame;  // スキップして次へ
+    // キューからフレームを取得
+    DecodedFrame frame_to_send;
+    bool found = false;
+    {
+      std::unique_lock<std::mutex> lock(g_queue_mutex);
+      // キュー内の古いフレームをスキップ
+      while (!g_decoded_queue.empty() && g_decoded_queue.front().frame_id < total_frame) {
+        frames_skipped++;
+        g_decoded_queue.pop();
+      }
+      if (!g_decoded_queue.empty() && g_decoded_queue.front().frame_id == total_frame) {
+        frame_to_send = g_decoded_queue.front();
+        g_decoded_queue.pop();
+        found = true;
+      }
+    }
+    g_queue_cv.notify_one();  // プリデコードスレッドに空きを通知
+
+    if (!found) {
+      // プリデコードバッファにない場合は少し待ってリトライ
+      // ただし、遅延が大きい場合はフレームスキップ
+      if (total_frame - last_frame > 5) {
+        // 大きく遅れている - フレームスキップして追いつく
+        last_frame = total_frame - 1;
+        frames_skipped++;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(2));
       continue;
     }
 
-    // フレーム数チェック
-    FrameReader *reader = readers[seg].get();
-    if (frame_in_seg >= static_cast<int>(reader->getFrameCount())) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(20));
-      last_frame = total_frame;  // スキップして次へ
-      continue;
-    }
-
-    // VisionIPCバッファを取得
-    VisionBuf *vipc_buf = vipc->get_buffer(VISION_STREAM_ROAD);
-    if (!vipc_buf) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(5));
-      continue;
-    }
-
-    // 同期デコード: reader->get() で直接デコードしてVisionIPCバッファに書き込み
-    bool ok = reader->get(frame_in_seg, vipc_buf);
-    if (!ok) {
-      // デコード失敗時はスキップ
+    if (!frame_to_send.valid || !frame_to_send.vipc_buf) {
       last_frame = total_frame;
       continue;
     }
@@ -337,13 +416,20 @@ int main(int argc, char *argv[]) {
     extra.frame_id = static_cast<uint64_t>(total_frame);
     extra.timestamp_sof = static_cast<uint64_t>(current_pos * 1e9);
     extra.timestamp_eof = static_cast<uint64_t>((current_pos + FRAME_INTERVAL) * 1e9);
-    vipc->send(vipc_buf, &extra, false);
+    vipc->send(frame_to_send.vipc_buf, &extra, false);
     frames_sent++;
     last_frame = total_frame;
     last_frame_time = std::chrono::steady_clock::now();
   }
 
-  fprintf(stderr, "[video_player] Exiting. Sent %zu frames total.\n", frames_sent);
+  // プリデコードスレッドの終了待ち
+  g_queue_cv.notify_all();
+  if (predecode_thread.joinable()) {
+    predecode_thread.join();
+  }
+
+  fprintf(stderr, "[video_player] Exiting. Sent %zu frames, skipped %zu frames.\n",
+          frames_sent, frames_skipped);
 
   // VisionIPCサーバーのクリーンアップ
   vipc.reset();
