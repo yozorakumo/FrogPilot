@@ -32,12 +32,14 @@
 
 const int env_debug_decoder = (getenv("DEBUG_V4L_DECODER") != NULL) ? atoi(getenv("DEBUG_V4L_DECODER")) : 0;
 
-static void checked_ioctl(int fd, unsigned long request, void *argp) {
+static bool checked_ioctl(int fd, unsigned long request, void *argp) {
   int ret = util::safe_ioctl(fd, request, argp);
   if (ret != 0) {
     fprintf(stderr, "[V4LDecoder] ioctl failed: fd=%d request=0x%lx errno=%d (%s)\n",
             fd, request, errno, strerror(errno));
+    return false;
   }
+  return true;
 }
 
 // Returns 0 on success, -1 on error, 1 on EAGAIN (would block)
@@ -76,13 +78,13 @@ static void queue_buffer(int fd, v4l2_buf_type buf_type, unsigned int index,
   checked_ioctl(fd, VIDIOC_QBUF, &v4l_buf);
 }
 
-static void request_buffers(int fd, v4l2_buf_type buf_type, unsigned int count) {
+static bool request_buffers(int fd, v4l2_buf_type buf_type, unsigned int count) {
   struct v4l2_requestbuffers reqbuf = {
     .type = buf_type,
     .memory = V4L2_MEMORY_USERPTR,
     .count = count
   };
-  checked_ioctl(fd, VIDIOC_REQBUFS, &reqbuf);
+  return checked_ioctl(fd, VIDIOC_REQBUFS, &reqbuf);
 }
 
 bool V4LDecoder::open(int in_width, int in_height) {
@@ -97,13 +99,14 @@ bool V4LDecoder::open(int in_width, int in_height) {
 
   // Verify device
   struct v4l2_capability cap;
-  checked_ioctl(fd, VIDIOC_QUERYCAP, &cap);
+  if (!checked_ioctl(fd, VIDIOC_QUERYCAP, &cap)) {
+    fprintf(stderr, "[V4LDecoder] QUERYCAP failed\n");
+    goto fail_close_fd;
+  }
   if (strcmp((const char *)cap.driver, "msm_vidc_driver") != 0 ||
       strcmp((const char *)cap.card, "msm_vidc_vdec") != 0) {
     fprintf(stderr, "[V4LDecoder] Wrong device: driver=%s card=%s\n", cap.driver, cap.card);
-    ::close(fd);
-    fd = -1;
-    return false;
+    goto fail_close_fd;
   }
   fprintf(stderr, "[V4LDecoder] Opened decoder: %s %s fd=%d\n", cap.driver, cap.card, fd);
 
@@ -124,7 +127,10 @@ bool V4LDecoder::open(int in_width, int in_height) {
       }
     }
   };
-  checked_ioctl(fd, VIDIOC_S_FMT, &fmt_out);
+  if (!checked_ioctl(fd, VIDIOC_S_FMT, &fmt_out)) {
+    fprintf(stderr, "[V4LDecoder] Failed to set OUTPUT format\n");
+    goto fail_close_fd;
+  }
   input_buf_size = fmt_out.fmt.pix_mp.plane_fmt[0].sizeimage;
   fprintf(stderr, "[V4LDecoder] OUTPUT format: HEVC %dx%d, sizeimage=%zu\n",
           fmt_out.fmt.pix_mp.width, fmt_out.fmt.pix_mp.height, input_buf_size);
@@ -149,7 +155,10 @@ bool V4LDecoder::open(int in_width, int in_height) {
       }
     }
   };
-  checked_ioctl(fd, VIDIOC_S_FMT, &fmt_cap);
+  if (!checked_ioctl(fd, VIDIOC_S_FMT, &fmt_cap)) {
+    fprintf(stderr, "[V4LDecoder] Failed to set CAPTURE format\n");
+    goto fail_close_fd;
+  }
   output_buf_size = fmt_cap.fmt.pix_mp.plane_fmt[0].sizeimage;
   fprintf(stderr, "[V4LDecoder] CAPTURE format: NV12 %dx%d, stride=%d, sizeimage=%zu\n",
           fmt_cap.fmt.pix_mp.width, fmt_cap.fmt.pix_mp.height, decoded_stride, output_buf_size);
@@ -166,15 +175,29 @@ bool V4LDecoder::open(int in_width, int in_height) {
   }
 
   // Request buffers
-  request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, V4L_DEC_BUF_IN_COUNT);
-  request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L_DEC_BUF_OUT_COUNT);
+  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, V4L_DEC_BUF_IN_COUNT)) {
+    fprintf(stderr, "[V4LDecoder] Failed to request OUTPUT buffers\n");
+    goto fail_free_ion;
+  }
+  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L_DEC_BUF_OUT_COUNT)) {
+    fprintf(stderr, "[V4LDecoder] Failed to request CAPTURE buffers\n");
+    goto fail_free_ion;
+  }
 
-  // Start streaming
+  // Start streaming - OUTPUT first, then CAPTURE (Venus/msm_vidc requirement)
+  // The encoder uses the same order: OUTPUT STREAMON before CAPTURE STREAMON.
+  // Reversing this order causes "STREAMON failed on capability" errors.
   v4l2_buf_type buf_type;
-  buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-  checked_ioctl(fd, VIDIOC_STREAMON, &buf_type);
   buf_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
-  checked_ioctl(fd, VIDIOC_STREAMON, &buf_type);
+  if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) {
+    fprintf(stderr, "[V4LDecoder] Failed to start OUTPUT streaming\n");
+    goto fail_free_ion;
+  }
+  buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+  if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) {
+    fprintf(stderr, "[V4LDecoder] Failed to start CAPTURE streaming\n");
+    goto fail_streamoff_output;
+  }
 
   // Queue all CAPTURE buffers (empty, to be filled by decoder)
   for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
@@ -184,6 +207,23 @@ bool V4LDecoder::open(int in_width, int in_height) {
   is_open = true;
   fprintf(stderr, "[V4LDecoder] Ready: %dx%d, stride=%d\n", width, height, decoded_stride);
   return true;
+
+fail_streamoff_output:
+  buf_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
+  util::safe_ioctl(fd, VIDIOC_STREAMOFF, &buf_type);
+fail_free_ion:
+  for (int i = 0; i < V4L_DEC_BUF_IN_COUNT; i++) {
+    buf_in[i].free();
+  }
+  for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
+    buf_out[i].free();
+  }
+  free_input_bufs = SafeQueue<int>();
+fail_close_fd:
+  ::close(fd);
+  fd = -1;
+  fprintf(stderr, "[V4LDecoder] open failed, falling back to CPU decoder\n");
+  return false;
 }
 
 void V4LDecoder::queueCaptureBuffer(int index) {
