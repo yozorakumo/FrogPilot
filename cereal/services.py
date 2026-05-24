@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import Optional
+from typing import Dict, Optional
 
 
 class Service:
@@ -9,7 +9,7 @@ class Service:
     self.decimation = decimation
 
 
-_services: dict[str, tuple] = {
+_services: Dict[str, tuple] = {
   # service: (should_log, frequency, qlog decimation (optional))
   # note: the "EncodeIdx" packets will still be in the log
   "gyroscope": (True, 104., 104),
