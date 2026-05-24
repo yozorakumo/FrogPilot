@@ -57,6 +57,7 @@ private:
   size_t output_buf_size = 0;
   int decoded_stride = 0;
 
+  bool setupCapture();
   void queueOutputBuffer(int index, uint32_t bytesused);
   void queueCaptureBuffer(int index);
 };
