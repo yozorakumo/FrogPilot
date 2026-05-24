@@ -130,10 +130,8 @@ bool V4LDecoder::open(int in_width, int in_height) {
           fmt_out.fmt.pix_mp.width, fmt_out.fmt.pix_mp.height, input_buf_size);
 
   // Set CAPTURE format (decoded NV12 output)
-  int stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, width);
-  int scanlines = VENUS_Y_SCANLINES(COLOR_FMT_NV12, height);
-  size_t nv12_size = VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
-  decoded_stride = stride;
+  decoded_stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, width);
+  uint32_t nv12_size = (uint32_t)VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
 
   struct v4l2_format fmt_cap = {
     .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
