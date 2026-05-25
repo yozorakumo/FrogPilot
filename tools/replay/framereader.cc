@@ -126,16 +126,16 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
   const AVCodec *decoder = nullptr;
 
 #ifdef QCOM2
-  // On QCOM2 (Snapdragon Venus), try direct V4L2 ION decoder for HEVC.
-  // This uses the same ION USERPTR pattern as V4LEncoder, bypassing FFmpeg's
-  // broken V4L2 M2M wrapper that doesn't handle Qualcomm ION buffers correctly.
-  if (hw_decoder && codecpar->codec_id == AV_CODEC_ID_HEVC) {
+  // NOTE: Direct V4L2 ION decoder disabled for video playback.
+  // The Venus msm_vidc driver on C3 does not emit SOURCE_CHANGE events
+  // and rejects CAPTURE STREAMON, making hardware decode impossible.
+  // CPU decode with multi-threading provides reliable playback instead.
+  if (false && hw_decoder && codecpar->codec_id == AV_CODEC_ID_HEVC) {
     int w = (codecpar->width + 3) & ~3;
     int h = codecpar->height;
     fprintf(stderr, "[VideoDecoder] Trying direct V4L2 ION decoder (%dx%d)...\n", w, h);
     if (v4l_decoder_.open(w, h)) {
       use_v4l_direct_ = true;
-      // Store codecpar for potential CPU fallback if V4L2 decode fails at runtime
       stored_codecpar_ = avcodec_parameters_alloc();
       if (stored_codecpar_) {
         avcodec_parameters_copy(stored_codecpar_, codecpar);
@@ -147,6 +147,7 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
     }
     fprintf(stderr, "[VideoDecoder] Direct V4L2 ION decoder failed, falling back to FFmpeg\n");
   }
+  fprintf(stderr, "[VideoDecoder] V4L2 HW decode disabled, using CPU decode\n");
 #endif
 
   if (!decoder) {
