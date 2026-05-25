@@ -37,6 +37,9 @@ private:
   // UI Edit Mode - イベントはOnroadWindowレベルで処理
   UIEditModeManager *edit_manager_;
 
+  // マウスイベント再入防止フラグ（sendEvent→ignore()→無限再帰防止）
+  bool handling_mouse_event_ = false;
+
 private slots:
   void offroadTransition(bool offroad);
   void primeChanged(bool prime);
