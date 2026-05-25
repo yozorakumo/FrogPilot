@@ -42,6 +42,7 @@ public:
   // Drain CAPTURE/OUTPUT buffers (non-blocking, re-queues them)
   void drainCapture();
   void drainOutput();
+  bool isCaptureReady() const { return capture_ready; }
 
 private:
   int fd = -1;

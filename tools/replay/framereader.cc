@@ -318,19 +318,14 @@ bool VideoDecoder::decodeV4L(FrameReader *reader, int idx, VisionBuf *buf) {
 #ifdef QCOM2
   int from_idx = idx;
 
-  fprintf(stderr, "[decodeV4L] idx=%d, prev_idx=%d, buf=%p\n", idx, reader->prev_idx, buf);
-
   // Flush V4L decoder on seek
   if (idx != reader->prev_idx + 1) {
-    fprintf(stderr, "[decodeV4L] Seek detected (idx=%d != prev_idx+1=%d), flushing\n",
-            idx, reader->prev_idx + 1);
     v4l_decoder_.flush();
 
     // Find nearest key frame
     for (int i = idx; i >= 0; --i) {
       if (reader->packets_info[i].flags & AV_PKT_FLAG_KEY) {
         from_idx = i;
-        fprintf(stderr, "[decodeV4L] Found keyframe at %d (seeking from %d to %d)\n", i, from_idx, idx);
         break;
       }
     }
@@ -340,34 +335,59 @@ bool VideoDecoder::decodeV4L(FrameReader *reader, int idx, VisionBuf *buf) {
 
   // Feed compressed packets to V4L decoder
   AVPacket pkt;
-  fprintf(stderr, "[decodeV4L] Feeding packets %d to %d (%d packets)\n", from_idx, idx, idx - from_idx + 1);
   for (int i = from_idx; i <= idx; ++i) {
     if (av_read_frame(reader->input_ctx, &pkt) == 0) {
       if (pkt.size > 0) {
         if (!v4l_decoder_.feed(pkt.data, pkt.size)) {
-          fprintf(stderr, "[decodeV4L] feed failed at packet %d (size=%d)\n", i, pkt.size);
           av_packet_unref(&pkt);
           return false;
         }
-      } else {
-        fprintf(stderr, "[decodeV4L] packet %d has size=0, skipping\n", i);
       }
       av_packet_unref(&pkt);
-    } else {
-      fprintf(stderr, "[decodeV4L] av_read_frame failed at packet %d\n", i);
     }
     // Drain intermediate CAPTURE buffers to prevent buffer starvation.
-    // Non-blocking: re-queues decoded frames we don't need (only intermediate).
-    // The target frame (i == idx) is NOT drained - getFrame() retrieves it.
     if (i < idx) {
       v4l_decoder_.drainCapture();
     }
   }
 
-  // Get decoded NV12 frame for the target (blocking with 500ms timeout)
-  fprintf(stderr, "[decodeV4L] Calling getFrame for idx=%d...\n", idx);
+  // If CAPTURE is not ready yet, the Venus decoder hasn't parsed enough stream
+  // data to emit SOURCE_CHANGE. Feed additional packets until it does.
+  // This is critical: Venus needs multiple NAL units (SPS/PPS + IDR slices)
+  // before it can determine the output format and trigger SOURCE_CHANGE.
+  if (!v4l_decoder_.isCaptureReady()) {
+    fprintf(stderr, "[decodeV4L] CAPTURE not ready after feeding target, priming with extra packets...\n");
+    int extra_count = 0;
+    int max_extra = 30;  // Feed up to 30 extra packets (~1.5s at 20fps)
+    int next_pkt = idx + 1;
+
+    while (!v4l_decoder_.isCaptureReady() && extra_count < max_extra &&
+           next_pkt < (int)reader->packets_info.size()) {
+      // Seek to the next packet position
+      avio_seek(reader->input_ctx->pb, reader->packets_info[next_pkt].pos, SEEK_SET);
+      if (av_read_frame(reader->input_ctx, &pkt) == 0) {
+        if (pkt.size > 0) {
+          if (!v4l_decoder_.feed(pkt.data, pkt.size)) {
+            av_packet_unref(&pkt);
+            fprintf(stderr, "[decodeV4L] feed failed during priming at packet %d\n", next_pkt);
+            return false;
+          }
+          extra_count++;
+        }
+        av_packet_unref(&pkt);
+      }
+      next_pkt++;
+    }
+    fprintf(stderr, "[decodeV4L] Primed with %d extra packets, capture_ready=%d\n",
+            extra_count, v4l_decoder_.isCaptureReady());
+  }
+
+  // Get decoded NV12 frame for the target (blocking with timeout)
+  // Note: The extra packets we fed produced decoded frames for later indices,
+  // but we only want the frame at idx. getFrame() will retrieve the first
+  // available CAPTURE buffer, which should correspond to our target frame
+  // since CAPTURE was just set up and we queued empty buffers.
   bool result = v4l_decoder_.getFrame(buf);
-  fprintf(stderr, "[decodeV4L] getFrame returned %d for idx=%d\n", result, idx);
   return result;
 #else
   return false;
