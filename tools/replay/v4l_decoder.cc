@@ -168,6 +168,11 @@ bool V4LDecoder::open(int in_width, int in_height) {
   if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, V4L_DEC_BUF_IN_COUNT)) goto fail;
   fprintf(stderr, "[V4LDecoder] OUTPUT REQBUFS: %d buffers\n", V4L_DEC_BUF_IN_COUNT);
 
+  // Start OUTPUT streaming FIRST (Venus requirement)
+  buf_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
+  if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) goto fail;
+  fprintf(stderr, "[V4LDecoder] OUTPUT STREAMON successful\n");
+
   // Request CAPTURE buffers
   if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L_DEC_BUF_OUT_COUNT)) {
     fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS failed\n");
@@ -175,7 +180,7 @@ bool V4LDecoder::open(int in_width, int in_height) {
   }
   fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS: %d buffers\n", V4L_DEC_BUF_OUT_COUNT);
 
-  // Start CAPTURE streaming first (Venus requirement)
+  // Start CAPTURE streaming
   buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
   if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) {
     fprintf(stderr, "[V4LDecoder] CAPTURE STREAMON failed\n");
@@ -188,11 +193,6 @@ bool V4LDecoder::open(int in_width, int in_height) {
     queueCaptureBuffer(i);
   }
   fprintf(stderr, "[V4LDecoder] Queued %d CAPTURE buffers\n", V4L_DEC_BUF_OUT_COUNT);
-
-  // Start OUTPUT streaming
-  buf_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
-  if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) goto fail;
-  fprintf(stderr, "[V4LDecoder] OUTPUT STREAMON successful\n");
 
   is_open = true;
   capture_ready = true;
