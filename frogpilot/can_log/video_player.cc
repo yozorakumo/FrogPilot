@@ -132,7 +132,7 @@ static std::tuple<size_t, size_t, size_t> calc_nv12_info(int w, int h) {
 #ifdef QCOM2
   int stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, w);
   int scanlines = VENUS_Y_SCANLINES(COLOR_FMT_NV12, h);
-  size_t buf_size = static_cast<size_t>(2346) * stride;
+  size_t buf_size = VENUS_BUFFER_SIZE(COLOR_FMT_NV12, w, h);
   return {static_cast<size_t>(stride), static_cast<size_t>(scanlines), buf_size};
 #else
   size_t stride = static_cast<size_t>(w);
