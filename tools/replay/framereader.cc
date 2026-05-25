@@ -126,11 +126,9 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
   const AVCodec *decoder = nullptr;
 
 #ifdef QCOM2
-  // NOTE: Direct V4L2 ION decoder disabled for video playback.
-  // The Venus msm_vidc driver on C3 does not emit SOURCE_CHANGE events
-  // and rejects CAPTURE STREAMON, making hardware decode impossible.
-  // CPU decode with multi-threading provides reliable playback instead.
-  if (false && hw_decoder && codecpar->codec_id == AV_CODEC_ID_HEVC) {
+  // Enable direct V4L2 ION decoder for HEVC on SDM845 (C3).
+  // Uses DMABUF for CAPTURE and USERPTR for OUTPUT with CODECCONFIG extradata.
+  if (hw_decoder && codecpar->codec_id == AV_CODEC_ID_HEVC) {
     int w = (codecpar->width + 3) & ~3;
     int h = codecpar->height;
     fprintf(stderr, "[VideoDecoder] Trying direct V4L2 ION decoder (%dx%d)...\n", w, h);
@@ -142,12 +140,18 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
       }
       width = w;
       height = h;
+
+      // Feed VPS/SPS/PPS extradata to Venus decoder with CODECCONFIG flag
+      if (codecpar->extradata && codecpar->extradata_size > 0) {
+        fprintf(stderr, "[VideoDecoder] Feeding extradata (%d bytes) to V4L decoder\n", codecpar->extradata_size);
+        v4l_decoder_.feedExtradata(codecpar->extradata, codecpar->extradata_size);
+      }
+
       fprintf(stderr, "[VideoDecoder] Direct V4L2 ION decoder active (%dx%d)\n", width, height);
       return true;
     }
     fprintf(stderr, "[VideoDecoder] Direct V4L2 ION decoder failed, falling back to FFmpeg\n");
   }
-  fprintf(stderr, "[VideoDecoder] V4L2 HW decode disabled, using CPU decode\n");
 #endif
 
   if (!decoder) {

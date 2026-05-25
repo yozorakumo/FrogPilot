@@ -1,11 +1,10 @@
 // v4l_decoder.cc - V4L2 hardware decoder for Qualcomm Venus (msm_vidc_vdec)
 //
-// Two-phase initialization:
-//   Phase 1 (open): Set OUTPUT format, REQBUFS, STREAMON
-//   Phase 2 (auto in feed): After first keyframe is fed, wait for SOURCE_CHANGE,
-//     then set up CAPTURE: G_FMT, REQBUFS, allocate ION, STREAMON, queue buffers
+// DMABUF-based CAPTURE for SDM845 compatibility:
+//   - OUTPUT: V4L2_MEMORY_USERPTR (compressed HEVC input)
+//   - CAPTURE: V4L2_MEMORY_DMABUF (decoded NV12 output)
 //
-// Device: /dev/v4l/by-path/platform-aa00000.qcom_vidc-video-index0
+// Device: /dev/video32
 // Driver: msm_vidc_driver, Card: msm_vidc_vdec
 
 #ifdef QCOM2
@@ -29,7 +28,9 @@
 #define V4L2_QCOM_BUF_FLAG_CODECCONFIG 0x00020000
 #define V4L2_QCOM_BUF_FLAG_EOS 0x02000000
 
-const int env_debug_decoder = (getenv("DEBUG_V4L_DECODER") != NULL) ? atoi(getenv("DEBUG_V4L_DECODER")) : 0;
+static int env_debug_decoder = (getenv("DEBUG_V4L_DECODER") != NULL) ? atoi(getenv("DEBUG_V4L_DECODER")) : 0;
+
+#define LOG_DEBUG(fmt, ...) do { if (env_debug_decoder) fprintf(stderr, "[V4LDecoder] " fmt "\n", ##__VA_ARGS__); } while(0)
 
 static bool checked_ioctl(int fd, unsigned long request, void *argp) {
   int ret = util::safe_ioctl(fd, request, argp);
@@ -50,8 +51,8 @@ static int try_ioctl(int fd, unsigned long request, void *argp) {
   return 0;
 }
 
-static void queue_buffer(int fd, v4l2_buf_type buf_type, unsigned int index,
-                          VisionBuf *buf, uint32_t bytesused, struct timeval timestamp = {}) {
+// Queue OUTPUT buffer (USERPTR)
+static void queue_output_buffer(int fd, int index, VisionBuf *buf, uint32_t bytesused, uint32_t flags) {
   v4l2_plane plane = {
     .length = (unsigned int)buf->len,
     .m = { .userptr = (unsigned long)buf->addr, },
@@ -60,22 +61,40 @@ static void queue_buffer(int fd, v4l2_buf_type buf_type, unsigned int index,
   };
 
   v4l2_buffer v4l_buf = {
-    .type = buf_type,
-    .index = index,
+    .type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
+    .index = (unsigned int)index,
     .memory = V4L2_MEMORY_USERPTR,
     .m = { .planes = &plane, },
     .length = 1,
-    .flags = V4L2_BUF_FLAG_TIMESTAMP_COPY,
-    .timestamp = timestamp
+    .flags = flags | V4L2_BUF_FLAG_TIMESTAMP_COPY,
   };
 
   checked_ioctl(fd, VIDIOC_QBUF, &v4l_buf);
 }
 
-static bool request_buffers(int fd, v4l2_buf_type buf_type, unsigned int count) {
+// Queue CAPTURE buffer (DMABUF)
+static void queue_capture_buffer(int fd, int index, VisionBuf *buf) {
+  v4l2_plane plane = {
+    .length = (unsigned int)buf->len,
+    .m = { .fd = buf->fd, },
+    .bytesused = 0,
+  };
+
+  v4l2_buffer v4l_buf = {
+    .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
+    .index = (unsigned int)index,
+    .memory = V4L2_MEMORY_DMABUF,
+    .m = { .planes = &plane, },
+    .length = 1,
+  };
+
+  checked_ioctl(fd, VIDIOC_QBUF, &v4l_buf);
+}
+
+static bool request_buffers(int fd, v4l2_buf_type buf_type, unsigned int count, v4l2_memory memory) {
   struct v4l2_requestbuffers reqbuf = {
     .type = buf_type,
-    .memory = V4L2_MEMORY_USERPTR,
+    .memory = memory,
     .count = count
   };
   return checked_ioctl(fd, VIDIOC_REQBUFS, &reqbuf);
@@ -89,9 +108,10 @@ bool V4LDecoder::open(int in_width, int in_height) {
   struct v4l2_format fmt = {};
   v4l2_buf_type buf_type = (v4l2_buf_type)0;
 
-  fd = ::open("/dev/v4l/by-path/platform-aa00000.qcom_vidc-video-index0", O_RDWR | O_NONBLOCK);
+  // Use /dev/video32 directly for SDM845 Venus decoder
+  fd = ::open("/dev/video32", O_RDWR | O_NONBLOCK);
   if (fd < 0) {
-    fprintf(stderr, "[V4LDecoder] Failed to open decoder device: %s\n", strerror(errno));
+    fprintf(stderr, "[V4LDecoder] Failed to open decoder device /dev/video32: %s\n", strerror(errno));
     return false;
   }
 
@@ -108,7 +128,7 @@ bool V4LDecoder::open(int in_width, int in_height) {
     struct v4l2_event_subscription sub = {};
     sub.type = V4L2_EVENT_SOURCE_CHANGE;
     if (!checked_ioctl(fd, VIDIOC_SUBSCRIBE_EVENT, &sub)) goto fail;
-    fprintf(stderr, "[V4LDecoder] Subscribed to V4L2_EVENT_SOURCE_CHANGE\n");
+    LOG_DEBUG("Subscribed to V4L2_EVENT_SOURCE_CHANGE");
   }
 
   // Set OUTPUT format (compressed HEVC input)
@@ -131,23 +151,24 @@ bool V4LDecoder::open(int in_width, int in_height) {
   decoded_stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, width);
   output_buf_size = (size_t)VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
 
-  // Allocate ION buffers for OUTPUT only
+  // Allocate ION buffers for OUTPUT (USERPTR)
   for (int i = 0; i < V4L_DEC_BUF_IN_COUNT; i++) {
     buf_in[i].allocate(input_buf_size);
     free_input_bufs.push(i);
   }
 
-  // Request and start OUTPUT streaming
-  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, V4L_DEC_BUF_IN_COUNT)) goto fail;
-  fprintf(stderr, "[V4LDecoder] OUTPUT REQBUFS: %d buffers\n", V4L_DEC_BUF_IN_COUNT);
+  // Request and start OUTPUT streaming (USERPTR)
+  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, V4L_DEC_BUF_IN_COUNT, V4L2_MEMORY_USERPTR)) goto fail;
+  LOG_DEBUG("OUTPUT REQBUFS: %d buffers (USERPTR)", V4L_DEC_BUF_IN_COUNT);
 
   buf_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
   if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) goto fail;
-  fprintf(stderr, "[V4LDecoder] OUTPUT STREAMON successful\n");
+  LOG_DEBUG("OUTPUT STREAMON successful");
 
   is_open = true;
   capture_ready = false;
-  fprintf(stderr, "[V4LDecoder] Phase 1 complete. CAPTURE will be set up after first frame.\n");
+  extradata_sent = false;
+  fprintf(stderr, "[V4LDecoder] Phase 1 complete. CAPTURE will be set up after SOURCE_CHANGE.\n");
   return true;
 
 fail:
@@ -167,20 +188,7 @@ bool V4LDecoder::setupCapture() {
 
   fprintf(stderr, "[V4LDecoder] Setting up CAPTURE...\n");
 
-  // Try S_FMT first (proactive), then G_FMT to confirm
-  fmt = {};
-  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-  fmt.fmt.pix_mp.width = (unsigned int)width;
-  fmt.fmt.pix_mp.height = (unsigned int)height;
-  fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
-  fmt.fmt.pix_mp.field = V4L2_FIELD_ANY;
-  fmt.fmt.pix_mp.num_planes = 1;
-  fmt.fmt.pix_mp.plane_fmt[0].sizeimage = (unsigned int)output_buf_size;
-
-  // S_FMT may or may not succeed depending on driver state
-  checked_ioctl(fd, VIDIOC_S_FMT, &fmt);
-
-  // Get actual CAPTURE format
+  // Get actual CAPTURE format after SOURCE_CHANGE
   fmt = {};
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
   if (!checked_ioctl(fd, VIDIOC_G_FMT, &fmt)) {
@@ -203,18 +211,19 @@ bool V4LDecoder::setupCapture() {
                                                   (int)fmt.fmt.pix_mp.height);
   }
 
-  // Allocate CAPTURE ION buffers
+  // Allocate CAPTURE ION buffers (DMABUF mode)
   for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
     buf_out[i].allocate(output_buf_size);
+    LOG_DEBUG("CAPTURE buffer %d: fd=%d len=%zu", i, buf_out[i].fd, buf_out[i].len);
   }
 
-  // Request CAPTURE buffers
-  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L_DEC_BUF_OUT_COUNT)) {
-    fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS failed\n");
+  // Request CAPTURE buffers with DMABUF memory
+  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L_DEC_BUF_OUT_COUNT, V4L2_MEMORY_DMABUF)) {
+    fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS (DMABUF) failed\n");
     for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) buf_out[i].free();
     return false;
   }
-  fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS: %d buffers\n", V4L_DEC_BUF_OUT_COUNT);
+  fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS: %d buffers (DMABUF)\n", V4L_DEC_BUF_OUT_COUNT);
 
   // Start CAPTURE streaming
   buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
@@ -225,11 +234,11 @@ bool V4LDecoder::setupCapture() {
   }
   fprintf(stderr, "[V4LDecoder] CAPTURE STREAMON successful\n");
 
-  // Queue all CAPTURE buffers
+  // Queue all CAPTURE buffers (DMABUF)
   for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
-    queueCaptureBuffer(i);
+    queue_capture_buffer(fd, i, &buf_out[i]);
   }
-  fprintf(stderr, "[V4LDecoder] Queued %d CAPTURE buffers\n", V4L_DEC_BUF_OUT_COUNT);
+  fprintf(stderr, "[V4LDecoder] Queued %d CAPTURE buffers (DMABUF)\n", V4L_DEC_BUF_OUT_COUNT);
 
   capture_ready = true;
   fprintf(stderr, "[V4LDecoder] CAPTURE ready: stride=%d, buf_size=%zu\n",
@@ -253,12 +262,11 @@ void V4LDecoder::drainOutput() {
 }
 
 void V4LDecoder::queueCaptureBuffer(int index) {
-  queue_buffer(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, index, &buf_out[index], (uint32_t)buf_out[index].len);
+  queue_capture_buffer(fd, index, &buf_out[index]);
 }
 
-void V4LDecoder::queueOutputBuffer(int index, uint32_t bytesused) {
-  struct timeval ts = {};
-  queue_buffer(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, index, &buf_in[index], bytesused, ts);
+void V4LDecoder::queueOutputBuffer(int index, uint32_t bytesused, uint32_t flags) {
+  queue_output_buffer(fd, index, &buf_in[index], bytesused, flags);
 }
 
 void V4LDecoder::drainCapture() {
@@ -277,7 +285,7 @@ void V4LDecoder::drainCapture() {
       v4l2_plane plane = {};
       v4l2_buffer v4l_buf = {
         .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
-        .memory = V4L2_MEMORY_USERPTR,
+        .memory = V4L2_MEMORY_DMABUF,
         .m = { .planes = &plane, },
         .length = 1,
       };
@@ -298,6 +306,15 @@ void V4LDecoder::drainCapture() {
   }
 }
 
+bool V4LDecoder::feedExtradata(const uint8_t *data, size_t size) {
+  if (!is_open) return false;
+  if (extradata_sent) return true;
+
+  extradata.assign(data, data + size);
+  LOG_DEBUG("Stored extradata: %zu bytes", size);
+  return true;
+}
+
 bool V4LDecoder::feed(const uint8_t *data, size_t size) {
   if (!is_open) {
     fprintf(stderr, "[V4LDecoder] feed: not open!\n");
@@ -306,8 +323,7 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
 
   static int feed_call_count = 0;
   feed_call_count++;
-  fprintf(stderr, "[V4LDecoder] feed #%d: size=%zu, capture_ready=%d\n",
-          feed_call_count, size, capture_ready);
+  LOG_DEBUG("feed #%d: size=%zu, capture_ready=%d", feed_call_count, size, capture_ready);
 
   drainOutput();
 
@@ -315,8 +331,7 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
   if (!capture_ready) {
     struct pollfd pfd = {.fd = fd, .events = POLLPRI | POLLOUT, .revents = 0};
     int rc = poll(&pfd, 1, 0);
-    fprintf(stderr, "[V4LDecoder] feed #%d: SOURCE_CHANGE poll rc=%d revents=0x%x\n",
-            feed_call_count, rc, pfd.revents);
+    LOG_DEBUG("feed #%d: SOURCE_CHANGE poll rc=%d revents=0x%x", feed_call_count, rc, pfd.revents);
     if (rc > 0 && (pfd.revents & POLLPRI)) {
       struct v4l2_event ev = {};
       if (util::safe_ioctl(fd, VIDIOC_DQEVENT, &ev) == 0 && ev.type == V4L2_EVENT_SOURCE_CHANGE) {
@@ -327,7 +342,7 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
           return false;
         }
       } else {
-        fprintf(stderr, "[V4LDecoder] feed #%d: POLLPRI but event type=%d (not SOURCE_CHANGE=%d)\n",
+        LOG_DEBUG("feed #%d: POLLPRI but event type=%d (not SOURCE_CHANGE=%d)",
                 feed_call_count, ev.type, V4L2_EVENT_SOURCE_CHANGE);
       }
     }
@@ -335,8 +350,7 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
 
   // Also drain OUTPUT after poll
   if (!capture_ready) {
-    // Still waiting for SOURCE_CHANGE - drain OUTPUT and continue
-    fprintf(stderr, "[V4LDecoder] feed #%d: capture not ready, draining output\n", feed_call_count);
+    LOG_DEBUG("feed #%d: capture not ready, draining output", feed_call_count);
     drainOutput();
   }
 
@@ -382,31 +396,40 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
 
   // Dump first bytes of first few packets to verify stream format
   if (feed_call_count <= 3) {
-    fprintf(stderr, "[V4LDecoder] feed #%d: first 16 bytes:", feed_call_count);
-    for (size_t j = 0; j < 16 && j < copy_size; j++) {
-      fprintf(stderr, " %02x", data[j]);
-    }
-    fprintf(stderr, "\n");
+    LOG_DEBUG("feed #%d: first 16 bytes:", feed_call_count);
     // Check for Annex B start code (00 00 00 01) or HVCC length prefix
     if (data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x00 && data[3] == 0x01) {
-      fprintf(stderr, "[V4LDecoder] feed #%d: Annex B format detected (start code)\n", feed_call_count);
+      LOG_DEBUG("feed #%d: Annex B format detected (start code)", feed_call_count);
     } else {
-      fprintf(stderr, "[V4LDecoder] feed #%d: NOT Annex B - may be HVCC/length-prefixed\n", feed_call_count);
+      LOG_DEBUG("feed #%d: NOT Annex B - may be HVCC/length-prefixed", feed_call_count);
     }
   }
 
   buf_in[buf_idx].sync(VISIONBUF_SYNC_TO_DEVICE);
-  queueOutputBuffer(buf_idx, (uint32_t)copy_size);
 
-  if (env_debug_decoder) {
-    printf("[V4LDecoder] feed: queued %zu bytes to OUTPUT buf %d\n", copy_size, buf_idx);
+  // Send extradata (VPS/SPS/PPS) with CODECCONFIG flag before first frame
+  uint32_t flags = 0;
+  if (!extradata.empty() && !extradata_sent) {
+    // Prepend extradata to first frame if it fits, or send separately
+    if (copy_size + extradata.size() <= buf_in[buf_idx].len) {
+      memmove((uint8_t*)buf_in[buf_idx].addr + extradata.size(), buf_in[buf_idx].addr, copy_size);
+      memcpy(buf_in[buf_idx].addr, extradata.data(), extradata.size());
+      copy_size += extradata.size();
+      flags = V4L2_QCOM_BUF_FLAG_CODECCONFIG;
+      extradata_sent = true;
+      LOG_DEBUG("feed #%d: prepended extradata (%zu bytes) with CODECCONFIG flag", feed_call_count, extradata.size());
+    }
   }
+
+  queueOutputBuffer(buf_idx, (uint32_t)copy_size, flags);
+
+  LOG_DEBUG("feed: queued %zu bytes to OUTPUT buf %d flags=0x%x", copy_size, buf_idx, flags);
 
   // After feeding, check for SOURCE_CHANGE or proactively set up CAPTURE
   if (!capture_ready) {
     struct pollfd pfd = {.fd = fd, .events = POLLPRI, .revents = 0};
     int src_rc = poll(&pfd, 1, 100);
-    fprintf(stderr, "[V4LDecoder] feed #%d: post-feed SOURCE_CHANGE poll rc=%d revents=0x%x\n",
+    LOG_DEBUG("feed #%d: post-feed SOURCE_CHANGE poll rc=%d revents=0x%x",
             feed_call_count, src_rc, pfd.revents);
     if (src_rc > 0 && (pfd.revents & POLLPRI)) {
       struct v4l2_event ev = {};
@@ -426,7 +449,7 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
     }
   }
 
-  fprintf(stderr, "[V4LDecoder] feed #%d: done, capture_ready=%d\n", feed_call_count, capture_ready);
+  LOG_DEBUG("feed #%d: done, capture_ready=%d", feed_call_count, capture_ready);
   return true;
 }
 
@@ -438,7 +461,7 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
 
   static int getframe_call_count = 0;
   getframe_call_count++;
-  fprintf(stderr, "[V4LDecoder] getFrame #%d: capture_ready=%d, out_buf=%p, stride=%d\n",
+  LOG_DEBUG("getFrame #%d: capture_ready=%d, out_buf=%p, stride=%d",
           getframe_call_count, capture_ready, out_buf, out_buf ? (int)out_buf->stride : -1);
 
   // If CAPTURE not ready, wait for SOURCE_CHANGE
@@ -447,7 +470,7 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
     struct pollfd pfd = {.fd = fd, .events = POLLPRI | POLLOUT, .revents = 0};
     for (int waited = 0; waited < 10000; waited += 500) {
       int rc = poll(&pfd, 1, 500);
-      fprintf(stderr, "[V4LDecoder] getFrame #%d: SOURCE_CHANGE wait poll rc=%d waited=%dms revents=0x%x\n",
+      LOG_DEBUG("getFrame #%d: SOURCE_CHANGE wait poll rc=%d waited=%dms revents=0x%x",
               getframe_call_count, rc, waited, pfd.revents);
       if (rc > 0) {
         if (pfd.revents & POLLPRI) {
@@ -483,10 +506,10 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
     return false;
   }
 
-  fprintf(stderr, "[V4LDecoder] getFrame #%d: polling for CAPTURE buffer (500ms timeout)...\n", getframe_call_count);
+  LOG_DEBUG("getFrame #%d: polling for CAPTURE buffer (500ms timeout)...", getframe_call_count);
   struct pollfd pfd = {.fd = fd, .events = POLLIN | POLLOUT | POLLPRI, .revents = 0};
   int rc = poll(&pfd, 1, 500);
-  fprintf(stderr, "[V4LDecoder] getFrame #%d: poll rc=%d revents=0x%x (POLLIN=%d POLLOUT=%d POLLPRI=%d)\n",
+  LOG_DEBUG("getFrame #%d: poll rc=%d revents=0x%x (POLLIN=%d POLLOUT=%d POLLPRI=%d)",
           getframe_call_count, rc, pfd.revents,
           !!(pfd.revents & POLLIN), !!(pfd.revents & POLLOUT), !!(pfd.revents & POLLPRI));
   if (rc <= 0) {
@@ -497,7 +520,7 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
   if (pfd.revents & POLLPRI) {
     struct v4l2_event ev = {};
     util::safe_ioctl(fd, VIDIOC_DQEVENT, &ev);
-    fprintf(stderr, "[V4LDecoder] getFrame #%d: dequeued event type=%d\n", getframe_call_count, ev.type);
+    LOG_DEBUG("getFrame #%d: dequeued event type=%d", getframe_call_count, ev.type);
   }
   if (pfd.revents & POLLOUT) {
     v4l2_plane plane = {};
@@ -519,7 +542,7 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
   v4l2_plane plane = {};
   v4l2_buffer v4l_buf = {
     .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
-    .memory = V4L2_MEMORY_USERPTR,
+    .memory = V4L2_MEMORY_DMABUF,
     .m = { .planes = &plane, },
     .length = 1,
   };
@@ -528,11 +551,11 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
     return false;
   }
 
-  fprintf(stderr, "[V4LDecoder] getFrame #%d: CAPTURE DQBUF idx=%d bytesused=%d flags=0x%x\n",
+  LOG_DEBUG("getFrame #%d: CAPTURE DQBUF idx=%d bytesused=%d flags=0x%x",
           getframe_call_count, v4l_buf.index, v4l_buf.m.planes[0].bytesused, v4l_buf.flags);
 
   if (v4l_buf.flags & (V4L2_QCOM_BUF_FLAG_CODECCONFIG | V4L2_QCOM_BUF_FLAG_EOS)) {
-    fprintf(stderr, "[V4LDecoder] getFrame #%d: skipping CODECCONFIG/EOS buffer (flags=0x%x)\n",
+    LOG_DEBUG("getFrame #%d: skipping CODECCONFIG/EOS buffer (flags=0x%x)",
             getframe_call_count, v4l_buf.flags);
     queueCaptureBuffer(v4l_buf.index);
     return false;
@@ -545,7 +568,7 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
   int dst_stride = (int)out_buf->stride;
   if (dst_stride == 0) dst_stride = width;
 
-  fprintf(stderr, "[V4LDecoder] getFrame #%d: copying NV12 src_stride=%d dst_stride=%d %dx%d\n",
+  LOG_DEBUG("getFrame #%d: copying NV12 src_stride=%d dst_stride=%d %dx%d",
           getframe_call_count, src_stride, dst_stride, width, height);
 
   for (int i = 0; i < height; i++) {
@@ -558,7 +581,7 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
   }
 
   queueCaptureBuffer(v4l_buf.index);
-  fprintf(stderr, "[V4LDecoder] getFrame #%d: SUCCESS!\n", getframe_call_count);
+  LOG_DEBUG("getFrame #%d: SUCCESS!", getframe_call_count);
   return true;
 }
 
@@ -574,7 +597,7 @@ void V4LDecoder::flush() {
       v4l2_plane plane = {};
       v4l2_buffer v4l_buf = {
         .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
-        .memory = V4L2_MEMORY_USERPTR,
+        .memory = V4L2_MEMORY_DMABUF,
         .m = { .planes = &plane, },
         .length = 1,
       };
@@ -609,8 +632,8 @@ void V4LDecoder::close() {
     checked_ioctl(fd, VIDIOC_STREAMOFF, &buf_type);
   }
 
-  request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, 0);
-  if (capture_ready) request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, 0);
+  request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, 0, V4L2_MEMORY_USERPTR);
+  if (capture_ready) request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, 0, V4L2_MEMORY_DMABUF);
 
   for (int i = 0; i < V4L_DEC_BUF_IN_COUNT; i++) buf_in[i].free();
   if (capture_ready) {
@@ -621,6 +644,8 @@ void V4LDecoder::close() {
   fd = -1;
   is_open = false;
   capture_ready = false;
+  extradata_sent = false;
+  extradata.clear();
   fprintf(stderr, "[V4LDecoder] Closed\n");
 }
 
