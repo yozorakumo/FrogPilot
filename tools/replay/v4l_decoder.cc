@@ -379,6 +379,22 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
 
   size_t copy_size = std::min(size, buf_in[buf_idx].len);
   memcpy(buf_in[buf_idx].addr, data, copy_size);
+
+  // Dump first bytes of first few packets to verify stream format
+  if (feed_call_count <= 3) {
+    fprintf(stderr, "[V4LDecoder] feed #%d: first 16 bytes:", feed_call_count);
+    for (size_t j = 0; j < 16 && j < copy_size; j++) {
+      fprintf(stderr, " %02x", data[j]);
+    }
+    fprintf(stderr, "\n");
+    // Check for Annex B start code (00 00 00 01) or HVCC length prefix
+    if (data[0] == 0x00 && data[1] == 0x00 && data[2] == 0x00 && data[3] == 0x01) {
+      fprintf(stderr, "[V4LDecoder] feed #%d: Annex B format detected (start code)\n", feed_call_count);
+    } else {
+      fprintf(stderr, "[V4LDecoder] feed #%d: NOT Annex B - may be HVCC/length-prefixed\n", feed_call_count);
+    }
+  }
+
   buf_in[buf_idx].sync(VISIONBUF_SYNC_TO_DEVICE);
   queueOutputBuffer(buf_idx, (uint32_t)copy_size);
 
