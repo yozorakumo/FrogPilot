@@ -287,7 +287,15 @@ void V4LDecoder::drainCapture() {
 }
 
 bool V4LDecoder::feed(const uint8_t *data, size_t size) {
-  if (!is_open) return false;
+  if (!is_open) {
+    fprintf(stderr, "[V4LDecoder] feed: not open!\n");
+    return false;
+  }
+
+  static int feed_call_count = 0;
+  feed_call_count++;
+  fprintf(stderr, "[V4LDecoder] feed #%d: size=%zu, capture_ready=%d\n",
+          feed_call_count, size, capture_ready);
 
   drainOutput();
 
@@ -295,6 +303,8 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
   if (!capture_ready) {
     struct pollfd pfd = {.fd = fd, .events = POLLPRI | POLLOUT, .revents = 0};
     int rc = poll(&pfd, 1, 0);
+    fprintf(stderr, "[V4LDecoder] feed #%d: SOURCE_CHANGE poll rc=%d revents=0x%x\n",
+            feed_call_count, rc, pfd.revents);
     if (rc > 0 && (pfd.revents & POLLPRI)) {
       struct v4l2_event ev = {};
       if (util::safe_ioctl(fd, VIDIOC_DQEVENT, &ev) == 0 && ev.type == V4L2_EVENT_SOURCE_CHANGE) {
@@ -304,6 +314,9 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
           fprintf(stderr, "[V4LDecoder] CAPTURE setup failed\n");
           return false;
         }
+      } else {
+        fprintf(stderr, "[V4LDecoder] feed #%d: POLLPRI but event type=%d (not SOURCE_CHANGE=%d)\n",
+                feed_call_count, ev.type, V4L2_EVENT_SOURCE_CHANGE);
       }
     }
   }
@@ -311,6 +324,7 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
   // Also drain OUTPUT after poll
   if (!capture_ready) {
     // Still waiting for SOURCE_CHANGE - drain OUTPUT and continue
+    fprintf(stderr, "[V4LDecoder] feed #%d: capture not ready, draining output\n", feed_call_count);
     drainOutput();
   }
 
@@ -363,28 +377,45 @@ bool V4LDecoder::feed(const uint8_t *data, size_t size) {
   // After feeding, check again for SOURCE_CHANGE
   if (!capture_ready) {
     struct pollfd pfd = {.fd = fd, .events = POLLPRI, .revents = 0};
-    if (poll(&pfd, 1, 100) > 0 && (pfd.revents & POLLPRI)) {
+    int src_rc = poll(&pfd, 1, 100);
+    fprintf(stderr, "[V4LDecoder] feed #%d: post-feed SOURCE_CHANGE poll rc=%d revents=0x%x\n",
+            feed_call_count, src_rc, pfd.revents);
+    if (src_rc > 0 && (pfd.revents & POLLPRI)) {
       struct v4l2_event ev = {};
       if (util::safe_ioctl(fd, VIDIOC_DQEVENT, &ev) == 0 && ev.type == V4L2_EVENT_SOURCE_CHANGE) {
         struct v4l2_event_src_change *sc = (struct v4l2_event_src_change *)ev.u.data;
         fprintf(stderr, "[V4LDecoder] SOURCE_CHANGE after feed! changes=0x%x\n", sc->changes);
         setupCapture();
       }
+    } else if (feed_call_count <= 5) {
+      fprintf(stderr, "[V4LDecoder] feed #%d: still no SOURCE_CHANGE after 100ms (capture_ready=%d)\n",
+              feed_call_count, capture_ready);
     }
   }
 
+  fprintf(stderr, "[V4LDecoder] feed #%d: done, capture_ready=%d\n", feed_call_count, capture_ready);
   return true;
 }
 
 bool V4LDecoder::getFrame(VisionBuf *out_buf) {
-  if (!is_open) return false;
+  if (!is_open) {
+    fprintf(stderr, "[V4LDecoder] getFrame: not open!\n");
+    return false;
+  }
+
+  static int getframe_call_count = 0;
+  getframe_call_count++;
+  fprintf(stderr, "[V4LDecoder] getFrame #%d: capture_ready=%d, out_buf=%p, stride=%d\n",
+          getframe_call_count, capture_ready, out_buf, out_buf ? (int)out_buf->stride : -1);
 
   // If CAPTURE not ready, wait for SOURCE_CHANGE
   if (!capture_ready) {
-    fprintf(stderr, "[V4LDecoder] getFrame: waiting for CAPTURE setup...\n");
+    fprintf(stderr, "[V4LDecoder] getFrame #%d: waiting for CAPTURE setup (up to 10s)...\n", getframe_call_count);
     struct pollfd pfd = {.fd = fd, .events = POLLPRI | POLLOUT, .revents = 0};
     for (int waited = 0; waited < 10000; waited += 500) {
       int rc = poll(&pfd, 1, 500);
+      fprintf(stderr, "[V4LDecoder] getFrame #%d: SOURCE_CHANGE wait poll rc=%d waited=%dms revents=0x%x\n",
+              getframe_call_count, rc, waited, pfd.revents);
       if (rc > 0) {
         if (pfd.revents & POLLPRI) {
           struct v4l2_event ev = {};
@@ -407,22 +438,33 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
           }
         }
       }
-      if (waited >= 10000) {
-        fprintf(stderr, "[V4LDecoder] getFrame: SOURCE_CHANGE timeout\n");
-        return false;
-      }
+    }
+    if (!capture_ready) {
+      fprintf(stderr, "[V4LDecoder] getFrame #%d: SOURCE_CHANGE TIMEOUT after 10s! Giving up.\n", getframe_call_count);
+      return false;
     }
   }
 
-  if (!capture_ready) return false;
+  if (!capture_ready) {
+    fprintf(stderr, "[V4LDecoder] getFrame #%d: still not capture_ready, returning false\n", getframe_call_count);
+    return false;
+  }
 
+  fprintf(stderr, "[V4LDecoder] getFrame #%d: polling for CAPTURE buffer (500ms timeout)...\n", getframe_call_count);
   struct pollfd pfd = {.fd = fd, .events = POLLIN | POLLOUT | POLLPRI, .revents = 0};
   int rc = poll(&pfd, 1, 500);
-  if (rc <= 0) return false;
+  fprintf(stderr, "[V4LDecoder] getFrame #%d: poll rc=%d revents=0x%x (POLLIN=%d POLLOUT=%d POLLPRI=%d)\n",
+          getframe_call_count, rc, pfd.revents,
+          !!(pfd.revents & POLLIN), !!(pfd.revents & POLLOUT), !!(pfd.revents & POLLPRI));
+  if (rc <= 0) {
+    fprintf(stderr, "[V4LDecoder] getFrame #%d: poll timeout or error (rc=%d)\n", getframe_call_count, rc);
+    return false;
+  }
 
   if (pfd.revents & POLLPRI) {
     struct v4l2_event ev = {};
     util::safe_ioctl(fd, VIDIOC_DQEVENT, &ev);
+    fprintf(stderr, "[V4LDecoder] getFrame #%d: dequeued event type=%d\n", getframe_call_count, ev.type);
   }
   if (pfd.revents & POLLOUT) {
     v4l2_plane plane = {};
@@ -436,7 +478,10 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
       free_input_bufs.push(v4l_buf.index);
     }
   }
-  if (!(pfd.revents & POLLIN)) return false;
+  if (!(pfd.revents & POLLIN)) {
+    fprintf(stderr, "[V4LDecoder] getFrame #%d: no POLLIN, returning false\n", getframe_call_count);
+    return false;
+  }
 
   v4l2_plane plane = {};
   v4l2_buffer v4l_buf = {
@@ -445,14 +490,17 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
     .m = { .planes = &plane, },
     .length = 1,
   };
-  if (try_ioctl(fd, VIDIOC_DQBUF, &v4l_buf) != 0) return false;
-
-  if (env_debug_decoder) {
-    printf("[V4LDecoder] getFrame: CAPTURE idx=%d bytesused=%d flags=0x%x\n",
-           v4l_buf.index, v4l_buf.m.planes[0].bytesused, v4l_buf.flags);
+  if (try_ioctl(fd, VIDIOC_DQBUF, &v4l_buf) != 0) {
+    fprintf(stderr, "[V4LDecoder] getFrame #%d: DQBUF CAPTURE failed\n", getframe_call_count);
+    return false;
   }
 
+  fprintf(stderr, "[V4LDecoder] getFrame #%d: CAPTURE DQBUF idx=%d bytesused=%d flags=0x%x\n",
+          getframe_call_count, v4l_buf.index, v4l_buf.m.planes[0].bytesused, v4l_buf.flags);
+
   if (v4l_buf.flags & (V4L2_QCOM_BUF_FLAG_CODECCONFIG | V4L2_QCOM_BUF_FLAG_EOS)) {
+    fprintf(stderr, "[V4LDecoder] getFrame #%d: skipping CODECCONFIG/EOS buffer (flags=0x%x)\n",
+            getframe_call_count, v4l_buf.flags);
     queueCaptureBuffer(v4l_buf.index);
     return false;
   }
@@ -464,6 +512,9 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
   int dst_stride = (int)out_buf->stride;
   if (dst_stride == 0) dst_stride = width;
 
+  fprintf(stderr, "[V4LDecoder] getFrame #%d: copying NV12 src_stride=%d dst_stride=%d %dx%d\n",
+          getframe_call_count, src_stride, dst_stride, width, height);
+
   for (int i = 0; i < height; i++) {
     memcpy(out_buf->y + i * dst_stride, src + i * src_stride, width);
   }
@@ -474,6 +525,7 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
   }
 
   queueCaptureBuffer(v4l_buf.index);
+  fprintf(stderr, "[V4LDecoder] getFrame #%d: SUCCESS!\n", getframe_call_count);
   return true;
 }
 

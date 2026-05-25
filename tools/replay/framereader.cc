@@ -242,7 +242,9 @@ bool VideoDecoder::initHardwareDecoder(AVHWDeviceType hw_device_type) {
 bool VideoDecoder::decode(FrameReader *reader, int idx, VisionBuf *buf) {
 #ifdef QCOM2
   if (use_v4l_direct_ && !v4l_fallback_to_cpu_) {
+    fprintf(stderr, "[VideoDecoder::decode] idx=%d, use_v4l_direct=true, calling decodeV4L\n", idx);
     bool result = decodeV4L(reader, idx, buf);
+    fprintf(stderr, "[VideoDecoder::decode] idx=%d, decodeV4L returned %d\n", idx, result);
     if (!result && !v4l_fallback_to_cpu_) {
       fprintf(stderr, "[VideoDecoder] V4L2 decode failed, falling back to CPU decoder\n");
       if (initCPUFallback()) {
@@ -316,14 +318,19 @@ bool VideoDecoder::decodeV4L(FrameReader *reader, int idx, VisionBuf *buf) {
 #ifdef QCOM2
   int from_idx = idx;
 
+  fprintf(stderr, "[decodeV4L] idx=%d, prev_idx=%d, buf=%p\n", idx, reader->prev_idx, buf);
+
   // Flush V4L decoder on seek
   if (idx != reader->prev_idx + 1) {
+    fprintf(stderr, "[decodeV4L] Seek detected (idx=%d != prev_idx+1=%d), flushing\n",
+            idx, reader->prev_idx + 1);
     v4l_decoder_.flush();
 
     // Find nearest key frame
     for (int i = idx; i >= 0; --i) {
       if (reader->packets_info[i].flags & AV_PKT_FLAG_KEY) {
         from_idx = i;
+        fprintf(stderr, "[decodeV4L] Found keyframe at %d (seeking from %d to %d)\n", i, from_idx, idx);
         break;
       }
     }
@@ -333,15 +340,21 @@ bool VideoDecoder::decodeV4L(FrameReader *reader, int idx, VisionBuf *buf) {
 
   // Feed compressed packets to V4L decoder
   AVPacket pkt;
+  fprintf(stderr, "[decodeV4L] Feeding packets %d to %d (%d packets)\n", from_idx, idx, idx - from_idx + 1);
   for (int i = from_idx; i <= idx; ++i) {
     if (av_read_frame(reader->input_ctx, &pkt) == 0) {
       if (pkt.size > 0) {
         if (!v4l_decoder_.feed(pkt.data, pkt.size)) {
+          fprintf(stderr, "[decodeV4L] feed failed at packet %d (size=%d)\n", i, pkt.size);
           av_packet_unref(&pkt);
           return false;
         }
+      } else {
+        fprintf(stderr, "[decodeV4L] packet %d has size=0, skipping\n", i);
       }
       av_packet_unref(&pkt);
+    } else {
+      fprintf(stderr, "[decodeV4L] av_read_frame failed at packet %d\n", i);
     }
     // Drain intermediate CAPTURE buffers to prevent buffer starvation.
     // Non-blocking: re-queues decoded frames we don't need (only intermediate).
@@ -352,7 +365,10 @@ bool VideoDecoder::decodeV4L(FrameReader *reader, int idx, VisionBuf *buf) {
   }
 
   // Get decoded NV12 frame for the target (blocking with 500ms timeout)
-  return v4l_decoder_.getFrame(buf);
+  fprintf(stderr, "[decodeV4L] Calling getFrame for idx=%d...\n", idx);
+  bool result = v4l_decoder_.getFrame(buf);
+  fprintf(stderr, "[decodeV4L] getFrame returned %d for idx=%d\n", result, idx);
+  return result;
 #else
   return false;
 #endif

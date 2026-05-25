@@ -304,7 +304,10 @@ int main(int argc, char *argv[]) {
 
       // デコード
       FrameReader *reader = readers[seg].get();
+      fprintf(stderr, "[video_player] Predecode: decoding frame %d (seg=%d, frame_in_seg=%d)\n",
+              decode_frame, seg, frame_in_seg);
       bool ok = reader->get(frame_in_seg, vipc_buf);
+      fprintf(stderr, "[video_player] Predecode: frame %d decode result=%d\n", decode_frame, ok);
 
       DecodedFrame df;
       df.frame_id = decode_frame;
@@ -429,9 +432,8 @@ int main(int argc, char *argv[]) {
 
     if (!frame_to_send.valid || !frame_to_send.vipc_buf) {
       // デコード失敗フレーム - バッファはリングバッファで再利用される
-      if (frames_sent == 0 && total_frame > 10) {
-        fprintf(stderr, "[video_player] WARNING: No frames sent yet, decode may be failing (frame=%d)\n", total_frame);
-      }
+      fprintf(stderr, "[video_player] WARNING: frame %d invalid (valid=%d, buf=%p), skipping. sent=%zu\n",
+              total_frame, frame_to_send.valid, frame_to_send.vipc_buf, frames_sent);
       last_frame = total_frame;
       continue;
     }
@@ -442,6 +444,10 @@ int main(int argc, char *argv[]) {
     extra.timestamp_eof = static_cast<uint64_t>((current_pos + FRAME_INTERVAL) * 1e9);
     vipc->send(frame_to_send.vipc_buf, &extra, false);
     frames_sent++;
+    if (frames_sent <= 3) {
+      fprintf(stderr, "[video_player] Sent frame #%zu: frame_id=%d, buf=%p\n",
+              frames_sent, total_frame, frame_to_send.vipc_buf);
+    }
     last_frame = total_frame;
     last_frame_time = std::chrono::steady_clock::now();
 
