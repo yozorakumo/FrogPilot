@@ -512,6 +512,22 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
   LOG_DEBUG("getFrame #%d: poll rc=%d revents=0x%x (POLLIN=%d POLLOUT=%d POLLPRI=%d)",
           getframe_call_count, rc, pfd.revents,
           !!(pfd.revents & POLLIN), !!(pfd.revents & POLLOUT), !!(pfd.revents & POLLPRI));
+  if (revents & POLLERR) {
+    LOG_DEBUG("V4LDecoder::getFrame: poll error");
+    return false;
+  }
+  if (revents & POLLHUP) {
+    LOG_DEBUG("V4LDecoder::getFrame: poll hangup");
+    return false;
+  }
+  if (revents & POLLNVAL) {
+    LOG_DEBUG("V4LDecoder::getFrame: poll invalid");
+    return false;
+  }
+  if (revents == 0) {
+    LOG_DEBUG("V4LDecoder::getFrame: poll timeout after %d ms", 500);
+    return false;
+  }
   if (rc <= 0) {
     fprintf(stderr, "[V4LDecoder] getFrame #%d: poll timeout or error (rc=%d)\n", getframe_call_count, rc);
     return false;

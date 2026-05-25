@@ -33,6 +33,7 @@
 #include "common/params.h"
 #include "common/util.h"
 #include "msgq/visionipc/visionipc_server.h"
+#include "msgq/visionipc/visionbuf.h"
 #include "system/camerad/cameras/camera_common.h"
 #include "tools/replay/framereader.h"
 #include "tools/replay/util.h"
@@ -442,7 +443,8 @@ int main(int argc, char *argv[]) {
     extra.frame_id = static_cast<uint64_t>(total_frame);
     extra.timestamp_sof = static_cast<uint64_t>(current_pos * 1e9);
     extra.timestamp_eof = static_cast<uint64_t>((current_pos + FRAME_INTERVAL) * 1e9);
-    vipc->send(frame_to_send.vipc_buf, &extra, false);
+    frame_to_send.vipc_buf->sync(VISIONBUF_SYNC_TO_DEVICE);
+    vipc->send(frame_to_send.vipc_buf, &extra, true);
     frames_sent++;
     if (frames_sent <= 3) {
       fprintf(stderr, "[video_player] Sent frame #%zu: frame_id=%d, buf=%p\n",
