@@ -37,9 +37,10 @@ void FrogPilotOnroadWindow::mouseMoveEvent(QMouseEvent *e) {
 }
 
 FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) {
-  // UIEditMode中はこのウィジェットのマウスイベントをすべて無視し、
-  // AnnotatedCameraWidget (nvg) へイベントを転送できるようにする
-  setAttribute(Qt::WA_TransparentForMouseEvents, true);
+  // WA_TransparentForMouseEvents は設定しない
+  // 子ウィジェット（PlaybackOverlay, stop_playback_btn_, 描画領域）が
+  // 正常にマウスイベントを受け取れるようにする
+  // イベント伝播は mousePressEvent/mouseReleaseEvent/mouseMoveEvent で制御
 
   signalTimer = new QTimer(this);
 
@@ -75,10 +76,8 @@ void FrogPilotOnroadWindow::initPlaybackOverlay() {
     playback_start_time_ = realtime_str;
   }
 
-  // WA_TransparentForMouseEvents is no longer set on FrogPilotOnroadWindow.
-  // Mouse events are handled by overridden mousePressEvent/mouseReleaseEvent/mouseMoveEvent:
-  // - Events on child widgets (PlaybackOverlay, stop button) are dispatched normally by Qt.
-  // - Events on empty areas are propagated to the parent (OnroadWindow) via e->ignore().
+  // PlaybackOverlay and stop_playback_btn_ receive mouse events normally via Qt's event dispatch.
+  // Mouse events on empty areas are propagated to parent via e->ignore() in mousePressEvent.
 
   playback_overlay_ = new PlaybackOverlay(this);
   playback_overlay_->setDuration(playback_duration_);
@@ -135,7 +134,8 @@ void FrogPilotOnroadWindow::initPlaybackOverlay() {
       background: rgba(220, 60, 60, 220);
     }
   )");
-  stop_playback_btn_->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+  // stop_playback_btn_ は親 FrogPilotOnroadWindow からマウスイベントを受け取る
+  // （親は WA_TransparentForMouseEvents を設定不再）
   QObject::connect(stop_playback_btn_, &QPushButton::clicked, [this]() {
     stopPlayback();
   });
