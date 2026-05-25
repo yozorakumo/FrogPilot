@@ -112,7 +112,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
     QMouseEvent forwarded(QEvent::MouseButtonPress, nvg_pos, e->globalPos(),
                           e->button(), e->buttons(), e->modifiers());
     // 直接メソッド呼び出し（sendEventを使わない）で再帰を防止
-    nvg->mousePressEvent(&forwarded);
+    nvg->forwardMousePress(&forwarded);
     nvg_handled = forwarded.isAccepted();
   }
 
@@ -238,7 +238,7 @@ void OnroadWindow::mouseMoveEvent(QMouseEvent* e) {
       QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
       QMouseEvent forwarded(QEvent::MouseMove, nvg_pos, e->globalPos(),
                             e->button(), e->buttons(), e->modifiers());
-      nvg->mouseMoveEvent(&forwarded);
+      nvg->forwardMouseMove(&forwarded);
     }
     handling_mouse_event_ = false;
     e->accept();
@@ -263,7 +263,7 @@ void OnroadWindow::mouseReleaseEvent(QMouseEvent* e) {
       QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
       QMouseEvent forwarded(QEvent::MouseButtonRelease, nvg_pos, e->globalPos(),
                             e->button(), e->buttons(), e->modifiers());
-      nvg->mouseReleaseEvent(&forwarded);
+      nvg->forwardMouseRelease(&forwarded);
     }
     handling_mouse_event_ = false;
     e->accept();

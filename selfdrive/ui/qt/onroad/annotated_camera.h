@@ -30,6 +30,11 @@ public:
   FrogPilotAnnotatedCameraWidget *frogpilot_nvg;
   ScreenRecorder *screen_recorder;
 
+  // OnroadWindow からのイベント転送用ラッパー
+  void forwardMousePress(QMouseEvent *event) { mousePressEvent(event); }
+  void forwardMouseMove(QMouseEvent *event) { mouseMoveEvent(event); }
+  void forwardMouseRelease(QMouseEvent *event) { mouseReleaseEvent(event); }
+
 private:
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
   void drawSpeedometer(QPainter &p, const QString &speed_str, const QString &speed_unit, float current_speed, float rpm, int gear, bool clutch_pressed, const QJsonObject &frogpilot_toggles);
