@@ -128,7 +128,11 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
 #ifdef QCOM2
   // Enable direct V4L2 ION decoder for HEVC on SDM845 (C3).
   // Uses DMABUF for CAPTURE and USERPTR for OUTPUT with CODECCONFIG extradata.
-  if (hw_decoder && codecpar->codec_id == AV_CODEC_ID_HEVC) {
+  //
+  // DISABLED: HW decoder requires /dev/dma_buf which may not exist on all devices.
+  // When DMA BUF is unavailable, poll() times out and video doesn't play.
+  // Falling back to SW decoding (libde265) for reliable operation.
+  if (false && hw_decoder && codecpar->codec_id == AV_CODEC_ID_HEVC) {
     int w = (codecpar->width + 3) & ~3;
     int h = codecpar->height;
     fprintf(stderr, "[VideoDecoder] Trying direct V4L2 ION decoder (%dx%d)...\n", w, h);
