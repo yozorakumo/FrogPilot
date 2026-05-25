@@ -1346,9 +1346,9 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 void AnnotatedCameraWidget::mousePressEvent(QMouseEvent *event) {
   if (edit_manager_ && edit_manager_->handleMousePress(event->pos())) {
     event->accept();
-  } else {
-    CameraWidget::mousePressEvent(event);
+    return;  // 編集モードで処理したらCameraWidgetに渡さない
   }
+  CameraWidget::mousePressEvent(event);
 }
 
 void AnnotatedCameraWidget::mouseMoveEvent(QMouseEvent *event) {

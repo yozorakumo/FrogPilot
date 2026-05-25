@@ -31,6 +31,9 @@ public:
   void updateState(const UIState &s, const FrogPilotUIState &fs);
   void resizeEvent(QResizeEvent *event) override;
 
+  // UIEditMode マネージャー設定（OnroadWindow から呼び出し）
+  void setEditModeManager(UIEditModeManager *manager) { edit_manager_ = manager; }
+
 protected:
   void mousePressEvent(QMouseEvent *e) override;
   void mouseReleaseEvent(QMouseEvent *e) override;
@@ -85,4 +88,7 @@ private:
 
   // Last applied state for diff detection in applyPlaybackState()
   PlaybackState last_applied_state_;
+
+  // UIEditMode マネージャー（編集モード中のイベント処理制御用）
+  UIEditModeManager *edit_manager_ = nullptr;
 };

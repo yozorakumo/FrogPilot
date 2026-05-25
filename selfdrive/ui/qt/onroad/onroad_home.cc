@@ -52,6 +52,7 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
 
   // FrogPilot variables
   frogpilot_onroad = new FrogPilotOnroadWindow(this);
+  frogpilot_onroad->setEditModeManager(edit_manager_);
 
   // UI Edit Mode - 長押し検出はMainWindow::eventFilter()に統合済み
   // UIEditModeManagerはオフセット管理のみに使用

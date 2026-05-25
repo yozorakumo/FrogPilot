@@ -37,6 +37,10 @@ void FrogPilotOnroadWindow::mouseMoveEvent(QMouseEvent *e) {
 }
 
 FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) {
+  // UIEditMode中はこのウィジェットのマウスイベントをすべて無視し、
+  // AnnotatedCameraWidget (nvg) へイベントを転送できるようにする
+  setAttribute(Qt::WA_TransparentForMouseEvents, true);
+
   signalTimer = new QTimer(this);
 
   QObject::connect(signalTimer, &QTimer::timeout, [this] {
