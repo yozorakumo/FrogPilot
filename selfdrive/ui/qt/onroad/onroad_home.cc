@@ -1,5 +1,6 @@
 #include "selfdrive/ui/qt/onroad/onroad_home.h"
 
+#include <QCoreApplication>
 #include <QPainter>
 #include <QStackedLayout>
 
@@ -95,6 +96,23 @@ void OnroadWindow::updateState(const UIState &s, const FrogPilotUIState &fs) {
 }
 
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
+  // AnnotatedCameraWidget にイベントを転送（長押しUIEditMode検出・編集モード操作用）
+  // FrogPilotOnroadWindow の空白領域からのイベントのみここに到達する
+  bool nvg_handled = false;
+  if (nvg) {
+    QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
+    QMouseEvent forwarded(QEvent::MouseButtonPress, nvg_pos, e->globalPos(),
+                          e->button(), e->buttons(), e->modifiers());
+    QCoreApplication::sendEvent(nvg, &forwarded);
+    nvg_handled = forwarded.isAccepted();
+  }
+
+  // 編集モードでイベントが処理された場合は親に伝播しない
+  if (nvg_handled) {
+    e->accept();
+    return;
+  }
+
   // 長押し追跡中は親（HomeWindow）に伝播しない（サイドバーのトグルを防止）
   if (edit_manager_ && edit_manager_->isPressPending()) {
     e->accept();
@@ -193,6 +211,36 @@ void OnroadWindow::primeChanged(bool prime) {
     createMapWidget();
   }
 #endif
+}
+
+void OnroadWindow::mouseMoveEvent(QMouseEvent* e) {
+  // 長押し追跡中または編集モード中はAnnotatedCameraWidgetに転送
+  if (edit_manager_ && (edit_manager_->isPressPending() || edit_manager_->isEditMode())) {
+    if (nvg) {
+      QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
+      QMouseEvent forwarded(QEvent::MouseMove, nvg_pos, e->globalPos(),
+                            e->button(), e->buttons(), e->modifiers());
+      QCoreApplication::sendEvent(nvg, &forwarded);
+    }
+    e->accept();
+    return;
+  }
+  QWidget::mouseMoveEvent(e);
+}
+
+void OnroadWindow::mouseReleaseEvent(QMouseEvent* e) {
+  // 長押し追跡中または編集モード中はAnnotatedCameraWidgetに転送
+  if (edit_manager_ && (edit_manager_->isPressPending() || edit_manager_->isEditMode())) {
+    if (nvg) {
+      QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
+      QMouseEvent forwarded(QEvent::MouseButtonRelease, nvg_pos, e->globalPos(),
+                            e->button(), e->buttons(), e->modifiers());
+      QCoreApplication::sendEvent(nvg, &forwarded);
+    }
+    e->accept();
+    return;
+  }
+  QWidget::mouseReleaseEvent(e);
 }
 
 void OnroadWindow::paintEvent(QPaintEvent *event) {
