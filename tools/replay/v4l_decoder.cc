@@ -127,27 +127,77 @@ bool V4LDecoder::open(int in_width, int in_height) {
   fprintf(stderr, "[V4LDecoder] OUTPUT format: HEVC %dx%d, sizeimage=%zu\n",
           fmt.fmt.pix_mp.width, fmt.fmt.pix_mp.height, input_buf_size);
 
+  // Set CAPTURE format (decoded NV12 output) upfront.
+  // msm_vidc (Venus) requires CAPTURE format to be set before processing data.
+  // Unlike standard V4L2 M2M, Venus won't emit SOURCE_CHANGE without this.
+  decoded_stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, width);
+  output_buf_size = (size_t)VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
+
+  fmt = {};
+  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+  fmt.fmt.pix_mp.width = (unsigned int)width;
+  fmt.fmt.pix_mp.height = (unsigned int)height;
+  fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_NV12;
+  fmt.fmt.pix_mp.field = V4L2_FIELD_ANY;
+  fmt.fmt.pix_mp.num_planes = 1;
+  fmt.fmt.pix_mp.plane_fmt[0].sizeimage = (unsigned int)output_buf_size;
+
+  if (!checked_ioctl(fd, VIDIOC_S_FMT, &fmt)) {
+    fprintf(stderr, "[V4LDecoder] CAPTURE S_FMT failed, trying without\n");
+    // Non-fatal: some drivers may reject upfront CAPTURE format
+  } else {
+    fprintf(stderr, "[V4LDecoder] CAPTURE format: NV12 %dx%d, sizeimage=%d\n",
+            fmt.fmt.pix_mp.width, fmt.fmt.pix_mp.height,
+            fmt.fmt.pix_mp.plane_fmt[0].sizeimage);
+    // Update sizes from actual format
+    output_buf_size = (size_t)fmt.fmt.pix_mp.plane_fmt[0].sizeimage;
+  }
+
   // Allocate ION buffers for OUTPUT
   for (int i = 0; i < V4L_DEC_BUF_IN_COUNT; i++) {
     buf_in[i].allocate(input_buf_size);
     free_input_bufs.push(i);
   }
 
-  // Request and start OUTPUT streaming
+  // Allocate ION buffers for CAPTURE
+  for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
+    buf_out[i].allocate(output_buf_size);
+  }
+
+  // Request OUTPUT buffers
   if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, V4L_DEC_BUF_IN_COUNT)) goto fail;
   fprintf(stderr, "[V4LDecoder] OUTPUT REQBUFS: %d buffers\n", V4L_DEC_BUF_IN_COUNT);
 
+  // Request CAPTURE buffers
+  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L_DEC_BUF_OUT_COUNT)) {
+    fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS failed\n");
+    goto fail;
+  }
+  fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS: %d buffers\n", V4L_DEC_BUF_OUT_COUNT);
+
+  // Start CAPTURE streaming first (Venus requirement)
+  buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+  if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) {
+    fprintf(stderr, "[V4LDecoder] CAPTURE STREAMON failed\n");
+    goto fail;
+  }
+  fprintf(stderr, "[V4LDecoder] CAPTURE STREAMON successful\n");
+
+  // Queue all CAPTURE buffers
+  for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
+    queueCaptureBuffer(i);
+  }
+  fprintf(stderr, "[V4LDecoder] Queued %d CAPTURE buffers\n", V4L_DEC_BUF_OUT_COUNT);
+
+  // Start OUTPUT streaming
   buf_type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
   if (!checked_ioctl(fd, VIDIOC_STREAMON, &buf_type)) goto fail;
   fprintf(stderr, "[V4LDecoder] OUTPUT STREAMON successful\n");
 
-  // Calculate expected CAPTURE buffer sizes
-  decoded_stride = VENUS_Y_STRIDE(COLOR_FMT_NV12, width);
-  output_buf_size = (size_t)VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
-
   is_open = true;
-  capture_ready = false;
-  fprintf(stderr, "[V4LDecoder] Phase 1 complete. CAPTURE will be set up after first frame.\n");
+  capture_ready = true;
+  fprintf(stderr, "[V4LDecoder] Initialization complete. OUTPUT+CAPTURE ready (%dx%d, stride=%d, buf=%zu)\n",
+          width, height, decoded_stride, output_buf_size);
   return true;
 
 fail:
@@ -156,6 +206,10 @@ fail:
     buf_in[i].free();
   }
   while (!free_input_bufs.empty()) free_input_bufs.pop();
+  // Cleanup CAPTURE buffers (may not have been allocated if fail early)
+  for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
+    buf_out[i].free();
+  }
   ::close(fd);
   fd = -1;
   fprintf(stderr, "[V4LDecoder] open failed, falling back to CPU decoder\n");
