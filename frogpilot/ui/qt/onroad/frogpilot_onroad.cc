@@ -273,7 +273,8 @@ void FrogPilotOnroadWindow::applyPlaybackState() {
   }
 
   // Diff detection: only update UI elements when values change
-  if (state.position != last_applied_state_.position) {
+  // 一時停止中は位置更新をスキップ（UI上で再生時間が停止するように）
+  if (state.playing && state.position != last_applied_state_.position) {
     playback_position_ = state.position;
     playback_overlay_->setPosition(state.position);
   }

@@ -12,15 +12,15 @@
 #define V4L_DEC_BUF_OUT_COUNT 6  // CAPTURE (decoded NV12 output)
 
 // V4L2 hardware decoder for Qualcomm Venus (msm_vidc_vdec)
-// Uses DMABUF for CAPTURE (required by SDM845 Venus driver) and USERPTR for OUTPUT.
+// Uses USERPTR for both OUTPUT and CAPTURE (no DMA BUF required).
 //   1. Set OUTPUT format (HEVC compressed input)
 //   2. REQBUFS + allocate USERPTR buffers for OUTPUT
 //   3. STREAMON OUTPUT
 //   4. Feed VPS/SPS/PPS with CODECCONFIG flag
 //   5. Feed compressed frames, wait for SOURCE_CHANGE
-//   6. Set CAPTURE format (NV12), REQBUFS with DMABUF
-//   7. Allocate ION buffers, export fd, pass to V4L2 as DMABUF
-//   8. STREAMON CAPTURE, queue empty DMABUF buffers
+//   6. Set CAPTURE format (NV12), REQBUFS with USERPTR
+//   7. Allocate ION buffers, pass mmap addr to V4L2 as USERPTR
+//   8. STREAMON CAPTURE, queue empty USERPTR buffers
 //   9. Dequeue decoded frames from CAPTURE
 class V4LDecoder {
 public:
@@ -57,7 +57,7 @@ private:
   bool extradata_sent = false;
 
   VisionBuf buf_in[V4L_DEC_BUF_IN_COUNT];   // OUTPUT (compressed HEVC) - USERPTR
-  VisionBuf buf_out[V4L_DEC_BUF_OUT_COUNT]; // CAPTURE (decoded NV12) - DMABUF
+  VisionBuf buf_out[V4L_DEC_BUF_OUT_COUNT]; // CAPTURE (decoded NV12) - USERPTR
 
   SafeQueue<int> free_input_bufs;
 

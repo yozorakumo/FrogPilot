@@ -24,6 +24,10 @@ struct UIElementConfig {
 class UIEditModeManager : public QObject {
   Q_OBJECT
 
+signals:
+  // 設定変更時に親ウィジェットに通知して即座に描画更新させる
+  void settingsChanged();
+
 public:
   explicit UIEditModeManager(QObject *parent = nullptr);
 

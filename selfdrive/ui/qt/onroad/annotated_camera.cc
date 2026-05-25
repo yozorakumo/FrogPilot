@@ -45,6 +45,12 @@ void AnnotatedCameraWidget::setEditModeManager(UIEditModeManager *manager) {
   if (frogpilot_nvg) {
     frogpilot_nvg->setEditModeManager(manager);
   }
+  // Connect settingsChanged signal to trigger repaint immediately
+  if (edit_manager_) {
+    connect(edit_manager_, &UIEditModeManager::settingsChanged, this, [this]() {
+      update();
+    });
+  }
 }
 
 void AnnotatedCameraWidget::resizeEvent(QResizeEvent *event) {

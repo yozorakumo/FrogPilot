@@ -171,6 +171,7 @@ bool UIEditModeManager::handleMousePress(const QPoint &pos) {
       edit_mode_ = false;
       saveSettings();
       selected_element_.clear();
+      emit settingsChanged();  // 編集モード終了を通知
       return true;
     }
 
@@ -181,6 +182,7 @@ bool UIEditModeManager::handleMousePress(const QPoint &pos) {
         press_pending_ = false;
         auto &sel_elem = elements_[selected_element_];
         sel_elem.scale = std::clamp(sel_elem.scale - 0.1f, SCALE_MIN, SCALE_MAX);
+        emit settingsChanged();  // 即座に描画更新を通知
         return true;
       }
       if (zoom_in_btn_rect_.contains(pos)) {
@@ -188,6 +190,7 @@ bool UIEditModeManager::handleMousePress(const QPoint &pos) {
         press_pending_ = false;
         auto &sel_elem = elements_[selected_element_];
         sel_elem.scale = std::clamp(sel_elem.scale + 0.1f, SCALE_MIN, SCALE_MAX);
+        emit settingsChanged();  // 即座に描画更新を通知
         return true;
       }
     }
@@ -204,6 +207,7 @@ bool UIEditModeManager::handleMousePress(const QPoint &pos) {
         is_dragging_ = true;
         long_press_timer_->stop();
         press_pending_ = false;
+        emit settingsChanged();  // 選択状態を即座に描画
         return true;
       }
     }
@@ -230,6 +234,7 @@ bool UIEditModeManager::handleMouseMove(const QPoint &pos) {
 
     elem.offset_x = new_x;
     elem.offset_y = new_y;
+    emit settingsChanged();  // ドラッグ中に即座に描画更新
     return true;
   }
   return false;
@@ -261,6 +266,7 @@ bool UIEditModeManager::handleDoubleClick(const QPoint &pos) {
       } else {
         it->scale = 0.75f;
       }
+      emit settingsChanged();  // 即座に描画更新を通知
       return true;
     }
   }
@@ -284,6 +290,7 @@ bool UIEditModeManager::handlePinchZoom(const QPoint &center, float scale_delta)
   if (!selected_element_.isEmpty()) {
     auto &elem = elements_[selected_element_];
     elem.scale = std::clamp(elem.scale * scale_delta, SCALE_MIN, SCALE_MAX);
+    emit settingsChanged();  // ピンチズーム中に即座に描画更新
     return true;
   }
   return false;
@@ -439,5 +446,6 @@ void UIEditModeManager::resetAll() {
     it->offset_y = 0.0f;
     it->scale = 1.0f;
   }
+  emit settingsChanged();  // リセット後に即座に描画更新
   saveSettings();
 }
