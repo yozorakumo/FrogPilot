@@ -5,6 +5,37 @@
 #include "common/params.h"
 #include "frogpilot/ui/qt/onroad/frogpilot_onroad.h"
 
+void FrogPilotOnroadWindow::mousePressEvent(QMouseEvent *e) {
+  // 子ウィジェット（PlaybackOverlay, stop_playback_btn_など）上のイベントは
+  // Qtのデフォルト配送に任す。空白領域のイベントは親（OnroadWindow）に伝播する。
+  QWidget *child = childAt(e->pos());
+  if (child) {
+    // 子ウィジェット上 → Qtのデフォルト処理（子にイベント配送）
+    QWidget::mousePressEvent(e);
+  } else {
+    // 空白領域 → 親に伝播してサイドバーなどの処理を有効にする
+    e->ignore();
+  }
+}
+
+void FrogPilotOnroadWindow::mouseReleaseEvent(QMouseEvent *e) {
+  QWidget *child = childAt(e->pos());
+  if (child) {
+    QWidget::mouseReleaseEvent(e);
+  } else {
+    e->ignore();
+  }
+}
+
+void FrogPilotOnroadWindow::mouseMoveEvent(QMouseEvent *e) {
+  QWidget *child = childAt(e->pos());
+  if (child) {
+    QWidget::mouseMoveEvent(e);
+  } else {
+    e->ignore();
+  }
+}
+
 FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) {
   signalTimer = new QTimer(this);
 
@@ -40,10 +71,10 @@ void FrogPilotOnroadWindow::initPlaybackOverlay() {
     playback_start_time_ = realtime_str;
   }
 
-  // WA_TransparentForMouseEvents stays true on FrogPilotOnroadWindow.
-  // Child widgets (PlaybackOverlay, stop button) have WA_TransparentForMouseEvents=false,
-  // so they receive mouse events directly. Events on empty areas pass through to OnroadWindow
-  // (enabling sidebar toggle and long-press UI edit mode).
+  // WA_TransparentForMouseEvents is no longer set on FrogPilotOnroadWindow.
+  // Mouse events are handled by overridden mousePressEvent/mouseReleaseEvent/mouseMoveEvent:
+  // - Events on child widgets (PlaybackOverlay, stop button) are dispatched normally by Qt.
+  // - Events on empty areas are propagated to the parent (OnroadWindow) via e->ignore().
 
   playback_overlay_ = new PlaybackOverlay(this);
   playback_overlay_->setDuration(playback_duration_);

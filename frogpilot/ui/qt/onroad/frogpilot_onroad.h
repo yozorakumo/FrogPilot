@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QPushButton>
+#include <QMouseEvent>
 #include <atomic>
 #include <mutex>
 #include <thread>
@@ -30,6 +31,12 @@ public:
   void updateState(const UIState &s, const FrogPilotUIState &fs);
   void resizeEvent(QResizeEvent *event) override;
 
+protected:
+  void mousePressEvent(QMouseEvent *e) override;
+  void mouseReleaseEvent(QMouseEvent *e) override;
+  void mouseMoveEvent(QMouseEvent *e) override;
+
+public:
   double fps;
 
   QColor bg;

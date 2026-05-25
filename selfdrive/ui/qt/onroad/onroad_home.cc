@@ -51,7 +51,6 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
 
   // FrogPilot variables
   frogpilot_onroad = new FrogPilotOnroadWindow(this);
-  frogpilot_onroad->setAttribute(Qt::WA_TransparentForMouseEvents, true);
 
   // UI Edit Mode - 長押し検出はMainWindow::eventFilter()に統合済み
   // UIEditModeManagerはオフセット管理のみに使用
@@ -96,6 +95,12 @@ void OnroadWindow::updateState(const UIState &s, const FrogPilotUIState &fs) {
 }
 
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
+  // 長押し追跡中は親（HomeWindow）に伝播しない（サイドバーのトグルを防止）
+  if (edit_manager_ && edit_manager_->isPressPending()) {
+    e->accept();
+    return;
+  }
+
   FrogPilotUIState &fs = *frogpilotUIState();
   QJsonObject &frogpilot_toggles = fs.frogpilot_toggles;
   SubMaster &fpsm = *(fs.sm);
