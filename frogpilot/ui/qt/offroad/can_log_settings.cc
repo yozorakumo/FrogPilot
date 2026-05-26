@@ -43,11 +43,9 @@ void GpsTimeExtractor::cancel() {
   cancelled = true;
 }
 
-qint64 GpsTimeExtractor::getTimestamp() const {
-  mutex.lock();
-  qint64 result = m_timestamp;
-  mutex.unlock();
-  return result;
+qint64 GpsTimeExtractor::getTimestamp() {
+  QMutexLocker locker(&mutex);
+  return m_timestamp;
 }
 
 bool GpsTimeExtractor::isExtracting() const {

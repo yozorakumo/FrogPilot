@@ -35,7 +35,7 @@ public:
   void cancel();
 
   // ロックを取得して安全なアクセスを提供
-  qint64 getTimestamp() const;
+  qint64 getTimestamp();
   bool isExtracting() const;
 
 signals:
