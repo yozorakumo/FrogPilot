@@ -127,7 +127,7 @@ bool VideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
 
 #ifdef QCOM2
   // Enable direct V4L2 ION decoder for HEVC on SDM845 (C3).
-  // Uses USERPTR for both OUTPUT and CAPTURE (no DMA BUF required).
+  // Uses USERPTR for OUTPUT and V4L2_MEMORY_DMABUF for CAPTURE (required by Venus).
   // CODECCONFIG extradata is prepended to the first frame.
   //
   // Fallback to SW decoding (libde265) if V4L2 decoder fails.
