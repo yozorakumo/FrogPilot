@@ -42,6 +42,7 @@ void UIEditModeManager::toggleEditMode() {
     saveSettings();
     selected_element_.clear();
   }
+  emit settingsChanged();  // 編集モード切替時に描画更新を通知
 }
 
 float UIEditModeManager::getOffsetX(const QString &name) const {

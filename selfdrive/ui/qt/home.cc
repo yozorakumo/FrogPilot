@@ -129,6 +129,25 @@ void HomeWindow::mousePressEvent(QMouseEvent* e) {
     sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
     params.putBool("Sidebar", sidebar->isVisible());
   }
+
+  // Handle developer sidebar toggle (right sidebar)
+  if ((onroad->isVisible() || body->isVisible()) && developer_sidebar) {
+    int window_width = width();
+
+    if (developer_sidebar->isVisible()) {
+      // Tap on developer sidebar area hides it
+      if (e->x() >= window_width - developer_sidebar->width()) {
+        developer_sidebar->setVisible(false);
+      }
+    } else {
+      // Tap on right edge (50px trigger area) shows it if enabled
+      if (e->x() >= window_width - 50) {
+        if (frogpilotUIState()->frogpilot_toggles.value("developer_sidebar").toBool()) {
+          developer_sidebar->setVisible(true);
+        }
+      }
+    }
+  }
 }
 
 void HomeWindow::mouseDoubleClickEvent(QMouseEvent* e) {
