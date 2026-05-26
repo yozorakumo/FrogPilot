@@ -2,13 +2,107 @@
 
 #include <QFile>
 #include <QProcess>
+#include <QThread>
+#include <QDebug>
 
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "frogpilot/ui/qt/widgets/frogpilot_controls.h"
 
+// GpsTimeExtractor - バックグラウンドGPS時刻抽出の実装
+
+GpsTimeExtractor::GpsTimeExtractor(QObject *parent) : QObject(parent), workerThread(nullptr), cancelled(false), m_timestamp(0) {
+}
+
+GpsTimeExtractor::~GpsTimeExtractor() {
+  cancel();
+  if (workerThread && workerThread->isRunning()) {
+    workerThread->quit();
+    workerThread->wait(5000);
+  }
+}
+
+void GpsTimeExtractor::extractAsync(const QString &routePath, const QString &rlogPath) {
+  QMutexLocker locker(&mutex);
+  currentRoutePath = routePath;
+  currentRlogPath = rlogPath;
+  cancelled = false;
+
+  // 既存のワーカースレッドをクリーンアップ
+  if (workerThread && workerThread->isRunning()) {
+    workerThread->quit();
+    workerThread->wait(1000);
+  }
+
+  // 新しいワーカースレッドを作成して開始
+  workerThread = QThread::create(workerThreadFunc, this);
+  workerThread->start();
+}
+
+void GpsTimeExtractor::cancel() {
+  QMutexLocker locker(&mutex);
+  cancelled = true;
+}
+
+qint64 GpsTimeExtractor::getTimestamp() const {
+  QMutexLocker locker(&mutex);
+  return m_timestamp;
+}
+
+bool GpsTimeExtractor::isExtracting() const {
+  return workerThread && workerThread->isRunning();
+}
+
+void GpsTimeExtractor::workerThreadFunc(GpsTimeExtractor *extractor) {
+  QString rlogPath;
+  QString routePath;
+
+  {
+    QMutexLocker locker(&extractor->mutex);
+    rlogPath = extractor->currentRlogPath;
+    routePath = extractor->currentRoutePath;
+  }
+
+  qint64 timestamp = 0;
+
+  // extract_gps_time.pyを実行
+  // pyenvのPythonを使用（capnp対応）
+  QString python_path = "/usr/local/pyenv/versions/3.11.4/bin/python3";
+  QProcess process;
+
+  process.setProgram(python_path);
+  process.setArguments({"frogpilot/can_log/extract_gps_time.py", rlogPath});
+  process.setWorkingDirectory("/data/openpilot");
+
+  process.start();
+  if (process.waitForFinished(10000)) {  // 10秒でタイムアウト
+    QString output = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
+    if (!output.isEmpty()) {
+      bool ok;
+      double ts = output.toDouble(&ok);
+      if (ok && ts > 0) {
+        timestamp = static_cast<qint64>(ts);
+      }
+    }
+  }
+
+  // キャンセルされたか確認
+  {
+    QMutexLocker locker(&extractor->mutex);
+    if (extractor->cancelled) {
+      return;
+    }
+    extractor->m_timestamp = timestamp;
+  }
+
+  // シグナルをを出力（スレッドセーフにQt::QueuedConnectionを使用）
+  QMetaObject::invokeMethod(extractor, "gpsTimeExtracted", Qt::QueuedConnection,
+                            Q_ARG(QString, routePath), Q_ARG(qint64, timestamp));
+}
+
 // CanLogRouteItem - 個別のルート（走行ログ）エントリ
 
-CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QWidget(parent), m_routePath(routePath) {
+CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent)
+  : QWidget(parent), m_routePath(routePath), infoLabel(nullptr), m_timestamp(0), m_gpsTimeUpdated(false) {
   QHBoxLayout *layout = new QHBoxLayout(this);
   layout->setContentsMargins(20, 10, 20, 10);
   layout->setSpacing(15);
@@ -16,10 +110,8 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
   QFileInfo routeInfo(routePath);
   QString routeName = routeInfo.fileName();
 
-  // rlogファイルからGPS録画時刻を取得（ファイル更新日時より正確）
-  QString displayText;
-  QDateTime recordTime;
-  QString rlogPath;
+  // rlogファイルを探す
+  m_rlogPath.clear();
 
   // 最初のセグメントのrlogファイルを探す
   QDir routeDir(routePath);
@@ -31,37 +123,33 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
       QString rlog = routeDir.filePath(segDir + "/rlog");
       QString rlogBz2 = routeDir.filePath(segDir + "/rlog.bz2");
       if (QFileInfo(rlog).exists()) {
-        rlogPath = rlog;
+        m_rlogPath = rlog;
         break;
       } else if (QFileInfo(rlogBz2).exists()) {
-        rlogPath = rlogBz2;
+        m_rlogPath = rlogBz2;
         break;
       }
     }
   }
   // フォールバック: ルート直下のrlog
-  if (rlogPath.isEmpty()) {
+  if (m_rlogPath.isEmpty()) {
     if (QFileInfo(routePath + "/rlog").exists()) {
-      rlogPath = routePath + "/rlog";
+      m_rlogPath = routePath + "/rlog";
     } else if (QFileInfo(routePath + "/rlog.bz2").exists()) {
-      rlogPath = routePath + "/rlog.bz2";
+      m_rlogPath = routePath + "/rlog.bz2";
     }
   }
 
-  // GPS時刻抽出はパフォーマンスの問題により一時的に無効化
-  // 将来的にバックグラウンド処理として実装予定
-  // フォールバック: rlogファイルのmtime
-  if (!rlogPath.isEmpty()) {
-    recordTime = QFileInfo(rlogPath).lastModified().toUTC();
+  // 初期表示（時刻抽出前はファイル更新日時）
+  QDateTime recordTime;
+  if (!m_rlogPath.isEmpty()) {
+    recordTime = QFileInfo(m_rlogPath).lastModified().toUTC();
   }
   if (!recordTime.isValid()) {
     recordTime = routeInfo.lastModified().toUTC();
   }
   if (recordTime.isValid()) {
-    // UTC時間をローカルタイムゾーンで表示
-    displayText = recordTime.toLocalTime().toString("yyyy/MM/dd HH:mm");
-  } else {
-    displayText = routeName;
+    m_timestamp = recordTime.toMSecsSinceEpoch() / 1000;
   }
 
   // セグメント数をカウント
@@ -96,11 +184,13 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
 
   QString rlogStr = hasRlog ? tr("✓ CAN data available") : tr("✕ No CAN data");
 
-  // 情報ラベル（日付/時刻 + サイズ + セグメント数 + CAN データ有無）
-  QLabel *infoLabel = new QLabel(displayText + "\n" + sizeStr + " | " + QString::number(segCount) + " segments\n" + rlogStr, this);
+  // 情報ラベル
+  infoLabel = new QLabel(this);
   infoLabel->setStyleSheet("QLabel { color: #E4E4E4; font-size: 35px; }");
   infoLabel->setWordWrap(true);
   layout->addWidget(infoLabel, 1);
+
+  updateDisplay();
 
   // 再生ボタン
   QPushButton *playButton = new QPushButton(tr("▶ Play"), this);
@@ -154,11 +244,70 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
   setStyleSheet("QWidget { border-bottom: 1px solid #393939; }");
 }
 
+CanLogRouteItem::~CanLogRouteItem() {
+}
+
+void CanLogRouteItem::updateGpsTime(qint64 timestamp) {
+  m_timestamp = timestamp;
+  m_gpsTimeUpdated = true;
+  updateDisplay();
+}
+
+void CanLogRouteItem::updateDisplay() {
+  // 時刻表示を更新
+  QDateTime recordTime;
+  if (m_timestamp > 0) {
+    recordTime = QDateTime::fromMSecsSinceEpoch(m_timestamp * 1000, Qt::UTC);
+  }
+
+  QString displayText;
+  if (recordTime.isValid()) {
+    // UTC時間をローカルタイムゾーンで表示
+    displayText = recordTime.toLocalTime().toString("yyyy/MM/dd HH:mm");
+  } else {
+    displayText = QFileInfo(m_routePath).fileName();
+  }
+
+  // サイズとセグメント数を再取得
+  QDir countDir(m_routePath);
+  QStringList countFilters;
+  countFilters << "--*";
+  int segCount = countDir.entryList(countFilters, QDir::Dirs | QDir::NoDotAndDotDot).size();
+
+  qint64 totalSize = 0;
+  QDirIterator it(m_routePath, QDir::Files, QDirIterator::Subdirectories);
+  while (it.hasNext()) {
+    it.next();
+    totalSize += it.fileInfo().size();
+  }
+
+  QString sizeStr;
+  if (totalSize >= 1024 * 1024 * 1024) {
+    sizeStr = QString::number(totalSize / (1024.0 * 1024 * 1024), 'f', 2) + " GB";
+  } else if (totalSize >= 1024 * 1024) {
+    sizeStr = QString::number(totalSize / (1024.0 * 1024), 'f', 1) + " MB";
+  } else {
+    sizeStr = QString::number(totalSize / 1024.0, 'f', 1) + " KB";
+  }
+
+  // rlogの存在確認
+  bool hasRlog = false;
+  QDirIterator rit(m_routePath, QStringList() << "rlog" << "rlog.bz2", QDir::Files, QDirIterator::Subdirectories);
+  if (rit.hasNext()) {
+    hasRlog = true;
+  }
+
+  QString rlogStr = hasRlog ? tr("✓ CAN data available") : tr("✕ No CAN data");
+
+  if (infoLabel) {
+    infoLabel->setText(displayText + "\n" + sizeStr + " | " + QString::number(segCount) + " segments\n" + rlogStr);
+  }
+}
+
 // FrogPilotCanLogPanel - CAN Log管理パネル
 
 FrogPilotCanLogPanel::FrogPilotCanLogPanel(FrogPilotSettingsWindow *parent)
   : FrogPilotListWidget(parent), parent(parent) {
-
   // ステータスラベル
   statusLabel = new QLabel(tr("No driving logs found."), this);
   statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
@@ -256,9 +405,23 @@ void FrogPilotCanLogPanel::refreshFileList() {
   headerLabel->setStyleSheet("QLabel { color: #E0E879; font-size: 40px; font-weight: bold; padding: 15px 20px; }");
   fileListLayout->addWidget(headerLabel);
 
+  // GPS抽出器の所有者としてパネル себяとする
+  GpsTimeExtractor *extractor = new GpsTimeExtractor(this);
+
   // 各ルートエントリを追加
   for (const QFileInfo &routeInfo : validRoutes) {
-    CanLogRouteItem *item = new CanLogRouteItem(routeInfo.absoluteFilePath(), this);
+    QString routePath = routeInfo.absoluteFilePath();
+    CanLogRouteItem *item = new CanLogRouteItem(routePath, this);
+
+    // extract_gps_time.pyを非同期で実行してGPS時刻を抽出
+    if (!item->m_rlogPath.isEmpty()) {
+      QObject::connect(extractor, &GpsTimeExtractor::gpsTimeExtracted, item, [item](const QString &extractedRoutePath, qint64 timestamp) {
+        if (extractedRoutePath == item->m_routePath && timestamp > 0) {
+          item->updateGpsTime(timestamp);
+        }
+      });
+      extractor->extractAsync(routePath, item->m_rlogPath);
+    }
 
     QObject::connect(item, &CanLogRouteItem::playClicked, [this](const QString &routePath) {
       startPlayback(routePath);
