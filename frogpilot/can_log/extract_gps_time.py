@@ -49,7 +49,17 @@ def read_capnp_messages(data):
 
 
 def extract_gps_time(rlog_path):
-  """rlogファイルからGPS録画時刻（UNIXタイムスタンプ秒）を抽出"""
+  """rlogファイルからGPS録画時刻（UNIXタイムスタンプ秒）を抽出
+
+  優先順位:
+    1. clocks.wallTimeNanos（UNIXエポック時間、ナノ秒）- 最も正確
+    2. gpsLocationExternal.unixTimestampMillis（hasFix=true の最初のイベント）
+    3. gpsLocation.unixTimestampMillis（hasFix=true の最初のイベント）
+    
+  GPS fixが未確定のイベント（hasFix=false）のタイムスタンプは無視する。
+  これにより、RTCデフォルト値等原因でGPS時刻が不正な場合でも、
+  正しいfix後のタイムスタンプが使用される。
+  """
   try:
     with open(rlog_path, 'rb') as f:
       dat = f.read(1024 * 1024)  # 先頭1MBのみ読み込み
@@ -69,14 +79,20 @@ def extract_gps_time(rlog_path):
               return str(wall_time / 1e9)  # ナノ秒→秒に変換
 
           elif event_type == 'gpsLocationExternal':
-            ts = msg.gpsLocationExternal.unixTimestampMillis
-            if ts > 0:
-              return str(ts / 1000.0)  # ミリ秒→秒に変換
+            # GPS fixが有効な場合のみタイムスタンプを使用
+            # hasFix は UBX-NAV-PVT の flags bit 0 で判定
+            # fix未確定期はRTCデフォルト値等原因で不正な日時が含まれる場合がある
+            if msg.gpsLocationExternal.hasFix:
+              ts = msg.gpsLocationExternal.unixTimestampMillis
+              if ts > 0:
+                return str(ts / 1000.0)  # ミリ秒→秒に変換
 
           elif event_type == 'gpsLocation':
-            ts = msg.gpsLocation.unixTimestampMillis
-            if ts > 0:
-              return str(ts / 1000.0)  # ミリ秒→秒に変換
+            # GPS fixが有効な場合のみタイムスタンプを使用
+            if msg.gpsLocation.hasFix:
+              ts = msg.gpsLocation.unixTimestampMillis
+              if ts > 0:
+                return str(ts / 1000.0)  # ミリ秒→秒に変換
 
       except Exception:
         continue

@@ -189,8 +189,12 @@ def extract_recording_time(events: list[tuple]) -> int | None:
 
   優先順位:
     1. clocks.wallTimeNanos（UNIXエポック時間、ナノ秒）- 最も正確
-    2. gpsLocationExternal.unixTimestampMillis（UNIXエポック時間、ミリ秒→ナノ秒）
-    3. gpsLocation.unixTimestampMillis（UNIXエポック時間、ミリ秒→ナノ秒）
+    2. gpsLocationExternal.unixTimestampMillis（hasFix=true の最初のイベント）
+    3. gpsLocation.unixTimestampMillis（hasFix=true の最初のイベント）
+
+  GPS fixが未確定のイベント（hasFix=false）のタイムスタンプは無視する。
+  これにより、RTCデフォルト値等原因でGPS時刻が不正な場合でも、
+  正しいfix後のタイムスタンプが使用される。
 
   Args:
     events: イベントリスト
@@ -207,27 +211,31 @@ def extract_recording_time(events: list[tuple]) -> int | None:
       except Exception:
         continue
 
-  # 2. gpsLocationExternal.unixTimestampMillisを使用
+  # 2. gpsLocationExternal.unixTimestampMillisを使用（hasFix=true の最初のイベント）
   for log_mono_time, event_type, raw_msg in events:
     if event_type == 'gpsLocationExternal':
       try:
         with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
-          ts = msg.gpsLocationExternal.unixTimestampMillis  # UNIX timestamp (ミリ秒)
-          if ts > 0:
-            cloudlog.info(f"CAN playback: using gpsLocationExternal time: {ts}")
-            return int(ts * 1e6)  # ミリ秒→ナノ秒に変換
+          # GPS fixが有効な場合のみタイムスタンプを使用
+          if msg.gpsLocationExternal.hasFix:
+            ts = msg.gpsLocationExternal.unixTimestampMillis  # UNIX timestamp (ミリ秒)
+            if ts > 0:
+              cloudlog.info(f"CAN playback: using gpsLocationExternal time: {ts}")
+              return int(ts * 1e6)  # ミリ秒→ナノ秒に変換
       except Exception:
         continue
 
-  # 3. フォールバック: gpsLocation.unixTimestampMillisを使用
+  # 3. フォールバック: gpsLocation.unixTimestampMillisを使用（hasFix=true の最初のイベント）
   for log_mono_time, event_type, raw_msg in events:
     if event_type == 'gpsLocation':
       try:
         with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
-          ts = msg.gpsLocation.unixTimestampMillis  # UNIX timestamp (ミリ秒)
-          if ts > 0:
-            cloudlog.info(f"CAN playback: using gpsLocation time: {ts}")
-            return int(ts * 1e6)  # ミリ秒→ナノ秒に変換
+          # GPS fixが有効な場合のみタイムスタンプを使用
+          if msg.gpsLocation.hasFix:
+            ts = msg.gpsLocation.unixTimestampMillis  # UNIX timestamp (ミリ秒)
+            if ts > 0:
+              cloudlog.info(f"CAN playback: using gpsLocation time: {ts}")
+              return int(ts * 1e6)  # ミリ秒→ナノ秒に変換
       except Exception:
         continue
 

@@ -197,7 +197,9 @@ def initialize_pigeon(pigeon: TTYPigeon) -> bool:
 
       # sending time to ublox
       t_now = datetime.utcnow()
-      if t_now >= datetime(2021, 6, 1):
+      # Skip time injection if system time is clearly stale (pre-2020 or more than 1 year in the future)
+      # This prevents injecting invalid RTC default values that could cause GPS time issues
+      if t_now >= datetime(2020, 1, 1) and t_now <= datetime.utcnow().replace(year=datetime.utcnow().year + 1):
         cloudlog.warning("Sending current time to ublox")
 
         # UBX-MGA-INI-TIME_UTC

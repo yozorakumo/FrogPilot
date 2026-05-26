@@ -142,8 +142,16 @@ kj::Array<capnp::word> UbloxMsgParser::gen_nav_pvt(ubx_t::nav_pvt_t *msg) {
   timeinfo.tm_min = msg->min();
   timeinfo.tm_sec = msg->sec();
 
-  std::time_t utc_tt = timegm(&timeinfo);
-  gpsLoc.setUnixTimestampMillis(utc_tt * 1e+03 + msg->nano() * 1e-06);
+  // Check GPS time validity flags before setting timestamp
+  // valid byte bits: bit 0 = validDate, bit 1 = validTime, bit 2 = fullyResolved
+  bool validDate = (msg->valid() & 0x01) != 0;
+  bool validTime = (msg->valid() & 0x02) != 0;
+  bool fullyResolved = (msg->valid() & 0x04) != 0;
+
+  if (validDate && validTime && fullyResolved) {
+    std::time_t utc_tt = timegm(&timeinfo);
+    gpsLoc.setUnixTimestampMillis(utc_tt * 1e+03 + msg->nano() * 1e-06);
+  }
   float f[] = { msg->vel_n() * 1e-03f, msg->vel_e() * 1e-03f, msg->vel_d() * 1e-03f };
   gpsLoc.setVNED(f);
   gpsLoc.setVerticalAccuracy(msg->v_acc() * 1e-03);
