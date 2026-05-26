@@ -48,33 +48,14 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
     }
   }
 
-  // extract_gps_time.pyスクリプトを呼び出してGPS時刻を取得
-  if (!rlogPath.isEmpty()) {
-    QProcess process;
-    process.setProgram("python3");
-    process.setArguments({"/data/openpilot/frogpilot/can_log/extract_gps_time.py", rlogPath});
-    process.setWorkingDirectory("/data/openpilot");
-    process.start();
-    process.waitForFinished(5000);  // 5秒でタイムアウト
-
-    QString output = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
-    if (!output.isEmpty()) {
-      bool ok;
-      double timestamp = output.toDouble(&ok);
-      if (ok && timestamp > 0) {
-        recordTime = QDateTime::fromMSecsSinceEpoch(qint64(timestamp * 1000), Qt::UTC);
-      }
-    }
-  }
-
+  // GPS時刻抽出はパフォーマンスの問題により一時的に無効化
+  // 将来的にバックグラウンド処理として実装予定
   // フォールバック: rlogファイルのmtime
+  if (!rlogPath.isEmpty()) {
+    recordTime = QFileInfo(rlogPath).lastModified().toUTC();
+  }
   if (!recordTime.isValid()) {
-    if (!rlogPath.isEmpty()) {
-      recordTime = QFileInfo(rlogPath).lastModified().toUTC();
-    }
-    if (!recordTime.isValid()) {
-      recordTime = routeInfo.lastModified().toUTC();
-    }
+    recordTime = routeInfo.lastModified().toUTC();
   }
   if (recordTime.isValid()) {
     // UTC時間をローカルタイムゾーンで表示
