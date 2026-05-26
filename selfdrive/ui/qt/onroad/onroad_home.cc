@@ -125,12 +125,6 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
     return;
   }
 
-  // 長押し追跡中は親（HomeWindow）に伝播しない（サイドバーのトグルを防止）
-  if (edit_manager_ && edit_manager_->isPressPending()) {
-    e->accept();
-    return;
-  }
-
   FrogPilotUIState &fs = *frogpilotUIState();
   QJsonObject &frogpilot_toggles = fs.frogpilot_toggles;
   SubMaster &fpsm = *(fs.sm);
@@ -170,8 +164,8 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
     nvg->screen_recorder->setVisible(!map->isVisible() && frogpilot_toggles.value("screen_recorder").toBool());
   }
 #endif
-  // propagation event to parent(HomeWindow)
-  QWidget::mousePressEvent(e);
+  // サイドバートグル用に親(HomeWindow)にイベントを伝播
+  e->ignore();
 }
 
 void OnroadWindow::createMapWidget() {

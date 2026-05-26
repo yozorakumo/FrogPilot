@@ -1354,7 +1354,8 @@ void AnnotatedCameraWidget::mousePressEvent(QMouseEvent *event) {
     event->accept();
     return;  // 編集モードで処理したらCameraWidgetに渡さない
   }
-  CameraWidget::mousePressEvent(event);
+  // 編集モードでない場合は親にイベントを伝播（サイドバートグル用）
+  event->ignore();
 }
 
 void AnnotatedCameraWidget::mouseMoveEvent(QMouseEvent *event) {

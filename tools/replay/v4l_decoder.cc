@@ -1,8 +1,8 @@
 // v4l_decoder.cc - V4L2 hardware decoder for Qualcomm Venus (msm_vidc_vdec)
 //
-// USERPTR-based CAPTURE for non-DMABUF devices:
-//   - OUTPUT: V4L2_MEMORY_USERPTR (compressed HEVC input)
-//   - CAPTURE: V4L2_MEMORY_USERPTR (decoded NV12 output via ION mmap addr)
+// Memory configuration:
+//   - OUTPUT: V4L2_MEMORY_USERPTR (compressed HEVC input via ION mmap)
+//   - CAPTURE: V4L2_MEMORY_DMABUF (decoded NV12 output) - REQUIRED by SDM845 Venus
 //
 // Device: /dev/video32
 // Driver: msm_vidc_driver, Card: msm_vidc_vdec
@@ -72,18 +72,18 @@ static void queue_output_buffer(int fd, int index, VisionBuf *buf, uint32_t byte
   checked_ioctl(fd, VIDIOC_QBUF, &v4l_buf);
 }
 
-// Queue CAPTURE buffer (USERPTR)
+// Queue CAPTURE buffer (DMABUF)
 static void queue_capture_buffer(int fd, int index, VisionBuf *buf) {
   v4l2_plane plane = {
     .length = (unsigned int)buf->len,
-    .m = { .userptr = (unsigned long)buf->addr, },
+    .m = { .fd = buf->fd, },  // DMABUF: use ION fd instead of mmap addr
     .bytesused = 0,
   };
 
   v4l2_buffer v4l_buf = {
     .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
     .index = (unsigned int)index,
-    .memory = V4L2_MEMORY_USERPTR,
+    .memory = V4L2_MEMORY_DMABUF,
     .m = { .planes = &plane, },
     .length = 1,
   };
@@ -211,19 +211,19 @@ bool V4LDecoder::setupCapture() {
                                                   (int)fmt.fmt.pix_mp.height);
   }
 
-  // Allocate CAPTURE ION buffers (USERPTR mode)
+  // Allocate CAPTURE ION buffers (DMABUF mode)
   for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
     buf_out[i].allocate(output_buf_size);
-    LOG_DEBUG("CAPTURE buffer %d: addr=%p len=%zu", i, buf_out[i].addr, buf_out[i].len);
+    LOG_DEBUG("CAPTURE buffer %d: fd=%d addr=%p len=%zu", i, buf_out[i].fd, buf_out[i].addr, buf_out[i].len);
   }
 
-  // Request CAPTURE buffers with USERPTR memory (no DMA BUF required)
-  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L_DEC_BUF_OUT_COUNT, V4L2_MEMORY_USERPTR)) {
-    fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS (USERPTR) failed\n");
+  // Request CAPTURE buffers with DMABUF memory (required by SDM845 Venus)
+  if (!request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, V4L_DEC_BUF_OUT_COUNT, V4L2_MEMORY_DMABUF)) {
+    fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS (DMABUF) failed\n");
     for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) buf_out[i].free();
     return false;
   }
-  fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS: %d buffers (USERPTR)\n", V4L_DEC_BUF_OUT_COUNT);
+  fprintf(stderr, "[V4LDecoder] CAPTURE REQBUFS: %d buffers (DMABUF)\n", V4L_DEC_BUF_OUT_COUNT);
 
   // Start CAPTURE streaming
   buf_type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
@@ -234,11 +234,11 @@ bool V4LDecoder::setupCapture() {
   }
   fprintf(stderr, "[V4LDecoder] CAPTURE STREAMON successful\n");
 
-  // Queue all CAPTURE buffers (USERPTR)
+  // Queue all CAPTURE buffers (DMABUF)
   for (int i = 0; i < V4L_DEC_BUF_OUT_COUNT; i++) {
     queue_capture_buffer(fd, i, &buf_out[i]);
   }
-  fprintf(stderr, "[V4LDecoder] Queued %d CAPTURE buffers (USERPTR)\n", V4L_DEC_BUF_OUT_COUNT);
+  fprintf(stderr, "[V4LDecoder] Queued %d CAPTURE buffers (DMABUF)\n", V4L_DEC_BUF_OUT_COUNT);
 
   capture_ready = true;
   fprintf(stderr, "[V4LDecoder] CAPTURE ready: stride=%d, buf_size=%zu\n",
@@ -285,7 +285,7 @@ void V4LDecoder::drainCapture() {
       v4l2_plane plane = {};
       v4l2_buffer v4l_buf = {
         .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
-        .memory = V4L2_MEMORY_USERPTR,
+        .memory = V4L2_MEMORY_DMABUF,
         .m = { .planes = &plane, },
         .length = 1,
       };
@@ -558,7 +558,7 @@ bool V4LDecoder::getFrame(VisionBuf *out_buf) {
   v4l2_plane plane = {};
   v4l2_buffer v4l_buf = {
     .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
-    .memory = V4L2_MEMORY_USERPTR,
+    .memory = V4L2_MEMORY_DMABUF,
     .m = { .planes = &plane, },
     .length = 1,
   };
@@ -613,7 +613,7 @@ void V4LDecoder::flush() {
       v4l2_plane plane = {};
       v4l2_buffer v4l_buf = {
         .type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
-        .memory = V4L2_MEMORY_USERPTR,
+        .memory = V4L2_MEMORY_DMABUF,
         .m = { .planes = &plane, },
         .length = 1,
       };
@@ -649,7 +649,7 @@ void V4LDecoder::close() {
   }
 
   request_buffers(fd, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE, 0, V4L2_MEMORY_USERPTR);
-  if (capture_ready) request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, 0, V4L2_MEMORY_USERPTR);
+  if (capture_ready) request_buffers(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE, 0, V4L2_MEMORY_DMABUF);
 
   for (int i = 0; i < V4L_DEC_BUF_IN_COUNT; i++) buf_in[i].free();
   if (capture_ready) {
