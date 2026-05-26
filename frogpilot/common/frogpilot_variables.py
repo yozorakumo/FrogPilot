@@ -177,6 +177,7 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("AMapKey1", "", 0, ""),
   ("AMapKey2", "", 0, ""),
   ("AutomaticallyDownloadModels", "1", 1, "0"),
+  ("AutomaticBackup", "0", 0, "0"),
   ("AutomaticUpdates", "1", 0, "1"),
   ("AvailableModelNames", "", 1, ""),
   ("AvailableModels", "", 1, ""),
@@ -705,6 +706,7 @@ class FrogPilotVariables:
     toggle.always_on_lateral_main = toggle.always_on_lateral_set and not toggle.use_lkas_for_aol and (params.get_bool("AlwaysOnLateralMain") if toggle.tuning_level >= level["AlwaysOnLateralMain"] else default.get_bool("AlwaysOnLateralMain"))
     toggle.always_on_lateral_pause_speed = params.get_int("PauseAOLOnBrake") if toggle.always_on_lateral_set and toggle.tuning_level >= level["PauseAOLOnBrake"] else default.get_int("PauseAOLOnBrake")
 
+    toggle.automatic_backup = params.get_bool("AutomaticBackup") if toggle.tuning_level >= level["AutomaticBackup"] else default.get_bool("AutomaticBackup")
     toggle.automatic_updates = (params.get_bool("AutomaticUpdates") if toggle.tuning_level >= level["AutomaticUpdates"] and (self.release_branch or self.vetting_branch) else default.get_bool("AutomaticUpdates")) and not BACKUP_PATH.is_file()
 
     toggle.car_model = params.get("CarModel", encoding="utf-8") or toggle.car_model

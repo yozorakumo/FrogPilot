@@ -140,6 +140,13 @@ STOCK_OPENPILOT_TOGGLES = (
 
 SOFTWARE_TOGGLES = (
   ToggleDefinition(
+    title=("Automatically Backup FrogPilot"),
+    param="AutomaticBackup",
+    description=("FrogPilot will automatically backup your configuration and models when you are offroad with an active internet connection."),
+    icon="../../../frogpilot/assets/toggle_icons/icon_backup.png",
+    tuning_level=0,
+  ),
+  ToggleDefinition(
     title=("Automatically Update FrogPilot"),
     param="AutomaticUpdates",
     description=("FrogPilot will automatically update itself and its assets when you are offroad with an active internet connection."),
