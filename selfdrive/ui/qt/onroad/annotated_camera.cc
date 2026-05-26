@@ -1355,7 +1355,12 @@ void AnnotatedCameraWidget::mousePressEvent(QMouseEvent *event) {
     return;  // 編集モードで処理したらCameraWidgetに渡さない
   }
   // 編集モードでない場合は親にイベントを伝播（サイドバートグル用）
-  event->ignore();
+  // 編集モード中でなく、press_pendingでもない場合はイベントを伝播してHomeWindowで処理
+  if (!edit_manager_ || (!edit_manager_->isEditMode() && !edit_manager_->isPressPending())) {
+    event->ignore();
+  } else {
+    event->accept();
+  }
 }
 
 void AnnotatedCameraWidget::mouseMoveEvent(QMouseEvent *event) {

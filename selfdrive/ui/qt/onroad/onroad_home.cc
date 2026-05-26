@@ -105,9 +105,8 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   }
   handling_mouse_event_ = true;
 
-  // 長押し追跡中または編集モード中のみ AnnotatedCameraWidget に転送
-  // （通常時はイベントを HomeWindow に伝播してサイドバー/開発者サイドバーのトグルを有効にする）
-  if (edit_manager_ && (edit_manager_->isPressPending() || edit_manager_->isEditMode())) {
+  // 編集モード中または長押し追跡中は AnnotatedCameraWidget に転送
+  if (edit_manager_ && (edit_manager_->isEditMode() || edit_manager_->isPressPending())) {
     if (nvg) {
       QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
       QMouseEvent forwarded(QEvent::MouseButtonPress, nvg_pos, e->globalPos(),
@@ -127,47 +126,8 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 
   handling_mouse_event_ = false;
 
-  FrogPilotUIState &fs = *frogpilotUIState();
-  QJsonObject &frogpilot_toggles = fs.frogpilot_toggles;
-  SubMaster &fpsm = *(fs.sm);
-
-  if (fpsm["frogpilotPlan"].getFrogpilotPlan().getSpeedLimitChanged() && nvg->frogpilot_nvg->newSpeedLimitRect.contains(e->pos())) {
-    fs.params_memory.putBool("SpeedLimitAccepted", true);
-    e->accept();
-    return;
-  }
-
-#ifdef ENABLE_MAPS
-  if (map != nullptr) {
-    bool sidebarVisible = geometry().x() > 0;
-    bool show_map = !sidebarVisible && !frogpilot_toggles.value("hide_map").toBool();
-    map->setVisible(show_map && !map->isVisible());
-    if (map->isVisible() && frogpilot_toggles.value("full_map").toBool()) {
-      nvg->frogpilot_nvg->bigMapOpen = false;
-
-      map->setFixedSize(this->size());
-
-      alerts->setVisible(false);
-      nvg->setVisible(false);
-    } else if (map->isVisible() && frogpilot_toggles.value("big_map").toBool()) {
-      nvg->frogpilot_nvg->bigMapOpen = true;
-
-      map->setFixedWidth(topWidget(this)->width() * 3 / 4 - UI_BORDER_SIZE);
-
-      alerts->setVisible(true);
-      nvg->setVisible(true);
-    } else {
-      nvg->frogpilot_nvg->bigMapOpen = false;
-
-      map->setFixedWidth(topWidget(this)->width() / 2 - UI_BORDER_SIZE);
-
-      alerts->setVisible(true);
-      nvg->setVisible(true);
-    }
-    nvg->screen_recorder->setVisible(!map->isVisible() && frogpilot_toggles.value("screen_recorder").toBool());
-  }
-#endif
-  // サイドバートグル用に親(HomeWindow)にイベントを伝播
+  // 通常時は特別な処理なしでイベントを HomeWindow に伝播
+  // （サイドバー/開発者サイドバーのトグルは HomeWindow::mousePressEvent で処理）
   e->ignore();
 }
 
@@ -230,8 +190,8 @@ void OnroadWindow::mouseMoveEvent(QMouseEvent* e) {
   }
   handling_mouse_event_ = true;
 
-  // 長押し追跡中または編集モード中はAnnotatedCameraWidgetに転送
-  if (edit_manager_ && (edit_manager_->isPressPending() || edit_manager_->isEditMode())) {
+  // 編集モード中または長押し追跡中はAnnotatedCameraWidgetに転送
+  if (edit_manager_ && (edit_manager_->isEditMode() || edit_manager_->isPressPending())) {
     if (nvg) {
       QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
       QMouseEvent forwarded(QEvent::MouseMove, nvg_pos, e->globalPos(),
@@ -255,8 +215,8 @@ void OnroadWindow::mouseReleaseEvent(QMouseEvent* e) {
   }
   handling_mouse_event_ = true;
 
-  // 長押し追跡中または編集モード中はAnnotatedCameraWidgetに転送
-  if (edit_manager_ && (edit_manager_->isPressPending() || edit_manager_->isEditMode())) {
+  // 編集モード中または長押し追跡中はAnnotatedCameraWidgetに転送
+  if (edit_manager_ && (edit_manager_->isEditMode() || edit_manager_->isPressPending())) {
     if (nvg) {
       QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
       QMouseEvent forwarded(QEvent::MouseButtonRelease, nvg_pos, e->globalPos(),
