@@ -9,55 +9,12 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QTimer>
-#include <QThread>
-#include <QMutex>
-#include <QWaitCondition>
-#include <QReadWriteLock>
+#include <QtConcurrent>
+#include <QFuture>
+
+#include "selfdrive/ui/qt/qt_window.h"
 
 #include "frogpilot/ui/qt/offroad/frogpilot_settings.h"
-
-// GpsTimeExtractor - バックグラウンドGPS時刻抽出クラス
-// QThreadを使用してextract_gps_time.pyをバックグラウンドで実行し、
-// 完了時にシグナルを発行する（非同期処理）
-class GpsTimeExtractor : public QObject {
-  Q_OBJECT
-
-public:
-  explicit GpsTimeExtractor(QObject *parent = nullptr);
-  ~GpsTimeExtractor();
-
-  // 非同期GPS時刻抽出を開始
-  // routePath: rlogファイルを含むルートディレクトリ
-  // rlogPath: rlogファイルのパス（rlog または rlog.bz2）
-  void extractAsync(const QString &routePath, const QString &rlogPath);
-
-  // 実行中の抽出をキャンセル
-  void cancel();
-
-  // ロックを取得して安全なアクセスを提供
-  qint64 getTimestamp();
-  bool isExtracting() const;
-
-signals:
-  // GPS時刻の抽出が完了した時に発火
-  // routePath: ルートディレクトリのパス
-  // timestamp: UNIXタイムスタンプ（秒）、失敗時は0
-  void gpsTimeExtracted(const QString &routePath, qint64 timestamp);
-
-  // 抽出に失敗した時に発火
-  void extractionFailed(const QString &routePath);
-
-private:
-  QThread *workerThread;
-  QString currentRoutePath;
-  QString currentRlogPath;
-  QMutex mutex;
-  volatile bool cancelled;
-  qint64 m_timestamp;
-  bool m_extracting;
-
-  static void workerThreadFunc(GpsTimeExtractor *extractor);
-};
 
 // CanLogRouteItem - 個別のルート（走行ログ）エントリ
 class CanLogRouteItem : public QWidget {

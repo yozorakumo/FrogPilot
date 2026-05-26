@@ -8,97 +8,6 @@
 #include "selfdrive/ui/qt/widgets/controls.h"
 #include "frogpilot/ui/qt/widgets/frogpilot_controls.h"
 
-// GpsTimeExtractor - バックグラウンドGPS時刻抽出の実装
-
-GpsTimeExtractor::GpsTimeExtractor(QObject *parent) : QObject(parent), workerThread(nullptr), cancelled(false), m_timestamp(0) {
-}
-
-GpsTimeExtractor::~GpsTimeExtractor() {
-  cancel();
-  if (workerThread && workerThread->isRunning()) {
-    workerThread->quit();
-    workerThread->wait(5000);
-  }
-}
-
-void GpsTimeExtractor::extractAsync(const QString &routePath, const QString &rlogPath) {
-  QMutexLocker locker(&mutex);
-  currentRoutePath = routePath;
-  currentRlogPath = rlogPath;
-  cancelled = false;
-
-  // 既存のワーカースレッドをクリーンアップ
-  if (workerThread && workerThread->isRunning()) {
-    workerThread->quit();
-    workerThread->wait(1000);
-  }
-
-  // 新しいワーカースレッドを作成して開始
-  workerThread = QThread::create(workerThreadFunc, this);
-  workerThread->start();
-}
-
-void GpsTimeExtractor::cancel() {
-  QMutexLocker locker(&mutex);
-  cancelled = true;
-}
-
-qint64 GpsTimeExtractor::getTimestamp() {
-  QMutexLocker locker(&mutex);
-  return m_timestamp;
-}
-
-bool GpsTimeExtractor::isExtracting() const {
-  return workerThread && workerThread->isRunning();
-}
-
-void GpsTimeExtractor::workerThreadFunc(GpsTimeExtractor *extractor) {
-  QString rlogPath;
-  QString routePath;
-
-  {
-    QMutexLocker locker(&extractor->mutex);
-    rlogPath = extractor->currentRlogPath;
-    routePath = extractor->currentRoutePath;
-  }
-
-  qint64 timestamp = 0;
-
-  // extract_gps_time.pyを実行
-  // pyenvのPythonを使用（capnp対応）
-  QString python_path = "/usr/local/pyenv/versions/3.11.4/bin/python3";
-  QProcess process;
-
-  process.setProgram(python_path);
-  process.setArguments({"frogpilot/can_log/extract_gps_time.py", rlogPath});
-  process.setWorkingDirectory("/data/openpilot");
-
-  process.start();
-  if (process.waitForFinished(10000)) {  // 10秒でタイムアウト
-    QString output = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
-    if (!output.isEmpty()) {
-      bool ok;
-      double ts = output.toDouble(&ok);
-      if (ok && ts > 0) {
-        timestamp = static_cast<qint64>(ts);
-      }
-    }
-  }
-
-  // キャンセルされたか確認
-  {
-    QMutexLocker locker(&extractor->mutex);
-    if (extractor->cancelled) {
-      return;
-    }
-    extractor->m_timestamp = timestamp;
-  }
-
-  // シグナルをを出力（スレッドセーフにQt::QueuedConnectionを使用）
-  QMetaObject::invokeMethod(extractor, "gpsTimeExtracted", Qt::QueuedConnection,
-                            Q_ARG(QString, routePath), Q_ARG(qint64, timestamp));
-}
-
 // CanLogRouteItem - 個別のルート（走行ログ）エントリ
 
 CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent)
@@ -399,23 +308,10 @@ void FrogPilotCanLogPanel::refreshFileList() {
   headerLabel->setStyleSheet("QLabel { color: #E0E879; font-size: 40px; font-weight: bold; padding: 15px 20px; }");
   fileListLayout->addWidget(headerLabel);
 
-  // GPS抽出器の所有者としてパネル себяとする
-  GpsTimeExtractor *extractor = new GpsTimeExtractor(this);
-
   // 各ルートエントリを追加
   for (const QFileInfo &routeInfo : validRoutes) {
     QString routePath = routeInfo.absoluteFilePath();
     CanLogRouteItem *item = new CanLogRouteItem(routePath, this);
-
-    // extract_gps_time.pyを非同期で実行してGPS時刻を抽出
-    if (!item->rlogPath().isEmpty()) {
-      QObject::connect(extractor, &GpsTimeExtractor::gpsTimeExtracted, item, [item](const QString &extractedRoutePath, qint64 timestamp) {
-        if (extractedRoutePath == item->routePath() && timestamp > 0) {
-          item->updateGpsTime(timestamp);
-        }
-      });
-      extractor->extractAsync(routePath, item->rlogPath());
-    }
 
     QObject::connect(item, &CanLogRouteItem::playClicked, [this](const QString &routePath) {
       startPlayback(routePath);
