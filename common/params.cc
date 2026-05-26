@@ -238,6 +238,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"AMapKey2", PERSISTENT | DONT_LOG},
     {"ApiCache_DriveStats", PERSISTENT},
     {"AutomaticallyDownloadModels", PERSISTENT},
+    {"AutomaticBackup", PERSISTENT},
     {"AutomaticUpdates", PERSISTENT},
     {"AvailableModelNames", PERSISTENT},
     {"AvailableModels", PERSISTENT},
