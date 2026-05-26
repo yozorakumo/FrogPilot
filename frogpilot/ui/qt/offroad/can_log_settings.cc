@@ -152,12 +152,6 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent)
     m_timestamp = recordTime.toMSecsSinceEpoch() / 1000;
   }
 
-  // セグメント数をカウント
-  QDir countDir(routePath);
-  QStringList countFilters;
-  countFilters << "--*";
-  int segCount = countDir.entryList(countFilters, QDir::Dirs | QDir::NoDotAndDotDot).size();
-
   // ルートの総サイズを計算
   qint64 totalSize = 0;
   QDirIterator it(routePath, QDir::Files, QDirIterator::Subdirectories);
@@ -414,13 +408,13 @@ void FrogPilotCanLogPanel::refreshFileList() {
     CanLogRouteItem *item = new CanLogRouteItem(routePath, this);
 
     // extract_gps_time.pyを非同期で実行してGPS時刻を抽出
-    if (!item->m_rlogPath.isEmpty()) {
+    if (!item->rlogPath().isEmpty()) {
       QObject::connect(extractor, &GpsTimeExtractor::gpsTimeExtracted, item, [item](const QString &extractedRoutePath, qint64 timestamp) {
-        if (extractedRoutePath == item->m_routePath && timestamp > 0) {
+        if (extractedRoutePath == item->routePath() && timestamp > 0) {
           item->updateGpsTime(timestamp);
         }
       });
-      extractor->extractAsync(routePath, item->m_rlogPath);
+      extractor->extractAsync(routePath, item->rlogPath());
     }
 
     QObject::connect(item, &CanLogRouteItem::playClicked, [this](const QString &routePath) {

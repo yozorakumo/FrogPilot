@@ -53,6 +53,8 @@ private:
   QString currentRlogPath;
   QMutex mutex;
   volatile bool cancelled;
+  qint64 m_timestamp;
+  bool m_extracting;
 
   static void workerThreadFunc(GpsTimeExtractor *extractor);
 };
@@ -66,6 +68,7 @@ public:
   ~CanLogRouteItem();
 
   QString routePath() const { return m_routePath; }
+  QString rlogPath() const { return m_rlogPath; }
 
   // GPS時刻が非同期で抽出された後に呼び出し
   void updateGpsTime(qint64 timestamp);
