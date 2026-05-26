@@ -16,40 +16,63 @@ CanLogRouteItem::CanLogRouteItem(const QString &routePath, QWidget *parent) : QW
   QFileInfo routeInfo(routePath);
   QString routeName = routeInfo.fileName();
 
-  // rlogファイルのmtimeから記録日時を取得（ディレクトリmtimeより正確）
+  // rlogファイルからGPS録画時刻を取得（ファイル更新日時より正確）
   QString displayText;
   QDateTime recordTime;
+  QString rlogPath;
+
   // 最初のセグメントのrlogファイルを探す
   QDir routeDir(routePath);
   QStringList segFilters;
   segFilters << "--*";
   QStringList segDirs = routeDir.entryList(segFilters, QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
   if (!segDirs.isEmpty()) {
-    // 最初のセグメントのrlog/rlog.bz2のmtimeを使用
     for (const QString &segDir : segDirs) {
-      QString rlogPath = routeDir.filePath(segDir + "/rlog");
-      QString rlogBz2Path = routeDir.filePath(segDir + "/rlog.bz2");
-      QFileInfo rlogInfo(rlogPath);
-      QFileInfo rlogBz2Info(rlogBz2Path);
-      if (rlogInfo.exists()) {
-        recordTime = rlogInfo.lastModified().toUTC();
+      QString rlog = routeDir.filePath(segDir + "/rlog");
+      QString rlogBz2 = routeDir.filePath(segDir + "/rlog.bz2");
+      if (QFileInfo(rlog).exists()) {
+        rlogPath = rlog;
         break;
-      } else if (rlogBz2Info.exists()) {
-        recordTime = rlogBz2Info.lastModified().toUTC();
+      } else if (QFileInfo(rlogBz2).exists()) {
+        rlogPath = rlogBz2;
         break;
       }
     }
   }
-  // フォールバック: rlogが見つからなければディレクトリのmtime
+  // フォールバック: ルート直下のrlog
+  if (rlogPath.isEmpty()) {
+    if (QFileInfo(routePath + "/rlog").exists()) {
+      rlogPath = routePath + "/rlog";
+    } else if (QFileInfo(routePath + "/rlog.bz2").exists()) {
+      rlogPath = routePath + "/rlog.bz2";
+    }
+  }
+
+  // extract_gps_time.pyスクリプトを呼び出してGPS時刻を取得
+  if (!rlogPath.isEmpty()) {
+    QProcess process;
+    process.setProgram("python3");
+    process.setArguments({"/data/openpilot/frogpilot/can_log/extract_gps_time.py", rlogPath});
+    process.setWorkingDirectory("/data/openpilot");
+    process.start();
+    process.waitForFinished(5000);  // 5秒でタイムアウト
+
+    QString output = QString::fromLocal8Bit(process.readAllStandardOutput()).trimmed();
+    if (!output.isEmpty()) {
+      bool ok;
+      double timestamp = output.toDouble(&ok);
+      if (ok && timestamp > 0) {
+        recordTime = QDateTime::fromMSecsSinceEpoch(qint64(timestamp * 1000), Qt::UTC);
+      }
+    }
+  }
+
+  // フォールバック: rlogファイルのmtime
   if (!recordTime.isValid()) {
-    // ルート直下のrlogをチェック
-    QFileInfo rlogInfo(routePath + "/rlog");
-    QFileInfo rlogBz2Info(routePath + "/rlog.bz2");
-    if (rlogInfo.exists()) {
-      recordTime = rlogInfo.lastModified().toUTC();
-    } else if (rlogBz2Info.exists()) {
-      recordTime = rlogBz2Info.lastModified().toUTC();
-    } else {
+    if (!rlogPath.isEmpty()) {
+      recordTime = QFileInfo(rlogPath).lastModified().toUTC();
+    }
+    if (!recordTime.isValid()) {
       recordTime = routeInfo.lastModified().toUTC();
     }
   }

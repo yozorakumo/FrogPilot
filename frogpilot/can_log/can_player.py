@@ -188,8 +188,9 @@ def extract_recording_time(events: list[tuple]) -> int | None:
   """イベントリストから録画時刻を取得
 
   優先順位:
-    1. clocks.wallTimeNanos（UNIXエポック時間、ナノ秒）
-    2. gpsLocation.timestamp（UNIXエポック時間、秒→ナノ秒に変換）
+    1. clocks.wallTimeNanos（UNIXエポック時間、ナノ秒）- 最も正確
+    2. gpsLocationExternal.unixTimestampMillis（UNIXエポック時間、ミリ秒→ナノ秒）
+    3. gpsLocation.unixTimestampMillis（UNIXエポック時間、ミリ秒→ナノ秒）
 
   Args:
     events: イベントリスト
@@ -206,15 +207,27 @@ def extract_recording_time(events: list[tuple]) -> int | None:
       except Exception:
         continue
 
-  # 2. フォールバック: gpsLocationイベントからtimestampを取得
+  # 2. gpsLocationExternal.unixTimestampMillisを使用
+  for log_mono_time, event_type, raw_msg in events:
+    if event_type == 'gpsLocationExternal':
+      try:
+        with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
+          ts = msg.gpsLocationExternal.unixTimestampMillis  # UNIX timestamp (ミリ秒)
+          if ts > 0:
+            cloudlog.info(f"CAN playback: using gpsLocationExternal time: {ts}")
+            return int(ts * 1e6)  # ミリ秒→ナノ秒に変換
+      except Exception:
+        continue
+
+  # 3. フォールバック: gpsLocation.unixTimestampMillisを使用
   for log_mono_time, event_type, raw_msg in events:
     if event_type == 'gpsLocation':
       try:
         with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
-          gps_time = msg.gpsLocation.timestamp  # UNIX timestamp (秒、float)
-          if gps_time > 0:
-            cloudlog.info(f"CAN playback: using GPS time as fallback: {gps_time}")
-            return int(gps_time * 1e9)  # ナノ秒に変換
+          ts = msg.gpsLocation.unixTimestampMillis  # UNIX timestamp (ミリ秒)
+          if ts > 0:
+            cloudlog.info(f"CAN playback: using gpsLocation time: {ts}")
+            return int(ts * 1e6)  # ミリ秒→ナノ秒に変換
       except Exception:
         continue
 

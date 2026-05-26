@@ -105,25 +105,27 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   }
   handling_mouse_event_ = true;
 
-  // AnnotatedCameraWidget にイベントを転送（長押しUIEditMode検出・編集モード操作用）
-  // FrogPilotOnroadWindow の空白領域からのイベントのみここに到達する
-  bool nvg_handled = false;
-  if (nvg) {
-    QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
-    QMouseEvent forwarded(QEvent::MouseButtonPress, nvg_pos, e->globalPos(),
-                          e->button(), e->buttons(), e->modifiers());
-    // 直接メソッド呼び出し（sendEventを使わない）で再帰を防止
-    nvg->forwardMousePress(&forwarded);
-    nvg_handled = forwarded.isAccepted();
+  // 長押し追跡中または編集モード中のみ AnnotatedCameraWidget に転送
+  // （通常時はイベントを HomeWindow に伝播してサイドバー/開発者サイドバーのトグルを有効にする）
+  if (edit_manager_ && (edit_manager_->isPressPending() || edit_manager_->isEditMode())) {
+    if (nvg) {
+      QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
+      QMouseEvent forwarded(QEvent::MouseButtonPress, nvg_pos, e->globalPos(),
+                            e->button(), e->buttons(), e->modifiers());
+      // 直接メソッド呼び出し（sendEventを使わない）で再帰を防止
+      nvg->forwardMousePress(&forwarded);
+      bool nvg_handled = forwarded.isAccepted();
+      handling_mouse_event_ = false;
+      if (nvg_handled) {
+        e->accept();
+      } else {
+        e->ignore();
+      }
+      return;
+    }
   }
 
   handling_mouse_event_ = false;
-
-  // 編集モードでイベントが処理された場合は親に伝播しない
-  if (nvg_handled) {
-    e->accept();
-    return;
-  }
 
   FrogPilotUIState &fs = *frogpilotUIState();
   QJsonObject &frogpilot_toggles = fs.frogpilot_toggles;
@@ -131,6 +133,7 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 
   if (fpsm["frogpilotPlan"].getFrogpilotPlan().getSpeedLimitChanged() && nvg->frogpilot_nvg->newSpeedLimitRect.contains(e->pos())) {
     fs.params_memory.putBool("SpeedLimitAccepted", true);
+    e->accept();
     return;
   }
 
