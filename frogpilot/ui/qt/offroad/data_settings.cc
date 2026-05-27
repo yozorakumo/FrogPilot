@@ -20,6 +20,14 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
   ScrollView *dataMainPanel = new ScrollView(dataMainList, this);
   dataLayout->addWidget(dataMainPanel);
 
+  ParamControl *automaticBackupToggle = new ParamControl("AutomaticBackup", tr("Automatically Backup FrogPilot"),
+    tr("<b>Automatically backup your configuration and models when you are offroad with an active internet connection.</b>"),
+    "../../frogpilot/assets/toggle_icons/icon_backup.png");
+  if (forceOpenDescriptions) {
+    automaticBackupToggle->showDescription();
+  }
+  dataMainList->addItem(automaticBackupToggle);
+
   FrogPilotListWidget *statsLabelsList = new FrogPilotListWidget(this);
   ScrollView *statsLabelsPanel = new ScrollView(statsLabelsList, this);
   dataLayout->addWidget(statsLabelsPanel);
