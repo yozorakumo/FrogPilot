@@ -13,8 +13,8 @@ void FrogPilotOnroadWindow::mousePressEvent(QMouseEvent *e) {
     // 子ウィジェット上 → Qtのデフォルト処理（子にイベント配送）
     QWidget::mousePressEvent(e);
   } else {
-    // 空白領域 → 親に伝播してサイドバーなどの処理を有効にする
-    e->ignore();
+    // 空白領域 → 基底クラスのロジックを実行（edit_manager_ チェック・nvg 転送・サイドバートグル）
+    OnroadWindow::mousePressEvent(e);
   }
 }
 
@@ -23,7 +23,7 @@ void FrogPilotOnroadWindow::mouseReleaseEvent(QMouseEvent *e) {
   if (child) {
     QWidget::mouseReleaseEvent(e);
   } else {
-    e->ignore();
+    OnroadWindow::mouseReleaseEvent(e);
   }
 }
 
@@ -32,7 +32,7 @@ void FrogPilotOnroadWindow::mouseMoveEvent(QMouseEvent *e) {
   if (child) {
     QWidget::mouseMoveEvent(e);
   } else {
-    e->ignore();
+    OnroadWindow::mouseMoveEvent(e);
   }
 }
 
