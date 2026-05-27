@@ -7,14 +7,14 @@
 
 void FrogPilotOnroadWindow::mousePressEvent(QMouseEvent *e) {
   // 子ウィジェット（PlaybackOverlay, stop_playback_btn_など）上のイベントは
-  // Qtのデフォルト配送に任す。空白領域のイベントは親（OnroadWindow）に伝播する。
+  // Qtのデフォルト配送に任す。空白領域のイベントは親に伝播する。
   QWidget *child = childAt(e->pos());
   if (child) {
     // 子ウィジェット上 → Qtのデフォルト処理（子にイベント配送）
     QWidget::mousePressEvent(e);
   } else {
-    // 空白領域 → 基底クラスのロジックを実行（edit_manager_ チェック・nvg 転送・サイドバートグル）
-    OnroadWindow::mousePressEvent(e);
+    // 空白領域 → 基底クラス QWidget のロジックを実行
+    QWidget::mousePressEvent(e);
   }
 }
 
@@ -23,7 +23,7 @@ void FrogPilotOnroadWindow::mouseReleaseEvent(QMouseEvent *e) {
   if (child) {
     QWidget::mouseReleaseEvent(e);
   } else {
-    OnroadWindow::mouseReleaseEvent(e);
+    QWidget::mouseReleaseEvent(e);
   }
 }
 
@@ -32,7 +32,7 @@ void FrogPilotOnroadWindow::mouseMoveEvent(QMouseEvent *e) {
   if (child) {
     QWidget::mouseMoveEvent(e);
   } else {
-    OnroadWindow::mouseMoveEvent(e);
+    QWidget::mouseMoveEvent(e);
   }
 }
 
