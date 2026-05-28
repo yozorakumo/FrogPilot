@@ -1394,94 +1394,75 @@ void AnnotatedCameraWidget::mouseDoubleClickEvent(QMouseEvent *event) {
   }
 }
 
-void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
-  qDebug() << "XXX touchEvent handled:" << event->isAccepted() << "editMode:" << (edit_manager_ ? edit_manager_->isEditMode() : -1) << "type:" << event->type() << "touchesSynthesized:" << event->touchesSynthesized();
-  if (edit_manager_) {
-    QList<QTouchEvent::TouchPoint> points = event->touchPoints();
-
-    if (edit_manager_->isEditMode() && points.size() == 2) {
-      // ピンチズーム: 2点間の距離変化を計算
-      QTouchEvent::TouchPoint p1 = points[0];
-      QTouchEvent::TouchPoint p2 = points[1];
-      float dx = p2.pos().x() - p1.pos().x();
-      float dy = p2.pos().y() - p1.pos().y();
-      float distance = std::sqrt(dx * dx + dy * dy);
-
-      if (last_pinch_distance_ > 0.0f && distance > 0.0f) {
-        float scale_delta = distance / last_pinch_distance_;
-        QPoint center(qRound((p1.pos().x() + p2.pos().x()) / 2.0),
-                      qRound((p1.pos().y() + p2.pos().y()) / 2.0));
-        edit_manager_->handlePinchZoom(center, scale_delta);
-      }
-      last_pinch_distance_ = distance;
-      event->accept();
-      return;
-    }
-
-    if (points.size() >= 1) {
-      // シングルタッチ - 長押し検出用にedit_managerに転送
-      // （WA_AcceptTouchEvents環境では合成マウスイベントが生成されない場合があるため）
-      QTouchEvent::TouchPoint p = points[0];
-      bool handled = false;
-      QEvent::Type mouseType;
-      Qt::MouseButton button = Qt::NoButton;
-      Qt::MouseButtons buttons = Qt::NoButton;
-
-      switch (p.state()) {
-        case Qt::TouchPointPressed:
-          handled = edit_manager_->handleMousePress(p.pos().toPoint());
-          mouseType = QEvent::MouseButtonPress;
-          button = Qt::LeftButton;
-          buttons = Qt::LeftButton;
-          break;
-        case Qt::TouchPointMoved:
-          handled = edit_manager_->handleMouseMove(p.pos().toPoint());
-          mouseType = QEvent::MouseMove;
-          button = Qt::NoButton;
-          buttons = Qt::LeftButton;
-          break;
-        case Qt::TouchPointReleased:
-          handled = edit_manager_->handleMouseRelease();
-          mouseType = QEvent::MouseButtonRelease;
-          button = Qt::LeftButton;
-          buttons = Qt::NoButton;
-          break;
-        default:
-          last_pinch_distance_ = 0.0f;
-          event->ignore();
-          return;
-      }
-      last_pinch_distance_ = 0.0f;
-
-      if (handled) {
-        event->accept();
-      } else {
-        // 編集モードでない通常タップ → マウスイベントを合成して親ウィジェットに転送
-        event->ignore();
-
-        // タッチ位置をグローバル座標に変換
-        QPoint globalPos = mapToGlobal(p.pos().toPoint());
-
-        // QMouseEvent を作成して自身に送信（ignore() されると親に伝播）
-        QMouseEvent mouseEvent(mouseType, p.pos().toPoint(), globalPos,
-                               button, buttons, Qt::NoModifier);
-        QCoreApplication::sendEvent(this, &mouseEvent);
-
-        // mouseEvent の accept/ignore 状態を元の touchEvent に反映
-        if (mouseEvent.isAccepted()) {
-          event->accept();
-        }
-      }
-      return;
-    } else {
-      last_pinch_distance_ = 0.0f;
-      event->ignore();
-      return;
-    }
-  } else {
-    last_pinch_distance_ = 0.0f;
-    event->ignore();
+bool AnnotatedCameraWidget::event(QEvent *event) {
+  if (event->type() == QEvent::TouchBegin ||
+      event->type() == QEvent::TouchUpdate ||
+      event->type() == QEvent::TouchEnd ||
+      event->type() == QEvent::TouchCancel) {
+    touchEvent(static_cast<QTouchEvent*>(event));
+    // タッチイベントが accept された時だけ true を返す
+    // ignore の場合は false を返して Qt に親への伝播を指示する
+    return event->isAccepted();
   }
+  return CameraWidget::event(event);
+}
+
+void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
+  if (!edit_manager_) {
+    event->ignore();
+    return;
+  }
+
+  QList<QTouchEvent::TouchPoint> points = event->touchPoints();
+
+  // 編集モードかつ2点タッチ → ピンチズーム処理
+  if (edit_manager_->isEditMode() && points.size() == 2) {
+    // ピンチズーム: 2点間の距離変化を計算
+    QTouchEvent::TouchPoint p1 = points[0];
+    QTouchEvent::TouchPoint p2 = points[1];
+    float dx = p2.pos().x() - p1.pos().x();
+    float dy = p2.pos().y() - p1.pos().y();
+    float distance = std::sqrt(dx * dx + dy * dy);
+
+    if (last_pinch_distance_ > 0.0f && distance > 0.0f) {
+      float scale_delta = distance / last_pinch_distance_;
+      QPoint center(qRound((p1.pos().x() + p2.pos().x()) / 2.0),
+                    qRound((p1.pos().y() + p2.pos().y()) / 2.0));
+      edit_manager_->handlePinchZoom(center, scale_delta);
+    }
+    last_pinch_distance_ = distance;
+    event->accept();
+    return;
+  }
+
+  if (points.size() >= 1) {
+    QTouchEvent::TouchPoint p = points[0];
+    bool handled = false;
+
+    switch (p.state()) {
+      case Qt::TouchPointPressed:
+        handled = edit_manager_->handleMousePress(p.pos().toPoint());
+        break;
+      case Qt::TouchPointMoved:
+        handled = edit_manager_->handleMouseMove(p.pos().toPoint());
+        break;
+      case Qt::TouchPointReleased:
+        handled = edit_manager_->handleMouseRelease();
+        break;
+      default:
+        event->ignore();
+        return;
+    }
+
+    if (handled) {
+      event->accept();
+    } else {
+      event->ignore();  // event() が isAccepted() を返すので、これで親に伝播する
+    }
+    return;
+  }
+
+  event->ignore();
 }
 
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {

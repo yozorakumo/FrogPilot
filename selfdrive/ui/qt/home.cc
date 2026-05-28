@@ -124,7 +124,6 @@ void HomeWindow::showDriverView(bool show, bool started) {
 }
 
 void HomeWindow::mousePressEvent(QMouseEvent* e) {
-  qDebug() << "XXX HomeWindow::mousePressEvent x:" << e->x();
   // 左端エッジ（50px）でのみ左サイドバーをトグル
   if ((onroad->isVisible() || body->isVisible()) && e->x() < 50) {
     sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
