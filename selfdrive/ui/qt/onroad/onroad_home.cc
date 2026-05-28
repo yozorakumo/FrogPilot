@@ -97,6 +97,7 @@ void OnroadWindow::updateState(const UIState &s, const FrogPilotUIState &fs) {
 }
 
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
+  qDebug() << "XXX OnroadWindow::mousePressEvent";
   // 再入防止: sendEvent → nvgがignore() → Qtが親に伝播 → 再びmousePressEvent
   // という無限再帰を防ぐ
   if (handling_mouse_event_) {

@@ -6,34 +6,16 @@
 #include "frogpilot/ui/qt/onroad/frogpilot_onroad.h"
 
 void FrogPilotOnroadWindow::mousePressEvent(QMouseEvent *e) {
-  // 子ウィジェット（PlaybackOverlay, stop_playback_btn_など）上のイベントは
-  // Qtのデフォルト配送に任す。空白領域のイベントは親に伝播する。
-  QWidget *child = childAt(e->pos());
-  if (child) {
-    // 子ウィジェット上 → Qtのデフォルト処理（子にイベント配送）
-    QWidget::mousePressEvent(e);
-  } else {
-    // 空白領域 → 基底クラス QWidget のロジックを実行
-    QWidget::mousePressEvent(e);
-  }
+  // Qtは子ウィジェットに自動的にイベントを配送するため、直接基底クラスを呼ぶ
+  QWidget::mousePressEvent(e);
 }
 
 void FrogPilotOnroadWindow::mouseReleaseEvent(QMouseEvent *e) {
-  QWidget *child = childAt(e->pos());
-  if (child) {
-    QWidget::mouseReleaseEvent(e);
-  } else {
-    QWidget::mouseReleaseEvent(e);
-  }
+  QWidget::mouseReleaseEvent(e);
 }
 
 void FrogPilotOnroadWindow::mouseMoveEvent(QMouseEvent *e) {
-  QWidget *child = childAt(e->pos());
-  if (child) {
-    QWidget::mouseMoveEvent(e);
-  } else {
-    QWidget::mouseMoveEvent(e);
-  }
+  QWidget::mouseMoveEvent(e);
 }
 
 FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) {

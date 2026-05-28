@@ -1352,31 +1352,38 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 void AnnotatedCameraWidget::mousePressEvent(QMouseEvent *event) {
   if (edit_manager_ && edit_manager_->handleMousePress(event->pos())) {
     event->accept();
-    return;  // 編集モードで処理したらCameraWidgetに渡さない
+    return;
   }
-  // 編集モードでない場合は親にイベントを伝播（サイドバートグル用）
-  // 編集モード中でなく、press_pendingでもない場合はイベントを伝播してHomeWindowで処理
-  if (!edit_manager_ || (!edit_manager_->isEditMode() && !edit_manager_->isPressPending())) {
-    event->ignore();
-  } else {
+  // 編集モード中のみaccept、それ以外は親に伝播（サイドバートグルのため）
+  if (edit_manager_ && edit_manager_->isEditMode()) {
     event->accept();
+  } else {
+    event->ignore();
   }
 }
 
 void AnnotatedCameraWidget::mouseMoveEvent(QMouseEvent *event) {
   if (edit_manager_ && edit_manager_->handleMouseMove(event->pos())) {
     event->accept();
-  } else {
-    CameraWidget::mouseMoveEvent(event);
+    return;
   }
+  if (edit_manager_ && edit_manager_->isEditMode()) {
+    event->accept();
+    return;
+  }
+  CameraWidget::mouseMoveEvent(event);
 }
 
 void AnnotatedCameraWidget::mouseReleaseEvent(QMouseEvent *event) {
   if (edit_manager_ && edit_manager_->handleMouseRelease()) {
     event->accept();
-  } else {
-    CameraWidget::mouseReleaseEvent(event);
+    return;
   }
+  if (edit_manager_ && edit_manager_->isEditMode()) {
+    event->accept();
+    return;
+  }
+  CameraWidget::mouseReleaseEvent(event);
 }
 
 void AnnotatedCameraWidget::mouseDoubleClickEvent(QMouseEvent *event) {
@@ -1388,6 +1395,7 @@ void AnnotatedCameraWidget::mouseDoubleClickEvent(QMouseEvent *event) {
 }
 
 void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
+  qDebug() << "XXX touchEvent handled:" << event->isAccepted() << "editMode:" << (edit_manager_ ? edit_manager_->isEditMode() : -1) << "type:" << event->type() << "touchesSynthesized:" << event->touchesSynthesized();
   if (edit_manager_) {
     QList<QTouchEvent::TouchPoint> points = event->touchPoints();
 
