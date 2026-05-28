@@ -1415,33 +1415,68 @@ void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
       }
       last_pinch_distance_ = distance;
       event->accept();
-    } else if (points.size() >= 1) {
+      return;
+    }
+
+    if (points.size() >= 1) {
       // シングルタッチ - 長押し検出用にedit_managerに転送
       // （WA_AcceptTouchEvents環境では合成マウスイベントが生成されない場合があるため）
       QTouchEvent::TouchPoint p = points[0];
       bool handled = false;
+      QEvent::Type mouseType;
+      Qt::MouseButton button = Qt::NoButton;
+      Qt::MouseButtons buttons = Qt::NoButton;
+
       switch (p.state()) {
         case Qt::TouchPointPressed:
           handled = edit_manager_->handleMousePress(p.pos().toPoint());
+          mouseType = QEvent::MouseButtonPress;
+          button = Qt::LeftButton;
+          buttons = Qt::LeftButton;
           break;
         case Qt::TouchPointMoved:
           handled = edit_manager_->handleMouseMove(p.pos().toPoint());
+          mouseType = QEvent::MouseMove;
+          button = Qt::NoButton;
+          buttons = Qt::LeftButton;
           break;
         case Qt::TouchPointReleased:
           handled = edit_manager_->handleMouseRelease();
+          mouseType = QEvent::MouseButtonRelease;
+          button = Qt::LeftButton;
+          buttons = Qt::NoButton;
           break;
         default:
-          break;
+          last_pinch_distance_ = 0.0f;
+          event->ignore();
+          return;
       }
       last_pinch_distance_ = 0.0f;
+
       if (handled) {
         event->accept();
       } else {
+        // 編集モードでない通常タップ → マウスイベントを合成して親ウィジェットに転送
         event->ignore();
+
+        // タッチ位置をグローバル座標に変換
+        QPoint globalPos = mapToGlobal(p.pos().toPoint());
+
+        // QMouseEvent を作成して自身に送信（ignore() されると親に伝播）
+        QMouseEvent mouseEvent(mouseType, p.pos().toPoint(), globalPos,
+                               button, buttons, Qt::NoModifier);
+        QCoreApplication::sendEvent(this, &mouseEvent);
+
+        // mouseEvent の accept/ignore 状態を元の touchEvent に反映
+        if (mouseEvent.isAccepted()) {
+          event->accept();
+        }
       }
+      return;
     } else {
       last_pinch_distance_ = 0.0f;
       event->ignore();
+      return;
     }
   } else {
     last_pinch_distance_ = 0.0f;
