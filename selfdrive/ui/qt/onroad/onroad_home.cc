@@ -105,17 +105,24 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   }
   handling_mouse_event_ = true;
 
-  // 編集モード中または長押し追跡中は AnnotatedCameraWidget に転送
-  if (edit_manager_ && (edit_manager_->isEditMode() || edit_manager_->isPressPending())) {
-    if (nvg) {
-      QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
+  // 常に handleMousePress を呼び出して長押し検出を開始する（循環依存の解消）
+  // 従来は isPressPending() が true の時だけ nvg に転送していたが、
+  // handleMousePress() は nvg からしか呼ばれないため press_pending_ が
+  // 永遠に false のままだった。ここで直接呼ぶことで循環を断つ。
+  // nvg->forwardMousePress() 内で handleMousePress が再度呼ばれるが、
+  // press_pending_ が既に true のため即座に return false される（重複なし）。
+  if (edit_manager_ && nvg) {
+    QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
+    edit_manager_->handleMousePress(nvg_pos);
+
+    // 編集モード中または長押し追跡中は AnnotatedCameraWidget に転送
+    if (edit_manager_->isEditMode() || edit_manager_->isPressPending()) {
       QMouseEvent forwarded(QEvent::MouseButtonPress, nvg_pos, e->globalPos(),
                             e->button(), e->buttons(), e->modifiers());
       // 直接メソッド呼び出し（sendEventを使わない）で再帰を防止
       nvg->forwardMousePress(&forwarded);
-      bool nvg_handled = forwarded.isAccepted();
       handling_mouse_event_ = false;
-      if (nvg_handled) {
+      if (forwarded.isAccepted()) {
         e->accept();
       } else {
         e->ignore();

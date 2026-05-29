@@ -220,7 +220,7 @@ void PlaybackOverlay::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 bool PlaybackOverlay::event(QEvent *event) {
-  // 、子widget内のイベント処理は吸收
+  // 子widget内のイベント処理は吸収
   // 子widgetの範囲外のイベントのみ親widgetに伝播させる
   switch (event->type()) {
     case QEvent::TouchBegin:
@@ -229,24 +229,26 @@ bool PlaybackOverlay::event(QEvent *event) {
     case QEvent::MouseButtonPress:
     case QEvent::MouseButtonRelease:
     case QEvent::MouseMove:
-      // 子widgetの範囲外でのイベントの場合のみ伝播させる
-      // （再生オーバーレイ表示中にサイドバートグルを可能にするため）
-      if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::TouchBegin) {
+      // Press/Release/TouchBegin/TouchEnd: 子widgetの範囲外なら親に伝播
+      // （再生オーバーレイ表示中にサイドバートグルや長押し検出を可能にするため）
+      // MouseMove: パフォーマンス上の理由で常にaccept
+      if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::TouchBegin ||
+          event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {
         QMouseEvent *mouseEvent = nullptr;
         QTouchEvent *touchEvent = nullptr;
-        if (event->type() == QEvent::MouseButtonPress) {
+        if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease) {
           mouseEvent = static_cast<QMouseEvent*>(event);
         } else {
           touchEvent = static_cast<QTouchEvent*>(event);
         }
-        
+
         QPoint pos;
         if (mouseEvent) {
           pos = mouseEvent->pos();
         } else if (touchEvent && !touchEvent->touchPoints().isEmpty()) {
           pos = touchEvent->touchPoints().first().pos().toPoint();
         }
-        
+
         // 子widgetの範囲内チェック
         bool inChildWidget = false;
         inChildWidget |= (play_pause_btn_ && play_pause_btn_->geometry().contains(pos));
@@ -254,7 +256,7 @@ bool PlaybackOverlay::event(QEvent *event) {
         inChildWidget |= (speed_btn_ && speed_btn_->geometry().contains(pos));
         inChildWidget |= (time_label_ && time_label_->geometry().contains(pos));
         inChildWidget |= (real_time_label_ && real_time_label_->geometry().contains(pos));
-        
+
         if (!inChildWidget) {
           // 子widget範囲外なら親widgetに伝播
           event->ignore();

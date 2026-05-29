@@ -6,16 +6,19 @@
 #include "frogpilot/ui/qt/onroad/frogpilot_onroad.h"
 
 void FrogPilotOnroadWindow::mousePressEvent(QMouseEvent *e) {
-  // Qtは子ウィジェットに自動的にイベントを配送するため、直接基底クラスを呼ぶ
-  QWidget::mousePressEvent(e);
+  // イベントがここに到達した時点で、子ウィジェット（PlaybackOverlay、
+  // stop_playback_btn_等）にはヒットしていない（Qtは最も深い子ウィジェットに
+  // 直接配送するため）。親（OnroadWindow）に伝播して、サイドバートグルや
+  // 長押し検出を可能にする。
+  e->ignore();
 }
 
 void FrogPilotOnroadWindow::mouseReleaseEvent(QMouseEvent *e) {
-  QWidget::mouseReleaseEvent(e);
+  e->ignore();
 }
 
 void FrogPilotOnroadWindow::mouseMoveEvent(QMouseEvent *e) {
-  QWidget::mouseMoveEvent(e);
+  e->ignore();
 }
 
 FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) {
