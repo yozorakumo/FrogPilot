@@ -89,7 +89,9 @@ void HomeWindow::updateState(const UIState &s, const FrogPilotUIState &fs) {
         showSidebar(false);
       }
 
-      developer_sidebar->setVisible(fs.frogpilot_toggles.value("developer_sidebar").toBool());
+      // developer_sidebarの表示状態は毎フレーム強制設定しない
+      // ユーザーがタップでトグルした状態を尊重する
+      // 初期化時のみoffroadTransition()で設定される
 
       frogpilotUIState()->frogpilot_scene.sidebar_visible = sidebar->isVisible();
       frogpilotUIState()->frogpilot_scene.developer_sidebar_visible = developer_sidebar->isVisible();

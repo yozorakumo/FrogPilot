@@ -34,30 +34,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   distance_btn = new DistanceButton(this);
   screen_recorder = new ScreenRecorder(this);
 
-  // UIEditMode切替ボタン（画面右上の歯車アイコン）
-  edit_mode_btn_ = new QPushButton(QString::fromUtf8("⚙"), this);
-  edit_mode_btn_->setFixedSize(60, 60);
-  edit_mode_btn_->setStyleSheet(R"(
-    QPushButton {
-      background: rgba(0, 0, 0, 128);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 24px;
-    }
-    QPushButton:pressed {
-      background: rgba(255, 165, 0, 200);
-    }
-  )");
-  connect(edit_mode_btn_, &QPushButton::clicked, this, [this]() {
-    if (edit_manager_) {
-      edit_manager_->toggleEditMode();
-      updateEditModeButtonStyle();
-    }
-  });
-  edit_mode_btn_->raise();
-  edit_mode_btn_->show();
-
+  // edit_mode_btn_ は FrogPilotOnroadWindow に配置（最前面でタッチイベントを受け取るため）
   // edit_manager_ は OnroadWindow から setEditModeManager() で設定される
   setAttribute(Qt::WA_AcceptTouchEvents);
 
@@ -73,7 +50,6 @@ void AnnotatedCameraWidget::setEditModeManager(UIEditModeManager *manager) {
   if (edit_manager_) {
     connect(edit_manager_, &UIEditModeManager::settingsChanged, this, [this]() {
       update();
-      updateEditModeButtonStyle();
     });
   }
 }
@@ -87,12 +63,6 @@ void AnnotatedCameraWidget::resizeEvent(QResizeEvent *event) {
   // This ensures correct positioning when sidebar visibility changes
   steering_wheel_base_pos_ = QPoint(width() - UI_BORDER_SIZE - btn_size, UI_BORDER_SIZE);
   recording_base_pos_ = QPoint(steering_wheel_base_pos_.x() - UI_BORDER_SIZE - btn_size, steering_wheel_base_pos_.y());
-
-  // 設定ボタンの配置（右上、experimental_btnの下）
-  if (edit_mode_btn_) {
-    edit_mode_btn_->move(width() - 70, steering_wheel_base_pos_.y() + btn_size + 10);
-    edit_mode_btn_->raise();
-  }
 
   // Apply edit mode offsets to QWidget elements
   if (edit_manager_) {
@@ -1477,37 +1447,6 @@ void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
   event->ignore();
 }
 
-void AnnotatedCameraWidget::updateEditModeButtonStyle() {
-  if (!edit_mode_btn_) return;
-  bool is_edit = edit_manager_ && edit_manager_->isEditMode();
-  if (is_edit) {
-    edit_mode_btn_->setStyleSheet(R"(
-      QPushButton {
-        background: rgba(255, 165, 0, 200);
-        color: white;
-        border: 2px solid rgba(255, 255, 255, 180);
-        border-radius: 10px;
-        font-size: 24px;
-      }
-      QPushButton:pressed {
-        background: rgba(255, 200, 100, 220);
-      }
-    )");
-  } else {
-    edit_mode_btn_->setStyleSheet(R"(
-      QPushButton {
-        background: rgba(0, 0, 0, 128);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-size: 24px;
-      }
-      QPushButton:pressed {
-        background: rgba(255, 165, 0, 200);
-      }
-    )");
-  }
-}
 
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {
   CameraWidget::showEvent(event);

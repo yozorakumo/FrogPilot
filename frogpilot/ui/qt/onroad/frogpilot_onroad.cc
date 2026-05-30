@@ -38,6 +38,41 @@ FrogPilotOnroadWindow::FrogPilotOnroadWindow(QWidget *parent) : QWidget(parent) 
   playback_overlay_ = nullptr;
   stop_playback_btn_ = nullptr;
   playback_timer_ = nullptr;
+
+  // UIEditMode切替ボタン（画面右上の歯車アイコン）
+  // FrogPilotOnroadWindowは最前面ウィジェットなので、ここに配置することで
+  // タッチイベントが正しく届く
+  edit_mode_btn_ = new QPushButton(QString::fromUtf8("⚙"), this);
+  edit_mode_btn_->setFixedSize(60, 60);
+  edit_mode_btn_->setStyleSheet(R"(
+    QPushButton {
+      background: rgba(0, 0, 0, 128);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 24px;
+    }
+    QPushButton:pressed {
+      background: rgba(255, 165, 0, 200);
+    }
+  )");
+  connect(edit_mode_btn_, &QPushButton::clicked, this, [this]() {
+    if (edit_manager_) {
+      edit_manager_->toggleEditMode();
+      updateEditModeButtonStyle();
+    }
+  });
+  edit_mode_btn_->raise();
+  edit_mode_btn_->show();
+}
+
+void FrogPilotOnroadWindow::setEditModeManager(UIEditModeManager *manager) {
+  edit_manager_ = manager;
+  if (edit_manager_) {
+    connect(edit_manager_, &UIEditModeManager::settingsChanged, this, [this]() {
+      updateEditModeButtonStyle();
+    });
+  }
 }
 
 FrogPilotOnroadWindow::~FrogPilotOnroadWindow() {
@@ -160,6 +195,12 @@ void FrogPilotOnroadWindow::updateState(const UIState &s, const FrogPilotUIState
 void FrogPilotOnroadWindow::resizeEvent(QResizeEvent *event) {
   QWidget::resizeEvent(event);
 
+  // 設定ボタンの配置（右上）
+  if (edit_mode_btn_) {
+    edit_mode_btn_->move(width() - 70, 10);
+    edit_mode_btn_->raise();
+  }
+
   if (isCanPlayback && playback_overlay_) {
     // Position overlay at the bottom of the widget
     int overlay_x = 0;
@@ -172,6 +213,38 @@ void FrogPilotOnroadWindow::resizeEvent(QResizeEvent *event) {
     // Position stop button at top-left corner (below sidebar area)
     stop_playback_btn_->setGeometry(20, 80, 120, 60);
     stop_playback_btn_->raise();
+  }
+}
+
+void FrogPilotOnroadWindow::updateEditModeButtonStyle() {
+  if (!edit_mode_btn_) return;
+  bool is_edit = edit_manager_ && edit_manager_->isEditMode();
+  if (is_edit) {
+    edit_mode_btn_->setStyleSheet(R"(
+      QPushButton {
+        background: rgba(255, 165, 0, 200);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 180);
+        border-radius: 10px;
+        font-size: 24px;
+      }
+      QPushButton:pressed {
+        background: rgba(255, 200, 100, 220);
+      }
+    )");
+  } else {
+    edit_mode_btn_->setStyleSheet(R"(
+      QPushButton {
+        background: rgba(0, 0, 0, 128);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 24px;
+      }
+      QPushButton:pressed {
+        background: rgba(255, 165, 0, 200);
+      }
+    )");
   }
 }
 

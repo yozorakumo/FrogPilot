@@ -32,7 +32,10 @@ public:
   void resizeEvent(QResizeEvent *event) override;
 
   // UIEditMode マネージャー設定（OnroadWindow から呼び出し）
-  void setEditModeManager(UIEditModeManager *manager) { edit_manager_ = manager; }
+  void setEditModeManager(UIEditModeManager *manager);
+
+signals:
+  void editModeToggleRequested();
 
 protected:
   void mousePressEvent(QMouseEvent *e) override;
@@ -91,4 +94,6 @@ private:
 
   // UIEditMode マネージャー（編集モード中のイベント処理制御用）
   UIEditModeManager *edit_manager_ = nullptr;
+  QPushButton *edit_mode_btn_ = nullptr;
+  void updateEditModeButtonStyle();
 };
