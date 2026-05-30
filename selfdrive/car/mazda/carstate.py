@@ -83,13 +83,13 @@ class CarState(CarStateBase):
       gear_pos = cp.vl["PEDALS"]["GEAR_POS"]
       GEAR_VALUES = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1}
 
-      # Direct clutch pedal signal from CLUTCH_SWITCH (0x366)
-      # CLUTCH_PEDAL is a binary switch at byte1 bit7 (Motorola bit 15)
-      ret.clutchPressed = cp.vl["CLUTCH_SWITCH"]["CLUTCH_PEDAL"] == 1
+      # Clutch pedal signal from NEW_MSG_28 (0x166) byte0 bit7 (Motorola bit 7)
+      # Verified by real-time CAN capture: clean ON/OFF matching pedal presses
+      ret.clutchPressed = cp.vl["NEW_MSG_28"]["CLUTCH_PEDAL"] == 1
 
       # Debug logging for MT gear and clutch detection
       cloudlog.debug(f"MT gear: NEW_MSG_28.GEAR_POS={new_msg28_gear}, PEDALS.GEAR_POS={gear_pos}")
-      cloudlog.debug(f"MT clutch: CLUTCH_PEDAL={cp.vl['CLUTCH_SWITCH']['CLUTCH_PEDAL']}")
+      cloudlog.debug(f"MT clutch: CLUTCH_PEDAL={cp.vl['NEW_MSG_28']['CLUTCH_PEDAL']}")
 
       if new_msg28_gear == 6:  # Reverse
         ret.gearShifter = car.CarState.GearShifter.reverse
@@ -246,7 +246,6 @@ class CarState(CarStateBase):
       messages += [
         ("NEW_MSG_28", 50),
         ("MSG_11", 10),
-        ("CLUTCH_SWITCH", 50),
       ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)

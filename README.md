@@ -15,7 +15,7 @@
   - **DBC定義修正**: 当初 `23|4@0+` → 実測データに基づき `20|4@0+` に修正
 - **ギア段信号**: `0x165` (PEDALS) `GEAR_POS` — 1速〜6速の具体的ギア段
   - 値マッピング: `2=6th`, `3=5th`, `4=4th`, `5=3rd`, `7=2nd`, `13=1st`
-- **クラッチ検出**: PEDALS `GEAR_POS`値が確定ギア値 `{2, 3, 4, 5, 7, 13}` 以外の場合にクラッチが踏まれていると判定
+- **クラッチ検出**: NEW_MSG_28 (0x166) `CLUTCH_PEDAL` — byte[0] bit7 (Motorola bit 7)、1=PRESSED/0=RELEASED
 - **判定フロー**: NEW_MSG_28で大分類 → PEDALSでギア段（前進時のみ）
 - **メリット**: RPM 比率による推定ではなく、CAN信号から直接ギア状態を取得。リバース検出も正確に実行可能
 
@@ -26,7 +26,7 @@
 - **異常値ガード**: `abs(steer_angle) > 360` を検出した場合、フォールバック→前回有効値の順に復元
 
 ### 3. MT車最適化制御
-- **クラッチ連動ディスエンゲージ**: `GEAR_POS`信号に基づき、クラッチペダルが踏まれた状態（ギア未確定）を検出して、安全にオープンパイロットの制御を解除（ディスエンゲージ）します。
+- **クラッチ連動ディスエンゲージ**: NEW_MSG_28 (0x166) の `CLUTCH_PEDAL` 信号に基づき、クラッチペダルが踏まれた状態を検出して、安全にオープンパイロットの制御を解除（ディスエンゲージ）します。
 - **エンスト防止ロジック**: 縦方向制御において、MT 車の特性に合わせた加減速の調整を行っています。
 - **判定方式**: NEW_MSG_28(0x166)で大分類 + PEDALS(0x165)の`GEAR_POS`でギア段を判定。`0x09E`の信号（CLUTCH_ALT, NEUTRAL_SW）は実車検証で常に0であることが確認され、使用されていません。
 
@@ -99,10 +99,11 @@
 #### 4. サイドブレーキ・クラッチ・ニュートラルのCAN信号調査
 - **サイドブレーキ (PARKING_BRAKE)**: CAN ID `0x09F` (159), MSG_11, byte0 bit4、ON=1/OFF=0
   - DBC定義に `SG_ PARKING_BRAKE : 4|1@0+` を追加
-- **クラッチ**: `GEAR_POS`ベースの間接検出を実装
+- **クラッチ**: NEW_MSG_28 (0x166) `CLUTCH_PEDAL` — byte[0] bit7 (Motorola bit 7)
   - `CLUTCH_PRESSED` (0x165 byte5 bit3) → **常に0、クラッチ信号ではない**（DBCから削除済み）
   - `CLUTCH_ALT` (0x09E byte0 bit5) → **常に0、クラッチ信号ではない**（DBCから削除済み）
-  - **解決策**: `GEAR_POS`値が確定ギア値 `{2, 3, 4, 5, 7, 13}` 以外の場合にクラッチが踏まれていると判定
+  - `CLUTCH_SWITCH` (0x366 byte1 bit7) → **無関係な信号、クラッチ操作と不一致**（DBCから削除済み）
+  - **解決策**: リアルタイムCAN信号キャプチャで特定。NEW_MSG_28 (0x166) byte[0] bit7がクラッチペダル直接信号（1=PRESSED/0=RELEASED）
 - **ニュートラル**: NEW_MSG_28のGEAR_POSがForward(4,5)以外で判定
 - **リバース**: NEW_MSG_28のGEAR_POS=6で判定（従来はリバース検出手段がなかった）
 
@@ -127,8 +128,21 @@
 - **メソッド**: `paintBrakePBClutchStatus()` で描画
 - **ファイル**: [`frogpilot/ui/qt/onroad/frogpilot_annotated_camera.h`](frogpilot/ui/qt/onroad/frogpilot_annotated_camera.h)
 
+#### 9. クラッチペダル信号の特定・修正 (`carstate.py`, `mazda_2_dj_mt.dbc`)
+- **問題**: クラッチペダル定義が間違っており、`CLUTCH_SWITCH` (0x366 byte1 bit7) は実際のクラッチ操作と無関係な信号を追跡していた
+- **調査手法**: commaデバイス (10.225.168.157) にSSH接続し、リアルタイムCAN信号キャプチャスクリプトを実行。ユーザーにクラッチを「1回だけ」「3回」押してもらい、全CAN IDの全ビット変化を追跡
+- **候補信号の比較**:
+  - `0x43D byte[2]`: ユーザーが1回しか押していないのに複数回変化 → ❌ ノイズ・周期信号
+  - `0x366 byte[1] bit7` (旧定義): 常時ランダムに変化 → ❌ 無関係
+  - `0x166 byte[0] bit7` (NEW_MSG_28): 1回のクラッチ操作で正確に1回ON/OFF → ✅ **正しい信号**
+- **修正内容**:
+  - DBC: `BO_ 870 CLUTCH_SWITCH` (0x366) を削除、`BO_ 358 NEW_MSG_28` (0x166) に `SG_ CLUTCH_PEDAL :7|1@0+` を追加
+  - CarState: `cp.vl["CLUTCH_SWITCH"]` → `cp.vl["NEW_MSG_28"]` に変更、CLUTCH_SWITCHのサブスクリプションを削除
+- **ファイル**: [`selfdrive/car/mazda/carstate.py`](selfdrive/car/mazda/carstate.py), [`opendbc/mazda_2_dj_mt.dbc`](opendbc/mazda_2_dj_mt.dbc)
+
 #### 検証に使用した実データ
 - `Y:\Github\mazda2canbus\realdata` の rlog データ（43,135件のUDSメッセージ、359,174 CAN フレーム）
+- リアルタイムCAN信号キャプチャ: commaデバイス (10.225.168.157) 経由で6回の検証実施
 
 ---
 

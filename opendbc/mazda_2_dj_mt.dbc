@@ -58,10 +58,8 @@ BO_ 357 PEDALS: 8 XXX
  SG_ NO_BRAKE_2 : 15|1@0+ (1,0) [0|7] "" XXX
  SG_ GEAR_POS : 55|8@0+ (1,0) [0|255] "" XXX
 
-BO_ 870 CLUTCH_SWITCH: 8 XXX
- SG_ CLUTCH_PEDAL : 15|1@0+ (1,0) [0|1] "" XXX
-
 BO_ 358 NEW_MSG_28: 8 XXX
+ SG_ CLUTCH_PEDAL : 7|1@0+ (1,0) [0|1] "" XXX
  SG_ GEAR_POS : 23|4@0+ (1,0) [0|15] "" XXX
 
 BO_ 514 ENGINE_DATA: 8 XXX
@@ -310,7 +308,7 @@ CM_ SG_ 540 DISTANCE_SETTING "Radar distance 0: disabled, 1: 4 bars, 2: 3 bars, 
 CM_ SG_ 1143 REAR_CT_ALERT "Rear Cross Traffic Alert";
 CM_ SG_ 579 STEERING_ANGLE "steering angle aligns with 0.022 factor and -45.06 offset";
 
-VAL_ 870 CLUTCH_PEDAL 0 "RELEASED" 1 "PRESSED" ;
+VAL_ 358 CLUTCH_PEDAL 0 "RELEASED" 1 "PRESSED" ;
 VAL_ 357 GEAR_POS 2 "6th" 3 "5th" 4 "4th" 5 "3rd" 7 "2nd" 13 "1st" 14 "Neutral/Clutch" ;
 VAL_ 159 PARKING_BRAKE 0 "OFF" 1 "ON" ;
 VAL_ 358 GEAR_POS 4 "Forward" 5 "Forward" 6 "Reverse" ;
@@ -330,5 +328,5 @@ CM_ SG_ 540 NEW_SIGNAL_7 "Added for longitudinal control support (PR commaai/ope
 CM_ SG_ 540 NEW_SIGNAL_8 "Added for longitudinal control support (PR commaai/opendbc#3355)";
 CM_ SG_ 540 NEW_SIGNAL_5 "Added for longitudinal control support (PR commaai/opendbc#3355)";
 CM_ SG_ 540 LC_NEW_SIGNAL_6 "Added for longitudinal control support (PR commaai/opendbc#3355). Renamed from NEW_SIGNAL_6 to avoid conflict with existing signal at bit 10.";
-CM_ SG_ 357 GEAR_POS "Removed signals: CLUTCH_PRESSED (byte5 bit3, always 0), GEAR (AT-only signal). Removed BO_ 158 (ID_9E): CLUTCH_ALT and NEUTRAL_SW (both always 0). Clutch/neutral detection now uses CLUTCH_SWITCH (0x366) CLUTCH_PEDAL signal instead of GEAR_POS values.";
-CM_ SG_ 870 CLUTCH_PEDAL "Clutch pedal switch. 1=pedal pressed, 0=released. Signal at byte1 bit7 (Motorola bit 15). From Mazda 2 DJ MT rlog analysis: 5 clean ON/OFF transitions during 4-5 clutch presses in 0-6s.";
+CM_ SG_ 357 GEAR_POS "Removed signals: CLUTCH_PRESSED (byte5 bit3, always 0), GEAR (AT-only signal). Removed BO_ 158 (ID_9E): CLUTCH_ALT and NEUTRAL_SW (both always 0). Clutch/neutral detection now uses NEW_MSG_28 (0x166) CLUTCH_PEDAL signal instead of GEAR_POS values.";
+CM_ SG_ 358 CLUTCH_PEDAL "Clutch pedal switch on Mazda 2 DJ MT. 1=pedal pressed, 0=released. Signal at byte0 bit7 (Motorola bit 7) on CAN ID 0x166 (NEW_MSG_28). Verified by real-time CAN capture: clean ON/OFF transitions matching clutch pedal presses. Previous definition at 0x366 byte1 bit7 was incorrect (tracked unrelated signal).";
