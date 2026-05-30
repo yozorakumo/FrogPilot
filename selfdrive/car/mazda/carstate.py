@@ -84,7 +84,8 @@ class CarState(CarStateBase):
       GEAR_VALUES = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1}
 
       # Direct clutch pedal signal from CLUTCH_SWITCH (0x366)
-      ret.clutchPressed = cp.vl["CLUTCH_SWITCH"]["CLUTCH_PEDAL"] == 1
+      # CLUTCH_PEDAL is an 8-bit analog value (0-255), not a binary switch
+      ret.clutchPressed = cp.vl["CLUTCH_SWITCH"]["CLUTCH_PEDAL"] > 100
 
       # Debug logging for MT gear and clutch detection
       cloudlog.debug(f"MT gear: NEW_MSG_28.GEAR_POS={new_msg28_gear}, PEDALS.GEAR_POS={gear_pos}")
