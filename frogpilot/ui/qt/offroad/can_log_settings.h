@@ -27,7 +27,8 @@ public:
   QString routePath() const { return m_routePath; }
   QString rlogPath() const { return m_rlogPath; }
 
-  // GPS時刻が非同期で抽出された後に呼び出し
+  qint64 timestamp() const { return m_timestamp; }
+
   void updateGpsTime(qint64 timestamp);
 
 signals:
@@ -50,14 +51,18 @@ class FrogPilotCanLogPanel : public FrogPilotListWidget {
 public:
   explicit FrogPilotCanLogPanel(FrogPilotSettingsWindow *parent);
 
- signals:
+  enum SortOrder { SortDescending, SortAscending };
+  void setSortOrder(SortOrder order);
+  SortOrder currentSortOrder() const { return m_sortOrder; }
+
+  signals:
   void openSubPanel();
   void requestCloseSettings();
 
- protected:
+protected:
   void showEvent(QShowEvent *event) override;
 
- private:
+private:
   void refreshFileList();
   void deleteRoute(const QString &routePath);
   void deleteAllLogs();
@@ -65,12 +70,19 @@ public:
   QString formatFileSize(qint64 bytes) const;
   QString formatDuration(float seconds) const;
 
+  void updateRouteTimestamps();
+  static qint64 extractGpsTime(const QString &routePath);
+  static QString findRlogPath(const QString &routePath);
+
   FrogPilotSettingsWindow *parent;
 
   QVBoxLayout *fileListLayout;
   QWidget *fileListWidget;
+  QPushButton *sortButton;
 
   QLabel *statusLabel;
+
+  SortOrder m_sortOrder = SortDescending;
 
   Params params;
   Params params_memory{"/dev/shm/params"};

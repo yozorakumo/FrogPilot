@@ -210,7 +210,7 @@ void CanLogRouteItem::updateDisplay() {
 // FrogPilotCanLogPanel - CAN Log管理パネル
 
 FrogPilotCanLogPanel::FrogPilotCanLogPanel(FrogPilotSettingsWindow *parent)
-  : FrogPilotListWidget(parent), parent(parent) {
+  : FrogPilotListWidget(parent), parent(parent), m_sortOrder(SortDescending) {
   // ステータスラベル
   statusLabel = new QLabel(tr("No driving logs found."), this);
   statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
@@ -232,6 +232,30 @@ FrogPilotCanLogPanel::FrogPilotCanLogPanel(FrogPilotSettingsWindow *parent)
   fileListLayout->addWidget(statusLabel);
   addItem(fileListWidget);
 
+  // ソートボタン
+  sortButton = new QPushButton(tr("↓ Newest First"), this);
+  sortButton->setStyleSheet(R"(
+    QPushButton {
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 28px;
+      font-weight: 500;
+      color: #E4E4E4;
+      background-color: #393939;
+    }
+    QPushButton:pressed {
+      background-color: #4a4a4a;
+    }
+  )");
+  QObject::connect(sortButton, &QPushButton::clicked, [this]() {
+    if (m_sortOrder == SortDescending) {
+      setSortOrder(SortAscending);
+    } else {
+      setSortOrder(SortDescending);
+    }
+  });
+  addItem(sortButton);
+
   // 全ログ削除ボタン
   ButtonControl *deleteAllButton = new ButtonControl(tr("Delete All Logs"),
     tr("DELETE ALL"),
@@ -242,6 +266,100 @@ FrogPilotCanLogPanel::FrogPilotCanLogPanel(FrogPilotSettingsWindow *parent)
     }
   });
   addItem(deleteAllButton);
+}
+
+void FrogPilotCanLogPanel::setSortOrder(SortOrder order) {
+  m_sortOrder = order;
+  sortButton->setText(order == SortDescending ? tr("↓ Newest First") : tr("↑ Oldest First"));
+  refreshFileList();
+}
+
+qint64 FrogPilotCanLogPanel::extractGpsTime(const QString &routePath) {
+  // extract_route_time.pyスクリプトを実行して補正済みGPS時刻を抽出
+  QString python_path = "/usr/local/pyenv/versions/3.11.4/bin/python3";
+  QFile env_file("/data/openpilot/launch_env.sh");
+  if (env_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    while (!env_file.atEnd()) {
+      QString line = env_file.readLine();
+      if (line.startsWith("export PYTHON=")) {
+        python_path = line.split('=').last().trimmed().remove('"').remove('\'');
+        break;
+      }
+    }
+    env_file.close();
+  }
+
+  QProcess process;
+  process.setProgram(python_path);
+  process.setArguments({"/data/openpilot/frogpilot/can_log/extract_route_time.py", routePath});
+  process.setWorkingDirectory("/data/openpilot");
+
+  process.start();
+  if (!process.waitForFinished(15000)) {
+    process.kill();
+    // フォールバック: ファイル更新日時
+    QString rlogPath = findRlogPath(routePath);
+    if (!rlogPath.isEmpty()) {
+      return QFileInfo(rlogPath).lastModified().toUTC().toMSecsSinceEpoch() / 1000;
+    }
+    return 0;
+  }
+
+  QString output = QString::fromUtfString(process.readAllStandardOutput()).trimmed();
+  if (!output.isEmpty()) {
+    bool ok;
+    qint64 timestamp = output.toLongLong(&ok);
+    if (ok && timestamp > 0) {
+      return timestamp / 1000000;  // ns to seconds
+    }
+  }
+
+  // フォールバック: ファイル更新日時
+  QString rlogPath = findRlogPath(routePath);
+  if (!rlogPath.isEmpty()) {
+    return QFileInfo(rlogPath).lastModified().toUTC().toMSecsSinceEpoch() / 1000;
+  }
+  return 0;
+}
+
+QString FrogPilotCanLogPanel::findRlogPath(const QString &routePath) {
+  QDir routeDir(routePath);
+  QStringList segFilters;
+  segFilters << "--*";
+  QStringList segDirs = routeDir.entryList(segFilters, QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+
+  if (!segDirs.isEmpty()) {
+    for (const QString &segDir : segDirs) {
+      QString rlog = routeDir.filePath(segDir + "/rlog");
+      QString rlogBz2 = routeDir.filePath(segDir + "/rlog.bz2");
+      if (QFileInfo(rlog).exists()) return rlog;
+      if (QFileInfo(rlogBz2).exists()) return rlogBz2;
+    }
+  }
+
+  if (QFileInfo(routePath + "/rlog").exists()) return routePath + "/rlog";
+  if (QFileInfo(routePath + "/rlog.bz2").exists()) return routePath + "/rlog.bz2";
+  return "";
+}
+
+void FrogPilotCanLogPanel::updateRouteTimestamps() {
+  // 全ルートアイテムを走査してGPS時刻で更新
+  QLayoutItem *item = fileListLayout->itemAt(0);
+  int index = 0;
+  while (item != nullptr) {
+    QWidget *widget = item->widget();
+    if (widget) {
+      CanLogRouteItem *routeItem = qobject_cast<CanLogRouteItem*>(widget);
+      if (routeItem) {
+        qint64 ts = extractGpsTime(routeItem->routePath());
+        if (ts > 0) {
+          routeItem->updateGpsTime(ts);
+        }
+      }
+    }
+    index++;
+    item = fileListLayout->itemAt(index);
+  }
 }
 
 void FrogPilotCanLogPanel::showEvent(QShowEvent *event) {
@@ -284,13 +402,28 @@ void FrogPilotCanLogPanel::refreshFileList() {
   }
 
   // 各ルートエントリを収集（rlogがあるもののみ）
-  QList<QFileInfo> validRoutes;
+  QList<QPair<QFileInfo, qint64>> validRoutes;
   for (const QFileInfo &routeInfo : routes) {
     QDir routeDir(routeInfo.absoluteFilePath());
     QDirIterator it(routeInfo.absoluteFilePath(), QStringList() << "rlog" << "rlog.bz2", QDir::Files, QDirIterator::Subdirectories);
     if (it.hasNext()) {
-      validRoutes.append(routeInfo);
+      // GPS時刻を抽出（非同期で実行）
+      qint64 gpsTime = extractGpsTime(routeInfo.absoluteFilePath());
+      validRoutes.append({routeInfo, gpsTime});
     }
+  }
+
+  // ソート順 적용
+  if (m_sortOrder == SortDescending) {
+    std::sort(validRoutes.begin(), validRoutes.end(),
+      [](const QPair<QFileInfo, qint64> &a, const QPair<QFileInfo, qint64> &b) {
+        return a.second > b.second;
+      });
+  } else {
+    std::sort(validRoutes.begin(), validRoutes.end(),
+      [](const QPair<QFileInfo, qint64> &a, const QPair<QFileInfo, qint64> &b) {
+        return a.second < b.second;
+      });
   }
 
   // 有効なルートがない場合はステータスメッセージを表示
@@ -309,9 +442,17 @@ void FrogPilotCanLogPanel::refreshFileList() {
   fileListLayout->addWidget(headerLabel);
 
   // 各ルートエントリを追加
-  for (const QFileInfo &routeInfo : validRoutes) {
+  for (const auto &routePair : validRoutes) {
+    const QFileInfo &routeInfo = routePair.first;
+    qint64 gpsTime = routePair.second;
     QString routePath = routeInfo.absoluteFilePath();
+
     CanLogRouteItem *item = new CanLogRouteItem(routePath, this);
+
+    // GPS時刻を更新
+    if (gpsTime > 0) {
+      item->updateGpsTime(gpsTime);
+    }
 
     QObject::connect(item, &CanLogRouteItem::playClicked, [this](const QString &routePath) {
       startPlayback(routePath);

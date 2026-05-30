@@ -52,7 +52,7 @@ QRect UIEditModeManager::getEffectiveBounds(const QString &name) const {
   float sc = it->scale;
   int sb = it->cached_sidebar_offset_x;
 
-  if (sc == 1.0f) return it->bounds.translated(sb, 0);
+  if (sc == 1.0f) return it->bounds;
 
   float ox = it->offset_x;
   float oy = it->offset_y;
@@ -64,7 +64,7 @@ QRect UIEditModeManager::getEffectiveBounds(const QString &name) const {
   float base_y = it->bounds.y() - oy;
 
   return QRect(
-    qRound(base_x * sc + ox + sb),
+    qRound(base_x * sc + ox),
     qRound(base_y * sc + oy),
     qRound(it->bounds.width() * sc),
     qRound(it->bounds.height() * sc)

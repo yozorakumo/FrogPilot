@@ -202,6 +202,192 @@ def is_valid_recording_time(dt: datetime) -> bool:
   return True
 
 
+def _extract_segment_timestamps(seg_path: str) -> tuple[int | None, int | None]:
+  """1つのセグメントからlogMonoTimeとGPS時刻を抽出
+
+  Returns:
+    (first_log_mono_ns, gps_time_ns) のタプル
+    取得できない場合は(None, None)
+  """
+  seg_dir = Path(seg_path)
+  rlog_path = seg_dir / RLOG_FILENAME
+  if not rlog_path.exists():
+    rlog_path = seg_dir / RLOG_FILENAME_UNCOMPRESSED
+  if not rlog_path.exists():
+    return None, None
+
+  try:
+    events = read_all_events_from_rlog(str(rlog_path))
+  except Exception:
+    return None, None
+
+  first_log_mono = None
+  gps_time_ns = None
+
+  for log_mono_time, event_type, raw_msg in events:
+    if first_log_mono is None:
+      first_log_mono = log_mono_time
+
+    if gps_time_ns is None:
+      if event_type == 'clocks':
+        try:
+          with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
+            wall_time_ns = msg.clocks.wallTimeNanos
+            dt = datetime.fromtimestamp(wall_time_ns / 1e9, tz=timezone.utc)
+            if is_valid_recording_time(dt):
+              gps_time_ns = wall_time_ns
+              break
+        except Exception:
+          continue
+
+      if event_type == 'gpsLocationExternal':
+        try:
+          with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
+            if msg.gpsLocationExternal.hasFix:
+              ts = msg.gpsLocationExternal.unixTimestampMillis
+              if ts > 0:
+                dt = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+                if is_valid_recording_time(dt):
+                  gps_time_ns = int(ts * 1e6)
+                  break
+        except Exception:
+          continue
+
+      if event_type == 'gpsLocation':
+        try:
+          with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
+            if msg.gpsLocation.hasFix:
+              ts = msg.gpsLocation.unixTimestampMillis
+              if ts > 0:
+                dt = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+                if is_valid_recording_time(dt):
+                  gps_time_ns = int(ts * 1e6)
+                  break
+        except Exception:
+          continue
+
+  return first_log_mono, gps_time_ns
+
+
+def calculate_timestamp_corrections(segments: list[str]) -> dict[str, int]:
+  """全セグメントのタイムスタンプ補正値を計算
+
+  端末起動後、GPS fix取得前に記録されたセグメントはRTCデフォルト値により
+  不正なタイムスタンプを持っている。この関数はGPS fixが得られたセグメントを
+  基準にして起動時刻からのオフセットを計算し、全セグメントの正しい
+  タイムスタンプを算出する。
+
+  ロジック:
+    1. 各セグメントの最初のイベントからlogMonoTimeを取得
+    2. そのセグメント内のGPS fix後のclocksまたはgpsLocationから真正の時刻を取得
+    3. オフセット = (GPS時刻 - logMonoTime_boot) を計算
+    4. 最も古いオフセットを基準にして全セグメントに適用
+
+  Args:
+    segments: セグメントディレクトリパスのリスト
+
+  Returns:
+    {segment_path: corrected_timestamp_ns} の辞書
+    補正できないセグメントは含まれない
+  """
+  if not segments:
+    return {}
+
+  segment_data = {}
+  for seg_path in segments:
+    first_log_mono, gps_time_ns = _extract_segment_timestamps(seg_path)
+    if first_log_mono is not None:
+      segment_data[seg_path] = {'first_log_mono': first_log_mono, 'gps_time': gps_time_ns}
+
+  valid_offsets = []
+  for seg_path, data in segment_data.items():
+    if data['gps_time'] is not None:
+      offset = data['gps_time'] - data['first_log_mono']
+      valid_offsets.append(offset)
+
+  if not valid_offsets:
+    return {}
+
+  reference_offset = min(valid_offsets)
+
+  corrected_timestamps = {}
+  for seg_path, data in segment_data.items():
+    corrected_timestamps[seg_path] = data['first_log_mono'] + reference_offset
+
+  return corrected_timestamps
+
+
+def get_route_start_time(segments: list[str]) -> int | None:
+  """ルートの開始時刻（GPS補正済み）を取得
+
+  すべてのセグメントから最も古い補正済みタイムスタンプを返す。
+
+  Args:
+    segments: セグメントディレクトリパスのリスト
+
+  Returns:
+    ルート開始時刻のwallTimeNanos（ナノ秒）、なければNone
+  """
+  corrections = calculate_timestamp_corrections(segments)
+  if corrections:
+    return min(corrections.values())
+  return None
+
+
+def _find_valid_gps_timestamp_in_data(dat: bytes) -> int | None:
+  """生のバイナリデータから直接GPSタイムスタンプを探す
+
+  clocksイベントやgpsLocationExternalイベントのパースに失敗した場合にフォールバックとして使用。
+  バイナリデータ内のunixTimestampMillis値（ミリ秒単位）を直接検索し、
+  2023年以降のGPS fix確立後の最初の一致を返す。
+
+  RTCデフォルト値は2022年以前のため、2023年以降でフィルタリングすることで
+  GPS fix前の不正なタイムスタンプを除外する。
+
+  Args:
+    dat: rlogファイルの内容（解凍済み）
+
+  Returns:
+    wallTimeNanos（ナノ秒）、見つからなければNone
+  """
+  import struct
+
+  # unixTimestampMillisの範囲（2020-01-01から2030-01-01）
+  MIN_TS_MS = 1577836800000  # 2020-01-01
+  MAX_TS_MS = 1767225600000  # 2030-01-01
+
+  # 2023年以降でGPS fix後のタイムスタンプのみを収集
+  candidates = []
+  offset = 0
+  while offset < len(dat) - 8:
+    try:
+      # リトルエンディアンの64ビット符号なし整数として読取
+      val = struct.unpack('<Q', dat[offset:offset+8])[0]
+
+      # 有効なunixTimestampMillis範囲内かチェック
+      if MIN_TS_MS < val < MAX_TS_MS:
+        try:
+          dt = datetime.fromtimestamp(val / 1000, tz=timezone.utc)
+          if is_valid_recording_time(dt):
+            # 2023年以降を優先（GPS fix後のタイムスタンプ）
+            if dt.year >= 2023:
+              candidates.append((offset, val, dt))
+        except (ValueError, OSError):
+          pass
+    except struct.error:
+      pass
+
+    offset += 1
+
+  # 2023年以降で最初に見つかったGPS fix後のタイムスタンプを返す
+  if candidates:
+    # ファイルオフセット順でソートして最初のものを返す
+    candidates.sort()
+    return int(candidates[0][1] * 1e6)
+
+  return None
+
+
 def extract_recording_time(events: list[tuple], segments: list[str] = None) -> int | None:
   """イベントリストから録画時刻を取得
 
@@ -210,8 +396,9 @@ def extract_recording_time(events: list[tuple], segments: list[str] = None) -> i
        ※ RTCデフォルト値等原因で未来の日付になる場合は無効としてスキップ
     2. gpsLocationExternal.unixTimestampMillis（hasFix=true の最初のイベント）
     3. gpsLocation.unixTimestampMillis（hasFix=true の最初のイベント）
-    4. セグメントのディレクトリ名から日時を抽出（例: 2025-05-30--08-30-00）
-    5. セグメントディレクトリのmtime
+    4. 生のバイナリデータから直接GPSタイムスタンプを検索
+    5. セグメントのディレクトリ名から日時を抽出（例: 2025-05-30--08-30-00）
+    6. セグメントディレクトリのmtime
 
   GPS fixが未確定のイベント（hasFix=false）のタイムスタンプは無視する。
   これにより、RTCデフォルト値等原因でGPS時刻が不正な場合でも、
@@ -275,24 +462,26 @@ def extract_recording_time(events: list[tuple], segments: list[str] = None) -> i
       except Exception:
         continue
 
-  # 4. フォールバック: セグメントのディレクトリ名から日時を抽出
+  # 4. フォールバック: 生のバイナリデータから直接GPSタイムスタンプを検索
   if segments:
-    import re
-    # ディレクトリ名の形式: 2025-05-30--08-30-00--<dongle>--<segment>
     for seg_path in segments:
-      seg_name = os.path.basename(seg_path)
-      match = re.match(r'^(\d{4}-\d{2}-\d{2}--\d{2}-\d{2}-\d{2})', seg_name)
-      if match:
+      rlog_path = os.path.join(seg_path, RLOG_FILENAME)
+      if not os.path.exists(rlog_path):
+        rlog_path = os.path.join(seg_path, RLOG_FILENAME_UNCOMPRESSED)
+      if os.path.exists(rlog_path):
         try:
-          dt_str = match.group(1)
-          # ディレクトリ名の日時をパース
-          # 形式: YYYY-MM-DD--HH-MM-SS → YYYY-MM-DD HH:MM:SS
-          dt = datetime.strptime(dt_str.replace('--', ' '), '%Y-%m-%d %H:%M %S', tz=timezone.utc)
-          if is_valid_recording_time(dt):
-            cloudlog.info(f"CAN playback: using directory name time: {dt_str}")
-            return int(dt.timestamp() * 1e9)  # 秒→ナノ秒
-        except Exception:
-          continue
+          with open(rlog_path, 'rb') as f:
+            dat = f.read(8 * 1024 * 1024)  # 先頭8MBを読み込み
+          if dat.startswith(b'BZh9'):
+            dat = bz2.decompress(dat)
+          ts_ns = _find_valid_gps_timestamp_in_data(dat)
+          if ts_ns is not None:
+            dt = datetime.fromtimestamp(ts_ns / 1e9, tz=timezone.utc)
+            cloudlog.info(f"CAN playback: using raw GPS timestamp: {dt}")
+            return ts_ns
+        except Exception as e:
+          cloudlog.warning(f"CAN playback: failed to extract raw GPS timestamp: {e}")
+        break
 
   return None
 
@@ -405,15 +594,20 @@ class CanPlayer:
     self._event_count = len(self._events)
     self._duration = (self._end_time_ns - self._start_time_ns) / 1e9
 
-    # 録画日時を設定
-    # 1. clocks.wallTimeNanosから取得（最も正確）
-    # 2. フォールバック: ファイルのmtime
+    # 録画日時を設定（GPS補正済み）
+    # calculate_timestamp_correctionsを使ってRTCデフォルト値による不正なタイムスタンプを補正
+    segments = discover_segments(route_path)
+    if segments:
+      corrected_time = get_route_start_time(segments)
+      if corrected_time is not None:
+        self._recording_time_ns = corrected_time
+      else:
+        self._recording_time_ns = None
+
     if self._recording_time_ns is not None:
       recording_dt = datetime.fromtimestamp(self._recording_time_ns / 1e9)
       self._recording_time_str = recording_dt.strftime('%Y-%m-%d %H:%M')
     else:
-      # フォールバック: セグメントディレクトリの変更日時
-      segments = discover_segments(route_path)
       if segments:
         recording_timestamp = os.path.getmtime(segments[0])
         recording_dt = datetime.fromtimestamp(recording_timestamp)
