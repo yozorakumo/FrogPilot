@@ -87,13 +87,20 @@ class CarState(CarStateBase):
       # Verified by real-time CAN capture: clean ON/OFF matching pedal presses
       ret.clutchPressed = cp.vl["NEW_MSG_28"]["CLUTCH_PEDAL"] == 1
 
+      # Reverse gear detection from PEDALS (0x165) byte3 bit0 (REVERSE_GEAR)
+      # Verified by CAN capture: N=0, R=1 (clean 1-bit signal)
+      reverse_gear = cp.vl["PEDALS"]["REVERSE_GEAR"] == 1
+
       # Gear detection using PEDALS (0x165) GEAR_POS — stable discrete values
       # NEW_MSG_28 GEAR_POS (4-bit) was found to be an analog sensor that drifts
       # continuously, causing false Reverse detection during brake/clutch operation.
       #
       # PEDALS GEAR_POS updates only when clutch is released (gear physically engaged).
       # While clutch is pressed, hold the last confirmed gear position.
-      if gear_pos in FORWARD_GEARS:
+      if reverse_gear:
+        ret.gearShifter = car.CarState.GearShifter.reverse
+        fp_ret.gearStep = 0
+      elif gear_pos in FORWARD_GEARS:
         self.last_gear_pos = gear_pos
         ret.gearShifter = car.CarState.GearShifter.drive
         fp_ret.gearStep = FORWARD_GEARS[gear_pos]
@@ -107,7 +114,7 @@ class CarState(CarStateBase):
         fp_ret.gearStep = 0  # N
 
       # Debug logging for MT gear and clutch detection
-      cloudlog.debug(f"MT gear: PEDALS.GEAR_POS={gear_pos}, last={self.last_gear_pos}, clutch={ret.clutchPressed}, shifter={ret.gearShifter}")
+      cloudlog.debug(f"MT gear: PEDALS.GEAR_POS={gear_pos}, last={self.last_gear_pos}, clutch={ret.clutchPressed}, reverse={reverse_gear}, shifter={ret.gearShifter}")
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
       ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
