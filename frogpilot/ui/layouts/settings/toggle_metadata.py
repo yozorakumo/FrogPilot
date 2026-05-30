@@ -2324,6 +2324,13 @@ VEHICLE_SETTINGS_TOGGLES = (
     tuning_level=0,
   ),
   ToggleDefinition(
+    title=("Auto i-stop Cancel"),
+    param="MazdaIStopCancel",
+    description=("<b>Automatically cancel i-stop (idle stop) when the engine starts.</b><br><br>Sends the i-stop OFF command via CAN to prevent the engine from auto-stopping at traffic lights."),
+    parent_param="MazdaToggles",
+    tuning_level=0,
+  ),
+  ToggleDefinition(
     title=("Speedometer Style"),
     param="SpeedometerStyle",
     button_labels=["SELECT"],

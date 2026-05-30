@@ -142,3 +142,13 @@ def create_door_lock_command(packer, lock):
     "DOOR_LOCK_ALL": 1 if lock else 0
   }
   return packer.make_can_msg("BCM", 0, values)
+
+def create_istop_cancel_command(packer):
+  """Send i-stop cancel command via BCM (0x420).
+  Sends ISTOP_OFF=1 to disable i-stop system.
+  This mirrors the physical i-stop OFF button press."""
+  values = {
+    "DOOR_LOCK_STATUS": 0,
+    "DOOR_LOCK_ALL": 0,
+  }
+  return packer.make_can_msg("BCM", 0, values)

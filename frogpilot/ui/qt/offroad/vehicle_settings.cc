@@ -200,6 +200,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(FrogPilotSettingsWindow *parent) 
     {"MazdaLockSpeed", tr("Lock Speed"), tr("<b>The speed at which the doors will automatically lock.</b>"), ""},
     {"MazdaAutoUnlock", tr("Automatic Door Unlock"), tr("<b>Automatically unlock doors.</b>"), ""},
     {"MazdaUnlockSpeed", tr("Unlock Speed"), tr("<b>The speed at which the doors will automatically unlock.</b>"), ""},
+    {"MazdaIStopCancel", tr("Auto i-stop Cancel"), tr("<b>Automatically cancel i-stop (idle stop) when the engine starts.</b>"), ""},
     {"SpeedometerStyle", tr("Speedometer Style"), tr("<b>Select the speedometer display style.</b><br><br>"
                                                      "<b>Default</b>: Large digital display.<br>"
                                                      "<b>F1 LED</b>: F1-style LED bar.<br>"

@@ -43,6 +43,7 @@ class CarController(CarControllerBase):
 
     # FrogPilot variables
     self.doors_locked = False
+    self.istop_cancel_sent = False  # Track i-stop cancel command
 
   def update(self, CC, CS, now_nanos, frogpilot_toggles):
     can_sends = []
@@ -181,6 +182,10 @@ class CarController(CarControllerBase):
 
     # FrogPilot Mazda carcontroller functions
     if self.CP.carFingerprint == CAR.MAZDA_2_DJ_MT:
+      # Sync internal state with actual door lock feedback from 0x436
+      if hasattr(CS, 'doorLocked'):
+        self.doors_locked = CS.doorLocked
+
       if not self.doors_locked:
         if frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_lock_speed and CS.out.vEgo >= frogpilot_toggles.mazda_lock_speed * CV.KPH_TO_MS:
           can_sends.append(mazdacan.create_door_lock_command(self.packer, True))
@@ -192,6 +197,14 @@ class CarController(CarControllerBase):
         elif frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_unlock_park_brake and CS.out.parkingBrake:
           can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
           self.doors_locked = False
+
+      # i-stop auto cancel: send cancel command once per engine start when i-stop is enabled
+      if hasattr(CS, 'iStopEnabled') and hasattr(frogpilot_toggles, 'mazda_istop_cancel'):
+        if frogpilot_toggles.mazda_istop_cancel and CS.iStopEnabled and not self.istop_cancel_sent:
+          can_sends.append(mazdacan.create_istop_cancel_command(self.packer))
+          self.istop_cancel_sent = True
+        elif not CS.iStopEnabled:
+          self.istop_cancel_sent = False
 
     self.frame += 1
     return new_actuators, can_sends

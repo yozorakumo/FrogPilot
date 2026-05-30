@@ -19,6 +19,8 @@ class CarState(CarStateBase):
     self.low_speed_alert = False
     self.lkas_allowed_speed = False
     self.last_gear_pos = 0  # For clutch gear hold: remembers last confirmed gear
+    self.doorLocked = False  # Door lock status from 0x436 DOOR_LOCK_FB
+    self.iStopEnabled = False  # i-stop status from 0x130 ISTOP_STATUS (True = i-stop active)
     self.lkas_disabled = False
     self.steering_angle_prev = 0.0
 
@@ -115,6 +117,13 @@ class CarState(CarStateBase):
 
       # Debug logging for MT gear and clutch detection
       cloudlog.debug(f"MT gear: PEDALS.GEAR_POS={gear_pos}, last={self.last_gear_pos}, clutch={ret.clutchPressed}, reverse={reverse_gear}, shifter={ret.gearShifter}")
+
+      # Door lock feedback from 0x436 DOOR_LOCK_FB (MT only)
+      self.doorLocked = bool(cp.vl["DOOR_LOCK_FB"]["DOOR_LOCKED"])
+
+      # i-stop status from 0x130 ISTOP_STATUS (MT only)
+      # ISTOP_OFF=0 → i-stop is ON (enabled), ISTOP_OFF=1 → i-stop is OFF (disabled)
+      self.iStopEnabled = cp.vl["ISTOP_STATUS"]["ISTOP_OFF"] == 0
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
       ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
@@ -261,6 +270,8 @@ class CarState(CarStateBase):
       messages += [
         ("NEW_MSG_28", 50),
         ("MSG_11", 10),
+        ("DOOR_LOCK_FB", 10),
+        ("ISTOP_STATUS", 10),
       ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)

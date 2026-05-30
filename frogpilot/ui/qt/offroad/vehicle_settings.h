@@ -27,7 +27,7 @@ private:
   QSet<QString> hkgKeys = {"NewLongAPI", "TacoTuneHacks"};
   QSet<QString> hondaKeys = {"HondaAltTune", "HondaLowSpeedPedal", "HondaMaxBrake"};
   QSet<QString> longitudinalKeys = {"ExperimentalGMTune", "FrogsGoMoosTweak", "HondaAltTune", "HondaMaxBrake", "HondaLowSpeedPedal", "LongPitch", "NewLongAPI", "SNGHack", "SubaruSNG", "VoltSNG"};
-  QSet<QString> mazdaKeys = {"MazdaAutoLock", "MazdaAutoUnlock", "MazdaBrakeUI", "MazdaClutchUI", "MazdaLockSpeed", "MazdaMTMode", "MazdaMTUI", "MazdaPBUI", "MazdaUnlockSpeed", "SpeedometerStyle"};
+  QSet<QString> mazdaKeys = {"MazdaAutoLock", "MazdaAutoUnlock", "MazdaBrakeUI", "MazdaClutchUI", "MazdaIStopCancel", "MazdaLockSpeed", "MazdaMTMode", "MazdaMTUI", "MazdaPBUI", "MazdaUnlockSpeed", "SpeedometerStyle"};
   QSet<QString> subaruKeys = {"SubaruSNG"};
   QSet<QString> toyotaKeys = {"ClusterOffset", "FrogsGoMoosTweak", "LockDoorsTimer", "SNGHack", "ToyotaDoors"};
   QSet<QString> vehicleInfoKeys = {"BlindSpotSupport", "HardwareDetected", "OpenpilotLongitudinal", "PedalSupport", "RadarSupport", "SDSUSupport", "SNGSupport"};

@@ -331,6 +331,7 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("MazdaAutoUnlock", "0", 0, "0"),
   ("MazdaBrakeUI", "1", 0, "0"),
   ("MazdaClutchUI", "1", 0, "0"),
+  ("MazdaIStopCancel", "0", 0, "0"),
   ("MazdaLockSpeed", "15", 0, "15"),
   ("MazdaUnlockSpeed", "5", 0, "5"),
   ("MazdaMTMode", "0", 0, "0"),
@@ -1072,6 +1073,7 @@ class FrogPilotVariables:
     toggle.mazda_auto_unlock_park_brake = mazda_auto_unlock == 3
     toggle.mazda_unlock_speed = params.get_int("MazdaUnlockSpeed") if toggle.mazda_auto_unlock_speed and toggle.tuning_level >= level["MazdaUnlockSpeed"] else default.get_int("MazdaUnlockSpeed")
 
+    toggle.mazda_istop_cancel = mazda_toggles and (params.get_bool("MazdaIStopCancel") if toggle.tuning_level >= level["MazdaIStopCancel"] else default.get_bool("MazdaIStopCancel"))
     toggle.mazda_brake_ui = mazda_toggles and (params.get_bool("MazdaBrakeUI") if toggle.tuning_level >= level["MazdaBrakeUI"] else default.get_bool("MazdaBrakeUI"))
     toggle.mazda_clutch_ui = mazda_toggles and (params.get_bool("MazdaClutchUI") if toggle.tuning_level >= level["MazdaClutchUI"] else default.get_bool("MazdaClutchUI"))
     toggle.mazda_pb_ui = mazda_toggles and (params.get_bool("MazdaPBUI") if toggle.tuning_level >= level["MazdaPBUI"] else default.get_bool("MazdaPBUI"))
