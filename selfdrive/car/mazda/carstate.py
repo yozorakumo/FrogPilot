@@ -79,21 +79,21 @@ class CarState(CarStateBase):
 
     # MT gear and clutch detection
     if self.CP.transmissionType == car.CarParams.TransmissionType.manual:
+      new_msg28_gear = int(cp.vl["NEW_MSG_28"]["GEAR_POS"])
       gear_pos = cp.vl["PEDALS"]["GEAR_POS"]
-      reverse_gear = cp.vl["PEDALS"]["REVERSE_GEAR"] == 1
       GEAR_VALUES = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1}
 
       # Direct clutch pedal signal from CLUTCH_SWITCH (0x366)
       ret.clutchPressed = cp.vl["CLUTCH_SWITCH"]["CLUTCH_PEDAL"] == 1
 
       # Debug logging for MT gear and clutch detection
-      cloudlog.debug(f"MT gear: GEAR_POS={gear_pos}, REVERSE_GEAR={cp.vl['PEDALS']['REVERSE_GEAR']}, raw={cp.vl['PEDALS']['GEAR_POS']}")
+      cloudlog.debug(f"MT gear: NEW_MSG_28.GEAR_POS={new_msg28_gear}, PEDALS.GEAR_POS={gear_pos}")
       cloudlog.debug(f"MT clutch: CLUTCH_PEDAL={cp.vl['CLUTCH_SWITCH']['CLUTCH_PEDAL']}")
 
-      if reverse_gear:  # Reverse (clean 1-bit flag from PEDALS byte3 bit0)
+      if new_msg28_gear == 6:  # Reverse
         ret.gearShifter = car.CarState.GearShifter.reverse
         fp_ret.gearStep = 15  # R
-      elif gear_pos in GEAR_VALUES:  # Forward (1st-6th)
+      elif new_msg28_gear in [4, 5]:  # Forward
         ret.gearShifter = car.CarState.GearShifter.drive
         fp_ret.gearStep = GEAR_VALUES.get(gear_pos, 0)
       else:  # Neutral
@@ -243,6 +243,7 @@ class CarState(CarStateBase):
 
     if CP.flags & MazdaFlags.GEN1 and CP.flags & MazdaFlags.MT:
       messages += [
+        ("NEW_MSG_28", 50),
         ("MSG_11", 10),
         ("CLUTCH_SWITCH", 50),
       ]
