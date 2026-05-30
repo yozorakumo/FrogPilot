@@ -51,6 +51,7 @@ QRect UIEditModeManager::getEffectiveBounds(const QString &name) const {
 
   float sc = it->scale;
   int sb = it->cached_sidebar_offset_x;
+  (void)sb;
 
   if (sc == 1.0f) return it->bounds;
 

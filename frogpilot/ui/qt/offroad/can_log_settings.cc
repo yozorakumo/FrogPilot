@@ -305,7 +305,7 @@ qint64 FrogPilotCanLogPanel::extractGpsTime(const QString &routePath) {
     return 0;
   }
 
-  QString output = QString::fromUtfString(process.readAllStandardOutput()).trimmed();
+  QString output = QString::fromUtf8(process.readAllStandardOutput()).trimmed();
   if (!output.isEmpty()) {
     bool ok;
     qint64 timestamp = output.toLongLong(&ok);
