@@ -186,7 +186,18 @@ void PlaybackOverlay::setPlaying(bool playing) {
 
 void PlaybackOverlay::showOverlay() {
   show();
+  update();
   resetHideTimer();
+}
+
+void PlaybackOverlay::showEvent(QShowEvent *event) {
+  QWidget::showEvent(event);
+  if (parentWidget()) {
+    // 親ウィジェットの幅に合わせてオーバーレイのgeometryを更新
+    setGeometry(0, parentWidget()->height() - height(), parentWidget()->width(), height());
+    updateGeometry();
+    update();
+  }
 }
 
 void PlaybackOverlay::hideOverlay() {

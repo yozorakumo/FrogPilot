@@ -206,6 +206,8 @@ void FrogPilotOnroadWindow::resizeEvent(QResizeEvent *event) {
     int overlay_x = 0;
     int overlay_y = height() - PlaybackOverlay::kOverlayHeight;
     playback_overlay_->setGeometry(overlay_x, overlay_y, width(), PlaybackOverlay::kOverlayHeight);
+    playback_overlay_->updateGeometry();
+    playback_overlay_->update();
     playback_overlay_->raise();
   }
 

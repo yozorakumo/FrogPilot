@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QTimer>
+#include <QShowEvent>
 
 class PlaybackOverlay : public QWidget {
   Q_OBJECT
@@ -33,6 +34,7 @@ protected:
   void paintEvent(QPaintEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
   void mouseReleaseEvent(QMouseEvent *event) override;
+  void showEvent(QShowEvent *event) override;
   bool event(QEvent *event) override;
 
 private:
