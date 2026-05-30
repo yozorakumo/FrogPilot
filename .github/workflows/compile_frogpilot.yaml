@@ -187,6 +187,7 @@ jobs:
         run: |
           mkdir -p /data/pip_cache
           mkdir -p /data/tmp
+          mkdir -p /tmp
           mkdir -p /data/xdg_cache
           rm -rf /home/comma/.cache/pip || true
           echo "=== Disk space before cleanup ==="
