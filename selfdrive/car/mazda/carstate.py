@@ -79,27 +79,26 @@ class CarState(CarStateBase):
 
     # MT gear and clutch detection
     if self.CP.transmissionType == car.CarParams.TransmissionType.manual:
-      new_msg28_gear = int(cp.vl["NEW_MSG_28"]["GEAR_POS"])
-      gear_pos = cp.vl["PEDALS"]["GEAR_POS"]
-      GEAR_VALUES = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1}
+      gear_pos = int(cp.vl["PEDALS"]["GEAR_POS"])
+      FORWARD_GEARS = {2: 6, 3: 5, 4: 4, 5: 3, 7: 2, 13: 1}
 
       # Clutch pedal signal from NEW_MSG_28 (0x166) byte0 bit7 (Motorola bit 7)
       # Verified by real-time CAN capture: clean ON/OFF matching pedal presses
       ret.clutchPressed = cp.vl["NEW_MSG_28"]["CLUTCH_PEDAL"] == 1
 
-      # Debug logging for MT gear and clutch detection
-      cloudlog.debug(f"MT gear: NEW_MSG_28.GEAR_POS={new_msg28_gear}, PEDALS.GEAR_POS={gear_pos}")
-      cloudlog.debug(f"MT clutch: CLUTCH_PEDAL={cp.vl['NEW_MSG_28']['CLUTCH_PEDAL']}")
-
-      if new_msg28_gear == 6:  # Reverse
-        ret.gearShifter = car.CarState.GearShifter.reverse
-        fp_ret.gearStep = 15  # R
-      elif new_msg28_gear in [4, 5]:  # Forward
+      # Gear detection using PEDALS (0x165) GEAR_POS — stable discrete values
+      # NEW_MSG_28 GEAR_POS (4-bit) was found to be an analog sensor that drifts
+      # continuously, causing false Reverse detection during brake/clutch operation.
+      if gear_pos in FORWARD_GEARS:
         ret.gearShifter = car.CarState.GearShifter.drive
-        fp_ret.gearStep = GEAR_VALUES.get(gear_pos, 0)
-      else:  # Neutral
+        fp_ret.gearStep = FORWARD_GEARS[gear_pos]
+      else:
         ret.gearShifter = car.CarState.GearShifter.neutral
         fp_ret.gearStep = 0  # N
+
+      # Debug logging for MT gear and clutch detection
+      cloudlog.debug(f"MT gear: PEDALS.GEAR_POS={gear_pos}, shifter={ret.gearShifter}")
+      cloudlog.debug(f"MT clutch: CLUTCH_PEDAL={cp.vl['NEW_MSG_28']['CLUTCH_PEDAL']}")
     else:
       can_gear = int(cp.vl["GEAR"]["GEAR"])
       ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
