@@ -265,7 +265,8 @@ jobs:
 
           # Ensure we are in the correct directory for scons
           cd "$BUILD_DIR"
-          "$POETRY_BIN" run scons -j$(nproc)
+          # Use /tmp (tmpfs) for compiler temp files to avoid parallel build conflicts on /data/tmp
+          TMPDIR=/tmp "$POETRY_BIN" run scons -j$(nproc)
 
       - name: Take Ownership of Build Directory
         run: |
