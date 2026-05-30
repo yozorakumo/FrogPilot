@@ -343,23 +343,9 @@ QString FrogPilotCanLogPanel::findRlogPath(const QString &routePath) {
 }
 
 void FrogPilotCanLogPanel::updateRouteTimestamps() {
-  // 全ルートアイテムを走査してGPS時刻で更新
-  QLayoutItem *item = fileListLayout->itemAt(0);
-  int index = 0;
-  while (item != nullptr) {
-    QWidget *widget = item->widget();
-    if (widget) {
-      CanLogRouteItem *routeItem = qobject_cast<CanLogRouteItem*>(widget);
-      if (routeItem) {
-        qint64 ts = extractGpsTime(routeItem->routePath());
-        if (ts > 0) {
-          routeItem->updateGpsTime(ts);
-        }
-      }
-    }
-    index++;
-    item = fileListLayout->itemAt(index);
-  }
+  // GPS時刻抽出はQProcessを同期呼び出しするためUIスレッドをブロックする。
+  // 現状はファイル更新日時で十分なため、この機能は無効化。
+  // 将来的に非同期（QThreadPool等）で実装する場合はここを有効化する。
 }
 
 void FrogPilotCanLogPanel::showEvent(QShowEvent *event) {
@@ -416,14 +402,16 @@ void FrogPilotCanLogPanel::refreshFileList() {
   }
 
   // 各ルートエントリを収集（rlogがあるもののみ）
+  // 注意: extractGpsTime()はQProcessを同期的に呼び出すためUIスレッドをブロックする。
+  // 初期表示ではファイル更新日時を使用し、GPS時刻抽出は行わない。
   QList<QPair<QFileInfo, qint64>> validRoutes;
   for (const QFileInfo &routeInfo : routes) {
     QDir routeDir(routeInfo.absoluteFilePath());
     QDirIterator it(routeInfo.absoluteFilePath(), QStringList() << "rlog" << "rlog.bz2", QDir::Files, QDirIterator::Subdirectories);
     if (it.hasNext()) {
-      // GPS時刻を抽出（非同期で実行）
-      qint64 gpsTime = extractGpsTime(routeInfo.absoluteFilePath());
-      validRoutes.append({routeInfo, gpsTime});
+      // ファイル更新日時をソートキーとして使用（UIスレッドをブロックしない）
+      qint64 fileTime = routeInfo.lastModified().toUTC().toMSecsSinceEpoch() / 1000;
+      validRoutes.append({routeInfo, fileTime});
     }
   }
 
