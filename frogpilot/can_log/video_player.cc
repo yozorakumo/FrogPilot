@@ -227,23 +227,43 @@ int main(int argc, char *argv[]) {
   fprintf(stderr, "[video_player] VisionIPC started: %dx%d, stride=%zu, buf_size=%zu\n",
           vipc_w, vipc_h, stride, buf_size);
 
-  // 準備完了。can_playerの再生開始を待機
-  fprintf(stderr, "[video_player] Ready. Waiting for can_player to start...\n");
+  // 準備完了。can_playerが最初の位置をParamsに書き込んでから再生開始
+  // 問題3修正: can_player.run()が_update_params_state()でPositionを初期化するまで待機
+  fprintf(stderr, "[video_player] Ready. Waiting for can_player to initialize position...\n");
+  int init_wait_count = 0;
   while (!g_exit) {
     if (!params.getBool("CAN_PLAYBACK")) {
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
       continue;
     }
-    std::string playing = params.get("CanPlaybackPlaying");
-    if (playing == "1") break;
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // can_player.run()が_update_params_state()を呼んでPositionを初期化するまで待機
+    std::string pos_str = params.get("CanPlaybackPosition");
+    if (!pos_str.empty()) {
+      try {
+        double init_pos = std::stod(pos_str);
+        // Positionが0初期値から変わっているか、またはPlaying状態になった
+        std::string playing = params.get("CanPlaybackPlaying");
+        if (init_pos > 0.0 || playing == "1") {
+          break;
+        }
+      } catch (...) {}
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    init_wait_count++;
+    // 30秒待っても初期化されなければ強制続行（タイムアウト保護）
+    if (init_wait_count > 600) {
+      fprintf(stderr, "[video_player] Position init timeout, proceeding with pos=0\n");
+      break;
+    }
   }
   if (g_exit) return 0;
+  fprintf(stderr, "[video_player] Position initialized, starting playback\n");
 
   // --- プリデコードスレッド関数 ---
   // 別スレッドでフレームを事前デコードしてキューに入れる
   std::thread predecode_thread([&]() {
     int next_frame_to_decode = -1;
+    int position_wait_count = 0;
     while (!g_exit) {
       // キューに空きがあるまで待機
       {
@@ -258,7 +278,8 @@ int main(int argc, char *argv[]) {
       // 次にデコードすべきフレームを特定（last_frame + 1から）
       int decode_frame = next_frame_to_decode;
       if (decode_frame < 0) {
-        // 最初は現在位置から開始
+        // 問題3修正: 最初は現在位置から開始
+        // CanPlaybackPositionが更新されるまで待機または再取得
         std::string pos_str = params.get("CanPlaybackPosition");
         double pos = 0.0;
         if (!pos_str.empty()) {
@@ -266,6 +287,16 @@ int main(int argc, char *argv[]) {
         }
         decode_frame = static_cast<int>(pos * FPS);
         if (decode_frame < 0) decode_frame = 0;
+
+        // 再生位置が0のまま長すぎる場合は、can_playerの準備を待機
+        // （can_player.run()が最初に_update_params_state()を呼んでPositionを書き込み、
+        // その後CanPlaybackPlaying="1"をセットする）
+        if (pos == 0.0 && position_wait_count < 50) {
+          position_wait_count++;
+          std::this_thread::sleep_for(std::chrono::milliseconds(20));
+          continue;
+        }
+        position_wait_count = 0;
       } else {
         decode_frame = next_frame_to_decode + 1;
       }

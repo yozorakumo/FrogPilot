@@ -160,6 +160,15 @@ void FrogPilotOnroadWindow::initPlaybackOverlay() {
   });
   stop_playback_btn_->raise();
   stop_playback_btn_->show();
+
+  // 問題1修正: setGeometryは親widgetのgeometry確定後に実行する必要がある
+  // QTimer::singleShot(0, ...)でイベントキュー経由で次回イベントループで実行
+  QTimer::singleShot(0, this, [this]() {
+    if (stop_playback_btn_) {
+      stop_playback_btn_->setGeometry(20, 80, 120, 60);
+      stop_playback_btn_->raise();
+    }
+  });
 }
 
 void FrogPilotOnroadWindow::updateState(const UIState &s, const FrogPilotUIState &fs) {

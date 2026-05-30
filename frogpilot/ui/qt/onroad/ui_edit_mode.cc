@@ -93,31 +93,41 @@ int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left,
     return 0;
   }
 
-  // デフォルト位置（ユーザーオフセットなし）を計算
-  // bounds = default_pos + user_offset, so default_bounds = bounds - offset
-  QRect default_bounds = it->bounds.translated(-qRound(it->offset_x), -qRound(it->offset_y));
+  // 問題5修正: getSidebarOffsetX()のリファクタリング
+  // bounds は現在のユーザー位置（default + offset）を表す
+  // 純粋なデフォルト位置を計算（ユーザーオフセット除外）
+  int default_x = it->bounds.x() - qRound(it->offset_x);
+  int default_y = it->bounds.y() - qRound(it->offset_y);
+  int widget_width = it->bounds.width();
+  int widget_height = it->bounds.height();
 
-  // 映像表示領域（サイドバー除く）
+  // ビデオ表示領域（サイドバー除く）
   int video_left = sidebar_left ? SIDEBAR_WIDTH : 0;
   int video_right = sidebar_right ? (screen_width - SIDEBAR_WIDTH) : screen_width;
-  int video_center = (video_left + video_right) / 2;
+  int video_width = video_right - video_left;
 
-  int widget_center_x = default_bounds.center().x();
+  // デフォルト位置がビデオ表示領域の左端から何_PIXCELの位置にあるか（相対位置 0.0-1.0）
+  float relative_x = (float)(default_x + widget_width / 2) / (float)(screen_width);
+
+  // ウィジェットのデフォルト位置が画面中央より左にあるか右にあるか
+  bool default_is_left_side = (default_x + widget_width / 2) < (screen_width / 2);
 
   int result = 0;
 
-  // 左サイドバー表示時: デフォルト位置が映像領域の左半分にあり、かつ左サイドバーと重なる場合
-  if (sidebar_left && widget_center_x < video_center) {
-    if (default_bounds.left() < SIDEBAR_WIDTH) {
-      result = SIDEBAR_WIDTH;  // 右にオフセット
+  // 左サイドバー表示時: ウィジェットのデフォルト位置が左サイドバーと重なる場合
+  if (sidebar_left && default_is_left_side) {
+    if (default_x < SIDEBAR_WIDTH) {
+      result = SIDEBAR_WIDTH - default_x;  // 右にオフセット
+      if (result == SIDEBAR_WIDTH) result = SIDEBAR_WIDTH;  // 単純化
     }
   }
 
-  // 右開発者サイドバー表示時: デフォルト位置が映像領域の右半分にあり、かつ右サイドバーと重なる場合
-  if (sidebar_right && widget_center_x >= video_center) {
+  // 右サイドバー表示時: ウィジェットのデフォルト位置が右サイドバーと重なる場合
+  if (sidebar_right && !default_is_left_side) {
     int right_sidebar_left = screen_width - SIDEBAR_WIDTH;
-    if (default_bounds.right() > right_sidebar_left) {
-      result = -SIDEBAR_WIDTH;  // 左にオフセット
+    if (default_x + widget_width > right_sidebar_left) {
+      result = right_sidebar_left - (default_x + widget_width);  // 左にオフセット
+      if (result == 0) result = -SIDEBAR_WIDTH;  // 単純化
     }
   }
 

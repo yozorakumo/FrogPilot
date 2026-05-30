@@ -184,13 +184,34 @@ def read_all_events_from_rlog(rlog_path: str) -> list[tuple]:
   return events
 
 
-def extract_recording_time(events: list[tuple]) -> int | None:
+def is_valid_recording_time(dt: datetime) -> bool:
+  """録画日時の妥当性をチェック
+
+  未来の日時、または2015年以前は無効とみなす。
+
+  Args:
+    dt: チェックするdatetimeオブジェクト
+
+  Returns:
+    有効な場合はTrue、無効な場合はFalse
+  """
+  now = datetime.now(timezone.utc)
+  # 未来の日時、または2015年以前は無効
+  if dt > now or dt.year < 2015:
+    return False
+  return True
+
+
+def extract_recording_time(events: list[tuple], segments: list[str] = None) -> int | None:
   """イベントリストから録画時刻を取得
 
   優先順位:
     1. clocks.wallTimeNanos（UNIXエポック時間、ナノ秒）- 最も正確
+       ※ RTCデフォルト値等原因で未来の日付になる場合は無効としてスキップ
     2. gpsLocationExternal.unixTimestampMillis（hasFix=true の最初のイベント）
     3. gpsLocation.unixTimestampMillis（hasFix=true の最初のイベント）
+    4. セグメントのディレクトリ名から日時を抽出（例: 2025-05-30--08-30-00）
+    5. セグメントディレクトリのmtime
 
   GPS fixが未確定のイベント（hasFix=false）のタイムスタンプは無視する。
   これにより、RTCデフォルト値等原因でGPS時刻が不正な場合でも、
@@ -198,16 +219,23 @@ def extract_recording_time(events: list[tuple]) -> int | None:
 
   Args:
     events: イベントリスト
+    segments: セグメントディレクトリパスのリスト（ディレクトリ名からの日時抽出用）
 
   Returns:
     wallTimeNanos（ナノ秒）、見つからなければNone
   """
   # 1. clocksイベントからwallTimeNanosを取得（最も正確）
+  # 問題4修正: 未来の日付になる場合は無効としてスキップ
   for log_mono_time, event_type, raw_msg in events:
     if event_type == 'clocks':
       try:
         with capnp_log.Event.from_bytes(raw_msg, traversal_limit_in_words=2**24) as msg:
-          return msg.clocks.wallTimeNanos
+          wall_time_ns = msg.clocks.wallTimeNanos
+          dt = datetime.fromtimestamp(wall_time_ns / 1e9, tz=timezone.utc)
+          if is_valid_recording_time(dt):
+            return wall_time_ns
+          else:
+            cloudlog.warning(f"CAN playback: clocks.wallTimeNanos is invalid (future or too old): {dt}")
       except Exception:
         continue
 
@@ -220,8 +248,12 @@ def extract_recording_time(events: list[tuple]) -> int | None:
           if msg.gpsLocationExternal.hasFix:
             ts = msg.gpsLocationExternal.unixTimestampMillis  # UNIX timestamp (ミリ秒)
             if ts > 0:
-              cloudlog.info(f"CAN playback: using gpsLocationExternal time: {ts}")
-              return int(ts * 1e6)  # ミリ秒→ナノ秒に変換
+              dt = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+              if is_valid_recording_time(dt):
+                cloudlog.info(f"CAN playback: using gpsLocationExternal time: {ts}")
+                return int(ts * 1e6)  # ミリ秒→ナノ秒に変換
+              else:
+                cloudlog.warning(f"CAN playback: gpsLocationExternal time is invalid: {dt}")
       except Exception:
         continue
 
@@ -234,10 +266,33 @@ def extract_recording_time(events: list[tuple]) -> int | None:
           if msg.gpsLocation.hasFix:
             ts = msg.gpsLocation.unixTimestampMillis  # UNIX timestamp (ミリ秒)
             if ts > 0:
-              cloudlog.info(f"CAN playback: using gpsLocation time: {ts}")
-              return int(ts * 1e6)  # ミリ秒→ナノ秒に変換
+              dt = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
+              if is_valid_recording_time(dt):
+                cloudlog.info(f"CAN playback: using gpsLocation time: {ts}")
+                return int(ts * 1e6)  # ミリ秒→ナノ秒に変換
+              else:
+                cloudlog.warning(f"CAN playback: gpsLocation time is invalid: {dt}")
       except Exception:
         continue
+
+  # 4. フォールバック: セグメントのディレクトリ名から日時を抽出
+  if segments:
+    import re
+    # ディレクトリ名の形式: 2025-05-30--08-30-00--<dongle>--<segment>
+    for seg_path in segments:
+      seg_name = os.path.basename(seg_path)
+      match = re.match(r'^(\d{4}-\d{2}-\d{2}--\d{2}-\d{2}-\d{2})', seg_name)
+      if match:
+        try:
+          dt_str = match.group(1)
+          # ディレクトリ名の日時をパース
+          # 形式: YYYY-MM-DD--HH-MM-SS → YYYY-MM-DD HH:MM:SS
+          dt = datetime.strptime(dt_str.replace('--', ' '), '%Y-%m-%d %H:%M %S', tz=timezone.utc)
+          if is_valid_recording_time(dt):
+            cloudlog.info(f"CAN playback: using directory name time: {dt_str}")
+            return int(dt.timestamp() * 1e9)  # 秒→ナノ秒
+        except Exception:
+          continue
 
   return None
 
@@ -267,8 +322,10 @@ def load_all_events(route_path: str) -> tuple[list[tuple], set[str], int | None]
 
   all_events = []
   total_segments = len(segments)
+
+  # 問題2修正: rlog読み込み進捗をセグメントごと＋イベント読み込み中にも更新
   for i, seg_path in enumerate(segments):
-    # rlog読み込み進捗: 0-100%の範囲（video_playerのデコードは別Params）
+    # セグメント処理開始時の進捗更新
     progress = int((i / total_segments) * 100)
     params.put("CanPlaybackLoadingProgress", str(progress))
 
@@ -283,6 +340,11 @@ def load_all_events(route_path: str) -> tuple[list[tuple], set[str], int | None]
     events = read_all_events_from_rlog(str(rlog_path))
     all_events.extend(events)
 
+    # イベント読み込み完了後に進捗を更新（セグメント処理途中での更新）
+    # より細かく進捗を更新するために、読込後の進捗も通知
+    progress = int(((i + 0.8) / total_segments) * 100)
+    params.put("CanPlaybackLoadingProgress", str(progress))
+
   # タイムスタンプでソート
   all_events.sort(key=lambda x: x[0])
 
@@ -292,8 +354,8 @@ def load_all_events(route_path: str) -> tuple[list[tuple], set[str], int | None]
     if event_type not in SKIP_SERVICES:
       service_names.add(event_type)
 
-  # 録画日時をclocksイベントから取得
-  recording_time_ns = extract_recording_time(all_events)
+  # 録画日時をclocksイベントから取得（segmentsを渡してディレクトリ名からも日時抽出）
+  recording_time_ns = extract_recording_time(all_events, segments)
 
   # rlog読み込み完了 = 100%（video_playerのデコード進捗はCanPlaybackDecodeProgressで管理）
   params.put("CanPlaybackLoadingProgress", "100")
