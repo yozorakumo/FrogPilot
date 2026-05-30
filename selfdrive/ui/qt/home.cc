@@ -124,29 +124,23 @@ void HomeWindow::showDriverView(bool show, bool started) {
 }
 
 void HomeWindow::mousePressEvent(QMouseEvent* e) {
-  // 左端エッジ（50px）でのみ左サイドバーをトグル
-  if ((onroad->isVisible() || body->isVisible()) && e->x() < 50) {
+  // 画面左半分タップ → 左サイドバーの表示非表示
+  if ((onroad->isVisible() || body->isVisible()) && e->x() < width() / 2) {
     sidebar->setVisible(!sidebar->isVisible() && !onroad->isMapVisible());
     params.putBool("Sidebar", sidebar->isVisible());
   }
 
-  // 開発者サイドバーのトグル（右エッジ50px、ただし developer_sidebar 本体上は除く）
-  if ((onroad->isVisible() || body->isVisible()) && developer_sidebar) {
-    int window_width = width();
-
-    // developer_sidebar が表示されている場合、その領域上でのタップはトグルしない
-    if (developer_sidebar->isVisible() && e->x() >= window_width - developer_sidebar->width()) {
-      // developer_sidebar 上でのタップは無視（一瞬消える問題の修正）
-    } else if (e->x() >= window_width - 50) {
-      // 右エッジ50pxのタップで developer_sidebar をトグル
-      if (frogpilotUIState()->frogpilot_toggles.value("developer_sidebar").toBool()) {
+  // 画面右半分タップ → 右（開発者）サイドバーの表示非表示
+  if ((onroad->isVisible() || body->isVisible()) && e->x() >= width() / 2) {
+    if (developer_sidebar && frogpilotUIState()->frogpilot_toggles.value("developer_sidebar").toBool()) {
+      // developer_sidebar が表示されている場合、その領域上でのタップはトグルしない
+      if (!(developer_sidebar->isVisible() && e->x() >= width() - developer_sidebar->width())) {
         developer_sidebar->setVisible(!developer_sidebar->isVisible());
       }
     }
   }
 
-  // 常に親にイベントを伝播（子ウィジェットの長押し検出のため）
-  e->ignore();
+  // イベントをここで消費（親には伝播しない）
 }
 
 void HomeWindow::mouseDoubleClickEvent(QMouseEvent* e) {

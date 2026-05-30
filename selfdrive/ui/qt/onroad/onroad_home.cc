@@ -52,12 +52,11 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
 
   // FrogPilot variables
   frogpilot_onroad = new FrogPilotOnroadWindow(this);
-  frogpilot_onroad->setEditModeManager(edit_manager_);
 
-  // UI Edit Mode - 長押し検出はMainWindow::eventFilter()に統合済み
-  // UIEditModeManagerはオフセット管理のみに使用
+  // UI Edit Mode - 設定ボタンでトグル、オフセット管理に使用
   edit_manager_ = new UIEditModeManager(this);
   nvg->setEditModeManager(edit_manager_);
+  frogpilot_onroad->setEditModeManager(edit_manager_);
 }
 
 void OnroadWindow::resizeEvent(QResizeEvent *event) {
@@ -97,7 +96,7 @@ void OnroadWindow::updateState(const UIState &s, const FrogPilotUIState &fs) {
 }
 
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
-  // 再入防止: sendEvent → nvgがignore() → Qtが親に伝播 → 再びmousePressEvent
+  // 再入防止: forwardMousePress → nvgがignore() → Qtが親に伝播 → 再びmousePressEvent
   // という無限再帰を防ぐ
   if (handling_mouse_event_) {
     QWidget::mousePressEvent(e);
@@ -105,37 +104,23 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   }
   handling_mouse_event_ = true;
 
-  // 常に handleMousePress を呼び出して長押し検出を開始する（循環依存の解消）
-  // 従来は isPressPending() が true の時だけ nvg に転送していたが、
-  // handleMousePress() は nvg からしか呼ばれないため press_pending_ が
-  // 永遠に false のままだった。ここで直接呼ぶことで循環を断つ。
-  // nvg->forwardMousePress() 内で handleMousePress が再度呼ばれるが、
-  // press_pending_ が既に true のため即座に return false される（重複なし）。
-  if (edit_manager_ && nvg) {
+  // 編集モード中のみnvgにイベントを転送
+  if (edit_manager_ && edit_manager_->isEditMode() && nvg) {
     QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
-    edit_manager_->handleMousePress(nvg_pos);
-
-    // 編集モード中または長押し追跡中は AnnotatedCameraWidget に転送
-    if (edit_manager_->isEditMode() || edit_manager_->isPressPending()) {
-      QMouseEvent forwarded(QEvent::MouseButtonPress, nvg_pos, e->globalPos(),
-                            e->button(), e->buttons(), e->modifiers());
-      // 直接メソッド呼び出し（sendEventを使わない）で再帰を防止
-      nvg->forwardMousePress(&forwarded);
-      handling_mouse_event_ = false;
-      if (forwarded.isAccepted()) {
-        e->accept();
-      } else {
-        e->ignore();
-      }
-      return;
+    QMouseEvent forwarded(QEvent::MouseButtonPress, nvg_pos, e->globalPos(),
+                          e->button(), e->buttons(), e->modifiers());
+    nvg->forwardMousePress(&forwarded);
+    handling_mouse_event_ = false;
+    if (forwarded.isAccepted()) {
+      e->accept();
+    } else {
+      e->ignore();
     }
+    return;
   }
 
   handling_mouse_event_ = false;
-
-  // 通常時は特別な処理なしでイベントを HomeWindow に伝播
-  // （サイドバー/開発者サイドバーのトグルは HomeWindow::mousePressEvent で処理）
-  e->ignore();
+  e->ignore();  // HomeWindowに伝播
 }
 
 void OnroadWindow::createMapWidget() {
@@ -197,14 +182,12 @@ void OnroadWindow::mouseMoveEvent(QMouseEvent* e) {
   }
   handling_mouse_event_ = true;
 
-  // 編集モード中または長押し追跡中はAnnotatedCameraWidgetに転送
-  if (edit_manager_ && (edit_manager_->isEditMode() || edit_manager_->isPressPending())) {
-    if (nvg) {
-      QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
-      QMouseEvent forwarded(QEvent::MouseMove, nvg_pos, e->globalPos(),
-                            e->button(), e->buttons(), e->modifiers());
-      nvg->forwardMouseMove(&forwarded);
-    }
+  // 編集モード中のみAnnotatedCameraWidgetに転送
+  if (edit_manager_ && edit_manager_->isEditMode() && nvg) {
+    QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
+    QMouseEvent forwarded(QEvent::MouseMove, nvg_pos, e->globalPos(),
+                          e->button(), e->buttons(), e->modifiers());
+    nvg->forwardMouseMove(&forwarded);
     handling_mouse_event_ = false;
     e->accept();
     return;
@@ -222,14 +205,12 @@ void OnroadWindow::mouseReleaseEvent(QMouseEvent* e) {
   }
   handling_mouse_event_ = true;
 
-  // 編集モード中または長押し追跡中はAnnotatedCameraWidgetに転送
-  if (edit_manager_ && (edit_manager_->isEditMode() || edit_manager_->isPressPending())) {
-    if (nvg) {
-      QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
-      QMouseEvent forwarded(QEvent::MouseButtonRelease, nvg_pos, e->globalPos(),
-                            e->button(), e->buttons(), e->modifiers());
-      nvg->forwardMouseRelease(&forwarded);
-    }
+  // 編集モード中のみAnnotatedCameraWidgetに転送
+  if (edit_manager_ && edit_manager_->isEditMode() && nvg) {
+    QPoint nvg_pos = nvg->mapFromGlobal(e->globalPos());
+    QMouseEvent forwarded(QEvent::MouseButtonRelease, nvg_pos, e->globalPos(),
+                          e->button(), e->buttons(), e->modifiers());
+    nvg->forwardMouseRelease(&forwarded);
     handling_mouse_event_ = false;
     e->accept();
     return;

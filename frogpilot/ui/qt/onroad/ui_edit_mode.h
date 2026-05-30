@@ -4,7 +4,6 @@
 #include <QPainter>
 #include <QPoint>
 #include <QRect>
-#include <QTimer>
 #include <QString>
 #include <QJsonObject>
 #include <QJsonDocument>
@@ -35,7 +34,6 @@ public:
 
   // 編集モード状態
   bool isEditMode() const { return edit_mode_; }
-  bool isPressPending() const { return press_pending_; }
   void toggleEditMode();
 
   // UI要素の設定取得
@@ -79,13 +77,6 @@ private:
   float drag_start_offset_x_ = 0.0f;
   float drag_start_offset_y_ = 0.0f;
   bool is_dragging_ = false;
-
-  // 長押し検出
-  QTimer *long_press_timer_;
-  QPoint press_pos_;
-  bool press_pending_ = false;
-  static constexpr int LONG_PRESS_MS = 2000;
-  static constexpr int MOVE_THRESHOLD = 50;
 
   // ピンチズーム状態
   float pinch_start_scale_ = 1.0f;

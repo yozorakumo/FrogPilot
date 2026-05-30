@@ -8,8 +8,7 @@
 void FrogPilotOnroadWindow::mousePressEvent(QMouseEvent *e) {
   // イベントがここに到達した時点で、子ウィジェット（PlaybackOverlay、
   // stop_playback_btn_等）にはヒットしていない（Qtは最も深い子ウィジェットに
-  // 直接配送するため）。親（OnroadWindow）に伝播して、サイドバートグルや
-  // 長押し検出を可能にする。
+  // 直接配送するため）。親（OnroadWindow）に伝播して、サイドバートグルを可能にする。
   e->ignore();
 }
 

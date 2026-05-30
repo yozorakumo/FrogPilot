@@ -230,7 +230,7 @@ bool PlaybackOverlay::event(QEvent *event) {
     case QEvent::MouseButtonRelease:
     case QEvent::MouseMove:
       // Press/Release/TouchBegin/TouchEnd: 子widgetの範囲外なら親に伝播
-      // （再生オーバーレイ表示中にサイドバートグルや長押し検出を可能にするため）
+      // （再生オーバーレイ表示中にサイドバートグルを可能にするため）
       // MouseMove: パフォーマンス上の理由で常にaccept
       if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::TouchBegin ||
           event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {

@@ -34,6 +34,30 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   distance_btn = new DistanceButton(this);
   screen_recorder = new ScreenRecorder(this);
 
+  // UIEditMode切替ボタン（画面右上の歯車アイコン）
+  edit_mode_btn_ = new QPushButton(QString::fromUtf8("⚙"), this);
+  edit_mode_btn_->setFixedSize(60, 60);
+  edit_mode_btn_->setStyleSheet(R"(
+    QPushButton {
+      background: rgba(0, 0, 0, 128);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 24px;
+    }
+    QPushButton:pressed {
+      background: rgba(255, 165, 0, 200);
+    }
+  )");
+  connect(edit_mode_btn_, &QPushButton::clicked, this, [this]() {
+    if (edit_manager_) {
+      edit_manager_->toggleEditMode();
+      updateEditModeButtonStyle();
+    }
+  });
+  edit_mode_btn_->raise();
+  edit_mode_btn_->show();
+
   // edit_manager_ は OnroadWindow から setEditModeManager() で設定される
   setAttribute(Qt::WA_AcceptTouchEvents);
 
@@ -49,6 +73,7 @@ void AnnotatedCameraWidget::setEditModeManager(UIEditModeManager *manager) {
   if (edit_manager_) {
     connect(edit_manager_, &UIEditModeManager::settingsChanged, this, [this]() {
       update();
+      updateEditModeButtonStyle();
     });
   }
 }
@@ -62,6 +87,12 @@ void AnnotatedCameraWidget::resizeEvent(QResizeEvent *event) {
   // This ensures correct positioning when sidebar visibility changes
   steering_wheel_base_pos_ = QPoint(width() - UI_BORDER_SIZE - btn_size, UI_BORDER_SIZE);
   recording_base_pos_ = QPoint(steering_wheel_base_pos_.x() - UI_BORDER_SIZE - btn_size, steering_wheel_base_pos_.y());
+
+  // 設定ボタンの配置（右上、experimental_btnの下）
+  if (edit_mode_btn_) {
+    edit_mode_btn_->move(width() - 70, steering_wheel_base_pos_.y() + btn_size + 10);
+    edit_mode_btn_->raise();
+  }
 
   // Apply edit mode offsets to QWidget elements
   if (edit_manager_) {
@@ -1292,11 +1323,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   }
 
   // UI Edit Mode: Apply offsets, scale, and state to QWidget-based elements
-  // NOTE: Long press detection is handled entirely by UIEditModeManager's
-  // internal QTimer (started in handleMousePress/touchEvent), not by Params polling.
-  // Previous Params-based polling caused:
-  // 1. UI crashes due to filesystem I/O every frame (~20Hz) blocking the UI thread
-  // 2. Edit mode toggle race condition (timer + polling both toggling)
+  // Edit mode is toggled via the ⚙ button (edit_mode_btn_), not by long press.
   if (edit_manager_) {
     // Fix 1: Make buttons transparent to mouse events during edit mode
     bool is_edit = edit_manager_->isEditMode();
@@ -1350,24 +1377,18 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 }
 
 void AnnotatedCameraWidget::mousePressEvent(QMouseEvent *event) {
-  if (edit_manager_ && edit_manager_->handleMousePress(event->pos())) {
+  // 編集モード中のみイベントを処理
+  if (edit_manager_ && edit_manager_->isEditMode()) {
+    edit_manager_->handleMousePress(event->pos());
     event->accept();
     return;
   }
-  // 編集モード中のみaccept、それ以外は親に伝播（サイドバートグルのため）
-  if (edit_manager_ && edit_manager_->isEditMode()) {
-    event->accept();
-  } else {
-    event->ignore();
-  }
+  event->ignore();
 }
 
 void AnnotatedCameraWidget::mouseMoveEvent(QMouseEvent *event) {
-  if (edit_manager_ && edit_manager_->handleMouseMove(event->pos())) {
-    event->accept();
-    return;
-  }
   if (edit_manager_ && edit_manager_->isEditMode()) {
+    edit_manager_->handleMouseMove(event->pos());
     event->accept();
     return;
   }
@@ -1375,11 +1396,8 @@ void AnnotatedCameraWidget::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void AnnotatedCameraWidget::mouseReleaseEvent(QMouseEvent *event) {
-  if (edit_manager_ && edit_manager_->handleMouseRelease()) {
-    event->accept();
-    return;
-  }
   if (edit_manager_ && edit_manager_->isEditMode()) {
+    edit_manager_->handleMouseRelease();
     event->accept();
     return;
   }
@@ -1408,16 +1426,16 @@ bool AnnotatedCameraWidget::event(QEvent *event) {
 }
 
 void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
-  if (!edit_manager_) {
+  // 編集モード中のみタッチイベントを処理
+  if (!edit_manager_ || !edit_manager_->isEditMode()) {
     event->ignore();
     return;
   }
 
   QList<QTouchEvent::TouchPoint> points = event->touchPoints();
 
-  // 編集モードかつ2点タッチ → ピンチズーム処理
-  if (edit_manager_->isEditMode() && points.size() == 2) {
-    // ピンチズーム: 2点間の距離変化を計算
+  // 2点タッチ → ピンチズーム処理
+  if (points.size() == 2) {
     QTouchEvent::TouchPoint p1 = points[0];
     QTouchEvent::TouchPoint p2 = points[1];
     float dx = p2.pos().x() - p1.pos().x();
@@ -1437,32 +1455,58 @@ void AnnotatedCameraWidget::touchEvent(QTouchEvent *event) {
 
   if (points.size() >= 1) {
     QTouchEvent::TouchPoint p = points[0];
-    bool handled = false;
 
     switch (p.state()) {
       case Qt::TouchPointPressed:
-        handled = edit_manager_->handleMousePress(p.pos().toPoint());
+        edit_manager_->handleMousePress(p.pos().toPoint());
         break;
       case Qt::TouchPointMoved:
-        handled = edit_manager_->handleMouseMove(p.pos().toPoint());
+        edit_manager_->handleMouseMove(p.pos().toPoint());
         break;
       case Qt::TouchPointReleased:
-        handled = edit_manager_->handleMouseRelease();
+        edit_manager_->handleMouseRelease();
         break;
       default:
         event->ignore();
         return;
     }
-
-    if (handled) {
-      event->accept();
-    } else {
-      event->ignore();  // event() が isAccepted() を返すので、これで親に伝播する
-    }
+    event->accept();
     return;
   }
 
   event->ignore();
+}
+
+void AnnotatedCameraWidget::updateEditModeButtonStyle() {
+  if (!edit_mode_btn_) return;
+  bool is_edit = edit_manager_ && edit_manager_->isEditMode();
+  if (is_edit) {
+    edit_mode_btn_->setStyleSheet(R"(
+      QPushButton {
+        background: rgba(255, 165, 0, 200);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 180);
+        border-radius: 10px;
+        font-size: 24px;
+      }
+      QPushButton:pressed {
+        background: rgba(255, 200, 100, 220);
+      }
+    )");
+  } else {
+    edit_mode_btn_->setStyleSheet(R"(
+      QPushButton {
+        background: rgba(0, 0, 0, 128);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 24px;
+      }
+      QPushButton:pressed {
+        background: rgba(255, 165, 0, 200);
+      }
+    )");
+  }
 }
 
 void AnnotatedCameraWidget::showEvent(QShowEvent *event) {

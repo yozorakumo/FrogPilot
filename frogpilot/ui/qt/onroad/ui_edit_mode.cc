@@ -8,21 +8,6 @@
 #include <cstdio>
 
 UIEditModeManager::UIEditModeManager(QObject *parent) : QObject(parent) {
-  // 長押しタイマー
-  long_press_timer_ = new QTimer(this);
-  long_press_timer_->setSingleShot(true);
-  connect(long_press_timer_, &QTimer::timeout, this, [this]() {
-    if (press_pending_) {
-      edit_mode_ = !edit_mode_;
-      press_pending_ = false;
-      if (!edit_mode_) {
-        saveSettings();  // 編集モード終了時に保存
-        selected_element_.clear();
-      }
-      emit settingsChanged();  // 編集モード切替時に描画更新を通知
-    }
-  });
-
   // デフォルト要素を登録
   elements_["speedometer"] = UIElementConfig{"Speedometer"};
   elements_["max_speed"] = UIElementConfig{"Max Speed"};
@@ -141,92 +126,59 @@ int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left,
 }
 
 bool UIEditModeManager::handleMousePress(const QPoint &pos) {
-  // Already tracking a long press (e.g., from touch event), skip duplicate mouse event
-  if (press_pending_) {
-    return false;
+  if (!edit_mode_) return false;
+
+  // オーバーレイボタンの判定
+  if (reset_btn_rect_.contains(pos)) {
+    resetAll();
+    return true;
   }
-
-  press_pos_ = pos;
-
-  // 編集モードに関わらず長押しタイマーを開始
-  // （Paramsポーリングだけではプラットフォーム依存で信頼性不足のため）
-  press_pending_ = true;
-  long_press_timer_->start(LONG_PRESS_MS);
-
-  if (edit_mode_) {
-    // オーバーレイボタンの判定
-    if (reset_btn_rect_.contains(pos)) {
-      long_press_timer_->stop();
-      press_pending_ = false;
-      resetAll();
-      return true;
-    }
-    if (save_btn_rect_.contains(pos)) {
-      long_press_timer_->stop();
-      press_pending_ = false;
-      saveSettings();
-      return true;
-    }
-    if (exit_btn_rect_.contains(pos)) {
-      long_press_timer_->stop();
-      press_pending_ = false;
-      edit_mode_ = false;
-      saveSettings();
-      selected_element_.clear();
-      emit settingsChanged();  // 編集モード終了を通知
-      return true;
-    }
-
-    // ズームボタン判定（選択中要素がある場合）
-    if (!selected_element_.isEmpty()) {
-      if (zoom_out_btn_rect_.contains(pos)) {
-        long_press_timer_->stop();
-        press_pending_ = false;
-        auto &sel_elem = elements_[selected_element_];
-        sel_elem.scale = std::clamp(sel_elem.scale - 0.1f, SCALE_MIN, SCALE_MAX);
-        emit settingsChanged();  // 即座に描画更新を通知
-        return true;
-      }
-      if (zoom_in_btn_rect_.contains(pos)) {
-        long_press_timer_->stop();
-        press_pending_ = false;
-        auto &sel_elem = elements_[selected_element_];
-        sel_elem.scale = std::clamp(sel_elem.scale + 0.1f, SCALE_MIN, SCALE_MAX);
-        emit settingsChanged();  // 即座に描画更新を通知
-        return true;
-      }
-    }
-
-    // 要素選択
+  if (save_btn_rect_.contains(pos)) {
+    saveSettings();
+    return true;
+  }
+  if (exit_btn_rect_.contains(pos)) {
+    edit_mode_ = false;
+    saveSettings();
     selected_element_.clear();
-    for (auto it = elements_.begin(); it != elements_.end(); ++it) {
-      QRect expanded = getEffectiveBounds(it.key()).adjusted(-30, -30, 30, 30);
-      if (expanded.contains(pos)) {
-        selected_element_ = it.key();
-        drag_start_pos_ = pos;
-        drag_start_offset_x_ = it->offset_x;
-        drag_start_offset_y_ = it->offset_y;
-        is_dragging_ = true;
-        long_press_timer_->stop();
-        press_pending_ = false;
-        emit settingsChanged();  // 選択状態を即座に描画
-        return true;
-      }
-    }
-    return true;  // 編集モード中はイベントを消費
+    emit settingsChanged();
+    return true;
   }
-  return false;
+
+  // ズームボタン判定（選択中要素がある場合）
+  if (!selected_element_.isEmpty()) {
+    if (zoom_out_btn_rect_.contains(pos)) {
+      auto &sel_elem = elements_[selected_element_];
+      sel_elem.scale = std::clamp(sel_elem.scale - 0.1f, SCALE_MIN, SCALE_MAX);
+      emit settingsChanged();
+      return true;
+    }
+    if (zoom_in_btn_rect_.contains(pos)) {
+      auto &sel_elem = elements_[selected_element_];
+      sel_elem.scale = std::clamp(sel_elem.scale + 0.1f, SCALE_MIN, SCALE_MAX);
+      emit settingsChanged();
+      return true;
+    }
+  }
+
+  // 要素選択
+  selected_element_.clear();
+  for (auto it = elements_.begin(); it != elements_.end(); ++it) {
+    QRect expanded = getEffectiveBounds(it.key()).adjusted(-30, -30, 30, 30);
+    if (expanded.contains(pos)) {
+      selected_element_ = it.key();
+      drag_start_pos_ = pos;
+      drag_start_offset_x_ = it->offset_x;
+      drag_start_offset_y_ = it->offset_y;
+      is_dragging_ = true;
+      emit settingsChanged();
+      return true;
+    }
+  }
+  return true;  // 編集モード中はイベントを消費
 }
 
 bool UIEditModeManager::handleMouseMove(const QPoint &pos) {
-  if (press_pending_) {
-    // 移動距離が閾値を超えたら長押しキャンセル
-    if ((pos - press_pos_).manhattanLength() > MOVE_THRESHOLD) {
-      long_press_timer_->stop();
-      press_pending_ = false;
-    }
-  }
-
   if (edit_mode_ && is_dragging_ && !selected_element_.isEmpty()) {
     QPoint delta = pos - drag_start_pos_;
     float new_x = drag_start_offset_x_ + delta.x();
@@ -236,15 +188,13 @@ bool UIEditModeManager::handleMouseMove(const QPoint &pos) {
 
     elem.offset_x = new_x;
     elem.offset_y = new_y;
-    emit settingsChanged();  // ドラッグ中に即座に描画更新
+    emit settingsChanged();
     return true;
   }
   return false;
 }
 
 bool UIEditModeManager::handleMouseRelease() {
-  long_press_timer_->stop();
-  press_pending_ = false;
   is_dragging_ = false;
   return edit_mode_;
 }
@@ -326,7 +276,7 @@ void UIEditModeManager::paintOverlay(QPainter &p, int width, int height) {
   p.setFont(QFont("Inter", 18, QFont::Bold));
   p.setPen(QColor(255, 255, 255));
   p.drawText(QRect(0, 50, width, 40), Qt::AlignCenter,
-    "UI EDIT MODE - Drag to move, +/- to resize, long press to exit");
+    "UI EDIT MODE - Drag to move, +/- to resize, tap ⚙ to exit");
 
   if (!selected_element_.isEmpty()) {
     auto &elem = elements_[selected_element_];
