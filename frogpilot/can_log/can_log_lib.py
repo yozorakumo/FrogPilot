@@ -7,6 +7,8 @@
 gzip圧縮（.gz）に対応。圧縮ファイルは自動判定する。
 """
 
+from __future__ import annotations
+
 import gzip
 import os
 import struct

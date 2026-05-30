@@ -8,6 +8,8 @@ UNIXタイムスタンプ（秒）をstdoutに出力する。
   python extract_gps_time.py /path/to/rlog.bz2
 """
 
+from __future__ import annotations
+
 import sys
 import struct
 

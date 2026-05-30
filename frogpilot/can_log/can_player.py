@@ -19,6 +19,8 @@ can_playerがrlog内のほぼ全イベントを安全にパブリッシュでき
   python -m frogpilot.can_log.can_player --loop /data/media/0/realdata/000001a3--c20ba54385
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import time
