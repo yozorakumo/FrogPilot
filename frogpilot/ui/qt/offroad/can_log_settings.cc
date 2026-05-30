@@ -379,10 +379,17 @@ void FrogPilotCanLogPanel::refreshFileList() {
 
   QDir logDir(LOG_DIR);
   if (!logDir.exists()) {
-    statusLabel = new QLabel(tr("No log directory found.\nLogs are saved to /data/media/0/realdata/ while driving."), this);
-    statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
-    statusLabel->setAlignment(Qt::AlignCenter);
-    statusLabel->setWordWrap(true);
+    if (statusLabel) {
+      statusLabel->setText(tr("No log directory found.\nLogs are saved to /data/media/0/realdata/ while driving."));
+      statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
+      statusLabel->setAlignment(Qt::AlignCenter);
+      statusLabel->setWordWrap(true);
+    } else {
+      statusLabel = new QLabel(tr("No log directory found.\nLogs are saved to /data/media/0/realdata/ while driving."), this);
+      statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
+      statusLabel->setAlignment(Qt::AlignCenter);
+      statusLabel->setWordWrap(true);
+    }
     fileListLayout->addWidget(statusLabel);
     return;
   }
@@ -393,10 +400,17 @@ void FrogPilotCanLogPanel::refreshFileList() {
   QFileInfoList routes = logDir.entryInfoList(routeFilters, QDir::Dirs | QDir::NoDotAndDotDot, QDir::Time);
 
   if (routes.isEmpty()) {
-    statusLabel = new QLabel(tr("No driving logs found."), this);
-    statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
-    statusLabel->setAlignment(Qt::AlignCenter);
-    statusLabel->setWordWrap(true);
+    if (statusLabel) {
+      statusLabel->setText(tr("No driving logs found."));
+      statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
+      statusLabel->setAlignment(Qt::AlignCenter);
+      statusLabel->setWordWrap(true);
+    } else {
+      statusLabel = new QLabel(tr("No driving logs found."), this);
+      statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
+      statusLabel->setAlignment(Qt::AlignCenter);
+      statusLabel->setWordWrap(true);
+    }
     fileListLayout->addWidget(statusLabel);
     return;
   }
@@ -428,10 +442,17 @@ void FrogPilotCanLogPanel::refreshFileList() {
 
   // 有効なルートがない場合はステータスメッセージを表示
   if (validRoutes.isEmpty()) {
-    statusLabel = new QLabel(tr("No driving logs with CAN data found.\nDrive with openpilot to generate logs."), this);
-    statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
-    statusLabel->setAlignment(Qt::AlignCenter);
-    statusLabel->setWordWrap(true);
+    if (statusLabel) {
+      statusLabel->setText(tr("No driving logs with CAN data found.\nDrive with openpilot to generate logs."));
+      statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
+      statusLabel->setAlignment(Qt::AlignCenter);
+      statusLabel->setWordWrap(true);
+    } else {
+      statusLabel = new QLabel(tr("No driving logs with CAN data found.\nDrive with openpilot to generate logs."), this);
+      statusLabel->setStyleSheet("QLabel { color: #808080; font-size: 35px; padding: 20px; }");
+      statusLabel->setAlignment(Qt::AlignCenter);
+      statusLabel->setWordWrap(true);
+    }
     fileListLayout->addWidget(statusLabel);
     return;
   }
