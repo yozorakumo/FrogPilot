@@ -97,17 +97,7 @@ int UIEditModeManager::getSidebarOffsetX(const QString &name, bool sidebar_left,
   // bounds は現在のユーザー位置（default + offset）を表す
   // 純粋なデフォルト位置を計算（ユーザーオフセット除外）
   int default_x = it->bounds.x() - qRound(it->offset_x);
-  int default_y = it->bounds.y() - qRound(it->offset_y);
   int widget_width = it->bounds.width();
-  int widget_height = it->bounds.height();
-
-  // ビデオ表示領域（サイドバー除く）
-  int video_left = sidebar_left ? SIDEBAR_WIDTH : 0;
-  int video_right = sidebar_right ? (screen_width - SIDEBAR_WIDTH) : screen_width;
-  int video_width = video_right - video_left;
-
-  // デフォルト位置がビデオ表示領域の左端から何_PIXCELの位置にあるか（相対位置 0.0-1.0）
-  float relative_x = (float)(default_x + widget_width / 2) / (float)(screen_width);
 
   // ウィジェットのデフォルト位置が画面中央より左にあるか右にあるか
   bool default_is_left_side = (default_x + widget_width / 2) < (screen_width / 2);
