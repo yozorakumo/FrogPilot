@@ -136,19 +136,6 @@ def create_button_cmd(packer, CP, counter, button):
 
     return packer.make_can_msg("CRZ_BTNS", 0, values)
 
-def create_door_lock_command(packer, lock):
-  values = {
-    "DOOR_LOCK_STATUS": 2 if lock else 1,
-    "DOOR_LOCK_ALL": 1 if lock else 0
-  }
-  return packer.make_can_msg("BCM", 0, values)
-
-def create_istop_cancel_command(packer):
-  """Send i-stop cancel command via BCM (0x420).
-  Sends ISTOP_OFF=1 to disable i-stop system.
-  This mirrors the physical i-stop OFF button press."""
-  values = {
-    "DOOR_LOCK_STATUS": 0,
-    "DOOR_LOCK_ALL": 0,
-  }
-  return packer.make_can_msg("BCM", 0, values)
+# NOTE: Door lock and i-stop cancel commands are NOT functional on Mazda 2 DJ MT.
+# The BCM (0x420) is a status TX message and does not accept commands on HS-CAN.
+# These functions are kept as placeholders for future MS-CAN/UDS implementation.

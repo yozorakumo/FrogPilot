@@ -186,25 +186,10 @@ class CarController(CarControllerBase):
       if hasattr(CS, 'doorLocked'):
         self.doors_locked = CS.doorLocked
 
-      if not self.doors_locked:
-        if frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_lock_speed and CS.out.vEgo >= frogpilot_toggles.mazda_lock_speed * CV.KPH_TO_MS:
-          can_sends.append(mazdacan.create_door_lock_command(self.packer, True))
-          self.doors_locked = True
-      elif self.doors_locked:
-        if frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_unlock_speed and CS.out.vEgo <= frogpilot_toggles.mazda_unlock_speed * CV.KPH_TO_MS:
-          can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
-          self.doors_locked = False
-        elif frogpilot_toggles.experimental_mode and frogpilot_toggles.mazda_auto_unlock_park_brake and CS.out.parkingBrake:
-          can_sends.append(mazdacan.create_door_lock_command(self.packer, False))
-          self.doors_locked = False
-
-      # i-stop auto cancel: send cancel command once per engine start when i-stop is enabled
-      if hasattr(CS, 'iStopEnabled') and hasattr(frogpilot_toggles, 'mazda_istop_cancel'):
-        if frogpilot_toggles.mazda_istop_cancel and CS.iStopEnabled and not self.istop_cancel_sent:
-          can_sends.append(mazdacan.create_istop_cancel_command(self.packer))
-          self.istop_cancel_sent = True
-        elif not CS.iStopEnabled:
-          self.istop_cancel_sent = False
+      # NOTE: Door lock/unlock COMMAND via HS-CAN is not functional on Mazda 2 DJ MT.
+      # The BCM (0x420) is a status TX message and does not accept commands on HS-CAN.
+      # Door lock status monitoring via 0x436 still works correctly.
+      # TODO: Investigate MS-CAN or UDS diagnostic for door lock control.
 
     self.frame += 1
     return new_actuators, can_sends
