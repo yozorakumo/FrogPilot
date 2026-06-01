@@ -1,12 +1,13 @@
-# YozoraPilot (Mazda2 DJ MT カスタム版)
+# YozoraPilot (Frogpilotカスタム版)
 
-このリポジトリは、[FrogPilot](https://github.com/FrogAi/FrogPilot) をベースに、[yozorakumo](https://github.com/yozorakumo) による **マツダ Mazda2 (DJ) 6MT モデル** への完全対応を行ったカスタムフォークです。
+このリポジトリは、[FrogPilot](https://github.com/FrogAi/FrogPilot) をベースに、[yozorakumo](https://github.com/yozorakumo) による機能追加や対応車種追加対応を行ったカスタムフォークです。
 
 **FrogPilot**（openpilot コミュニティフォーク）の全機能に加え、MT車固有のCAN信号解析・制御を実装しています。
 
 ## 🌟 主な追加機能と修正点
 
 本ブランチ (`YozoraPilot`) では、マニュアルトランスミッション（MT）車両特有の挙動をサポートするために以下の実装を行っています。
+※動作確認はMazda2-DJLFS-DJ-MTでのみ行っています。
 
 ### 1. デュアル信号ギアポジション認識
 車両のネイティブ CAN 信号の解析により、2つの信号を組み合わせた高精度なギア判定を実現しました。
@@ -55,6 +56,35 @@
 - **予防層** ([`carcontroller.py`](selfdrive/car/mazda/carcontroller.py)): LKAS_BLOCK中はステアリング要求を0に
 - **伝播防止層** ([`mazdacan.py`](selfdrive/car/mazda/mazdacan.py)): `er1 = 0`（ERR_BIT_1を0に固定）
 - **検出緩和層** ([`carstate.py`](selfdrive/car/mazda/carstate.py)): `steerFaultPermanent = False`
+
+### 10. カスタムスピードメーターウィジェット（6種類）
+車両情報（速度・RPM・ギア）を統合表示するスピードメーターウィジェットを実装。設定画面から6種類のスタイルを選択可能:
+- **Default**: 大型デジタル速度表示（FrogPilot標準）
+- **F1 LED**: F1風15連LEDバー（緑→黄→赤）+ ギア表示 + レブリミット点滅警告
+- **GT7**: Gran Turismo風サーキュラーゲージ + RPMアーク（白→黄→赤）+ シフトインジケーターLED
+- **Forza**: Forza Horizon風パネル + RPMグラデーションバー + ギア・速度表示
+- **NFS Neon**: ネオン風グロー効果（シアン/マゼンタ）+ RPMバー + ギア・速度表示
+- **SimHub**: テレメトリ風ワイドパネル + RPM数値表示 + MAX速度 + スロットル/ブレークバー
+- **共通機能**: 全スタイルでRPM（0-8000rpm）・ギア段（N=緑/R=赤/1-6=白）を統合表示。UI Edit Modeで位置・サイズ変更可能
+- **ファイル**: [`annotated_camera.cc`](selfdrive/ui/qt/onroad/annotated_camera.cc), [`vehicle_settings.cc`](frogpilot/ui/qt/offroad/vehicle_settings.cc), [`toggle_metadata.py`](frogpilot/ui/layouts/settings/toggle_metadata.py)
+
+### 11. UI Edit Mode（オンザフライUIカスタマイズ）
+走行画面のUI要素をリアルタイムでドラッグ&ドロップによる位置変更・リサイズが可能な編集モード:
+- **操作方法**: ドラッグで移動、+/−ボタンまたはピンチズームでスケール変更（0.5x〜2.0x）、ダブルクリックでスケールサイクル
+- **カスタマイズ可能要素**: Speedometer / Max Speed / Compass / Gear / Brake/PB/Clutch / Steering Wheel / Recording / Driver Face
+- **サイドバー自動回避**: サイドバー表示時にウィジェットが隠れないよう自動オフセット計算
+- **設定永続化**: 位置・スケールをJSON形式でParamsに保存（`UIElementPositions`）。RESET/SAVE/EXITボタンで操作
+- **ファイル**: [`ui_edit_mode.cc`](frogpilot/ui/qt/onroad/ui_edit_mode.cc), [`ui_edit_mode.h`](frogpilot/ui/qt/onroad/ui_edit_mode.h)
+
+### 12. CANログ録画・再生システム
+走行中に自動録画されたrlog（CAN・GPS・全センサーデータ）を、UIから選択して再生するシステム:
+- **自動録画**: 標準のloggerdがイグニッションON時にrlogに全イベントを自動記録
+- **フルイベントリプレイ**: [`can_player.py`](frogpilot/can_log/can_player.py) がrlogから全イベントを読み出し、オリジナルタイミングを再現してパブリッシュ。UIにcarState/controlsState/modelV2等が正しく表示される
+- **映像同期再生**: [`video_player.cc`](frogpilot/can_log/video_player.cc) がfcamera.hevcをデコードしてVisionIPCでUIに配信。can_player.pyとParams経由で同期
+- **GPS時刻補正**: [`extract_route_time.py`](frogpilot/can_log/extract_route_time.py) がlogMonoTime（起動相対）→wallTimeNanos（GPS絶対時刻）のオフセットを計算し、GPS fix前の不正タイムスタンプを補正
+- **CANログ管理UI**: [`can_log_settings.cc`](frogpilot/ui/qt/offroad/can_log_settings.cc) で走行ログ一覧表示・ソート・再生・削除が可能
+- **バイナリCANログライブラリ**: [`can_log_lib.py`](frogpilot/can_log/can_log_lib.py) で1レコード22バイトの固定長バイナリ形式の読み書き（gzip圧縮対応）
+- **使用例**: `python -m frogpilot.can_log.can_player --loop /data/media/0/realdata/<route>`
 
 ---
 
@@ -116,6 +146,9 @@
 - **i-stop状態監視**: ISTOP_STATUS (0x130) からのアイドリングストップ状態取得
 - **青信号アラート CEM非依存**: CEM無効時も青信号検出アラートが動作
 - **CANダンプツール**: [`can_dump.py`](can_dump.py) によるCANバスキャプチャユーティリティ
+- **カスタムスピードメーター（6種類）**: Default / F1 LED / GT7 / Forza / NFS Neon / SimHub の切替可能。RPM・ギア・速度を統合表示
+- **UI Edit Mode**: 走行画面のUI要素をドラッグ&ドロップで位置・サイズ変更（8要素対応、JSON永続化）
+- **CANログ録画・再生**: rlogのフルイベントリプレイ + 映像同期再生 + GPS時刻補正 + 管理UI
 
 ---
 
@@ -174,6 +207,9 @@
 | i-stop 状態監視 | ❌ | ❌ | ✅ |
 | 青信号アラート CEM非依存 | ❌ | ❌ | ✅ |
 | CANバスダンプツール | ❌ | ❌ | ✅ |
+| カスタムスピードメーター（6種類） | ❌ | ❌ | ✅ |
+| UI Edit Mode（UI要素カスタマイズ） | ❌ | ❌ | ✅ |
+| CANログ録画・再生システム | ❌ | ❌ | ✅ |
 | 自動ドアロック/アンロック（設定） | ❌ | ❌ | ⚙️* |
 | Auto i-stop Cancel（設定） | ❌ | ❌ | ⚙️* |
 
