@@ -27,7 +27,7 @@
 ### 3. MT車最適化制御
 - **クラッチ連動ディスエンゲージ**: NEW_MSG_28 (0x166) の `CLUTCH_PEDAL` 信号に基づき、クラッチペダルが踏まれた状態を検出して、安全にオープンパイロットの制御を解除（ディスエンゲージ）します。
 - **エンスト防止ロジック**: 縦方向制御において、MT 車の特性に合わせた加減速の調整を行っています。
-- **ボタンベース制御**: ファクトリーACCがないMT車向けに、`MODE_X + MODE_Y`（メインボタン）の立ち上がりエッジでトグル制御
+- **ボタンベース制御**: MT車向けに、`MODE_X + MODE_Y`（メインボタン）の立ち上がりエッジでトグル制御
 
 ### 4. pandaセーフティ MT対応
 - **safetyParam=2** (`MAZDA_PARAM_MT`): MT車用のセーフティパラメータを追加。AT車用のCRZ_CTRLチェックをスキップし、ボタンベースの制御に切り替え
@@ -94,7 +94,7 @@
 
 | 車種 | DBC | トランスミッション | LKAS | ACC/MRCC | 縦方向制御 | 備考 |
 |------|-----|-------------------|------|----------|-----------|------|
-| **Mazda 2 DJ MT** | `mazda_2_dj_mt.dbc` | MT（6速） | ✅ | ✅（合成） | ✅ experimental | YozoraPilot独自対応 |
+| **Mazda2 DJ MT** | `mazda_2_dj_mt.dbc` | MT（6速） | ✅ | ✅（MRCC搭載） | ✅ experimental | YozoraPilot独自対応 |
 | Mazda CX-5 2017-21 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
 | Mazda CX-9 2016-20 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
 | Mazda 3 2017-18 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
@@ -102,7 +102,7 @@
 | Mazda CX-9 2021-23 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
 | Mazda CX-5 2022-24 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
 
-> **注意**: AT車のストックACCはレーダーECU経由で動作します。Mazda2 DJ MTはファクトリーACCがないため、レーダーECUをPROGRAMMING SESSIONに移行させ、openpilotが合成ACCメッセージを送信する方式をとります。
+> **注意**: AT車のストックACCはレーダーECU経由で動作します。Mazda2 DJ MTにはファクトリーMRCC（Mazda Radar Cruise Control）が搭載されており、ストックACC信号が利用可能です。
 
 ---
 
@@ -110,7 +110,7 @@
 
 ### openpilot 基本機能（全車種共通）
 - LKAS（車線維持支援）
-- ストックACC/MRCC（AT車のみ）
+- ストックACC/MRCC
 - BSM（ブラインドスポットモニタリング）統合
 - ドライバーモニタリング
 - レーンチェンジアシスト
@@ -138,7 +138,7 @@
 - **クラッチ連動ディスエンゲージ**: クラッチ操作時の安全な制御解除
 - **ボタンベースEngage/Disengage**: メインボタン（MODE_X + MODE_Y）でのトグル制御
 - **SET_P / SET_M 速度調整**: ロンジチューディナル制御中の速度増減
-- **Experimental Longitudinal Control**: ビジョンベースACC（レーダーECU PROGRAMMING SESSION方式）
+- **Experimental Longitudinal Control**: ビジョンベース縦方向制御（MRCC搭載車向け）
 - **LKAS Fault 3層防御**: 予防→伝播防止→検出緩和の多層対策
 - **ステアリング角度センサー二重化**: STEER2(プライマリ) + STEER(フォールバック)
 - **MT専用UI表示**: ギア段・クラッチ状態・ブレーキ・パーキングブレーク表示
@@ -360,7 +360,7 @@ Mazda2 DJ MT では、**experimental longitudinal mode** により縦方向（�
 
 ### レーダーECUの UDS プログラミングモードによる無効化
 
-Mazda のストック ACC（MRCC）は **レーダーECU が縦方向を制御** する設計になっています。openpilot が縦方向を制御するには、このレーダーECU の制御を無効化する必要があります。
+Mazda2 DJ MT にはファクトリーMRCC（Mazda Radar Cruise Control）が搭載されており、**レーダーECU が縦方向を制御** する設計になっています。openpilot が縦方向を制御するには、このレーダーECU の制御を無効化する必要があります。
 
 | 項目 | 詳細 |
 |---|---|
@@ -483,7 +483,7 @@ git checkout test-mazda2-dj-mt-frog-Build
 | [`mazda_2_dj_mt.dbc`](opendbc/mazda_2_dj_mt.dbc) | Mazda 2 DJ MT | YozoraPilot カスタムDBC。MT信号（GEAR_POS, CLUTCH_PEDAL, REVERSE_GEAR）を定義 |
 | [`mazda_2017.dbc`](opendbc/mazda_2017.dbc) | Mazda GEN1 AT車全般 | CX-5, CX-9, Mazda3, Mazda6 用標準DBC |
 | [`mazda_3_2019.dbc`](opendbc/mazda_3_2019.dbc) | Mazda 3 2019 | GEN2 用DBC |
-| [`mazda_radar.dbc`](opendbc/mazda_radar.dbc) | Mazda レーダー | レーダートラックデータ定義（PROGRAMMING SESSION中は使用不可） |
+| [`mazda_radar.dbc`](opendbc/mazda_radar.dbc) | Mazda レーダー | レーダートラックデータ定義（縦方向制御中は使用不可） |
 
 ---
 
