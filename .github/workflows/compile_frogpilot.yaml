@@ -329,7 +329,7 @@ jobs:
       - name: Commit and Push Build
         run: |
           BRANCH="${{ needs.get_branch.outputs.branch }}"
-          BUILT_BRANCH="${BRANCH}-built"
+          BUILT_BRANCH="${BRANCH}-Build"
 
           git add -f .
           git diff-index --quiet HEAD || git commit -m "Compile FrogPilot [skip ci]"

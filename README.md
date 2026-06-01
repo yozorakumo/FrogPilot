@@ -1,6 +1,8 @@
 # YozoraPilot (Mazda2 DJ MT カスタム版)
 
-このリポジトリは、[yozorakumo/YozoraPilot](https://github.com/yozorakumo/YozoraPilot) による、**マツダ Mazda2 (DJ) 6MT モデル** への完全対応を行ったカスタムブランチです。
+このリポジトリは、[FrogPilot](https://github.com/FrogAi/FrogPilot) をベースに、[yozorakumo](https://github.com/yozorakumo) による **マツダ Mazda2 (DJ) 6MT モデル** への完全対応を行ったカスタムフォークです。
+
+**FrogPilot**（openpilot コミュニティフォーク）の全機能に加え、MT車固有のCAN信号解析・制御を実装しています。
 
 ## 🌟 主な追加機能と修正点
 
@@ -8,27 +10,23 @@
 
 ### 1. デュアル信号ギアポジション認識
 車両のネイティブ CAN 信号の解析により、2つの信号を組み合わせた高精度なギア判定を実現しました。
-- **大分類信号**: `0x166` (NEW_MSG_28) `GEAR_POS` — Forward/Reverse/Neutral の大分類
-  - `GEAR_POS=4,5`: Forward（前進）
-  - `GEAR_POS=6`: Reverse（リバース）
-  - その他: Neutral（ニュートラル）
-  - **DBC定義修正**: 当初 `23|4@0+` → 実測データに基づき `20|4@0+` に修正
 - **ギア段信号**: `0x165` (PEDALS) `GEAR_POS` — 1速〜6速の具体的ギア段
   - 値マッピング: `2=6th`, `3=5th`, `4=4th`, `5=3rd`, `7=2nd`, `13=1st`
+- **リバース検出**: `0x165` (PEDALS) `REVERSE_GEAR` — byte3 bit0 のクリーンな1bit信号
 - **クラッチ検出**: NEW_MSG_28 (0x166) `CLUTCH_PEDAL` — byte[0] bit7 (Motorola bit 7)、1=PRESSED/0=RELEASED
-- **判定フロー**: NEW_MSG_28で大分類 → PEDALSでギア段（前進時のみ）
+- **判定フロー**: リバース → クラッチ非踏下＋走行中＋GEAR_POS確定 → クラッチ踏下（前回値保持）→ ニュートラル
 - **メリット**: RPM 比率による推定ではなく、CAN信号から直接ギア状態を取得。リバース検出も正確に実行可能
 
 ### 2. ステアリング角度センサーの二重化
 - **プライマリ**: `STEER2` (0x86) — 通常時のステアリング角度ソースとして使用
 - **フォールバック**: `STEER` (0x82) — STEER2が異常値（±360°超過）の場合のみ使用
-- **問題背景**: `STEER`(0x82)は右ウインカー/ハザード時に約26%の確率で異常値（1664°等）を出力するため、プライマリから外了
+- **問題背景**: `STEER`(0x82)は右ウインカー/ハザード時に約26%の確率で異常値（1664°等）を出力するため、プライマリから除外
 - **異常値ガード**: `abs(steer_angle) > 360` を検出した場合、フォールバック→前回有効値の順に復元
 
 ### 3. MT車最適化制御
 - **クラッチ連動ディスエンゲージ**: NEW_MSG_28 (0x166) の `CLUTCH_PEDAL` 信号に基づき、クラッチペダルが踏まれた状態を検出して、安全にオープンパイロットの制御を解除（ディスエンゲージ）します。
 - **エンスト防止ロジック**: 縦方向制御において、MT 車の特性に合わせた加減速の調整を行っています。
-- **判定方式**: NEW_MSG_28(0x166)で大分類 + PEDALS(0x165)の`GEAR_POS`でギア段を判定。`0x09E`の信号（CLUTCH_ALT, NEUTRAL_SW）は実車検証で常に0であることが確認され、使用されていません。
+- **ボタンベース制御**: ファクトリーACCがないMT車向けに、`MODE_X + MODE_Y`（メインボタン）の立ち上がりエッジでトグル制御
 
 ### 4. pandaセーフティ MT対応
 - **safetyParam=2** (`MAZDA_PARAM_MT`): MT車用のセーフティパラメータを追加。AT車用のCRZ_CTRLチェックをスキップし、ボタンベースの制御に切り替え
@@ -49,9 +47,147 @@
 - **クラッチ表示**: クラッチが踏まれている状態を視覚的にフィードバック
 - **BrakePBClutchUI トグル**: ブレーキペダル・パーキングブレーキ・クラッチの状態表示をトグルで切り替え可能（`paintBrakePBClutchStatus`）
 
-### 4. 正確な車両識別 (Fingerprinting)
+### 8. 正確な車両識別 (Fingerprinting)
 - Mazda2 DJ MT モデル固有の ECU（カメラ、レーダー、EPS、エンジン、ABS）のファームウェアバージョンをデータベースに登録。
 - MT 車に存在しない TCM（トランスミッション制御モジュール）を定義から除外することで、迅速かつ正確な車両識別を可能にしました。
+
+### 9. LKAS Fault 3層防御
+- **予防層** ([`carcontroller.py`](selfdrive/car/mazda/carcontroller.py)): LKAS_BLOCK中はステアリング要求を0に
+- **伝播防止層** ([`mazdacan.py`](selfdrive/car/mazda/mazdacan.py)): `er1 = 0`（ERR_BIT_1を0に固定）
+- **検出緩和層** ([`carstate.py`](selfdrive/car/mazda/carstate.py)): `steerFaultPermanent = False`
+
+---
+
+## 📋 対応車種
+
+以下の車種は [`values.py`](selfdrive/car/mazda/values.py) および各DBCファイルに基づく対応リストです。
+
+| 車種 | DBC | トランスミッション | LKAS | ACC/MRCC | 縦方向制御 | 備考 |
+|------|-----|-------------------|------|----------|-----------|------|
+| **Mazda 2 DJ MT** | `mazda_2_dj_mt.dbc` | MT（6速） | ✅ | ✅（合成） | ✅ experimental | YozoraPilot独自対応 |
+| Mazda CX-5 2017-21 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
+| Mazda CX-9 2016-20 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
+| Mazda 3 2017-18 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
+| Mazda 6 2017-20 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
+| Mazda CX-9 2021-23 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
+| Mazda CX-5 2022-24 | `mazda_2017.dbc` | AT | ✅ | ✅（ストック） | ❌ | GEN1 |
+
+> **注意**: AT車のストックACCはレーダーECU経由で動作します。Mazda2 DJ MTはファクトリーACCがないため、レーダーECUをPROGRAMMING SESSIONに移行させ、openpilotが合成ACCメッセージを送信する方式をとります。
+
+---
+
+## 🔧 対応機能一覧
+
+### openpilot 基本機能（全車種共通）
+- LKAS（車線維持支援）
+- ストックACC/MRCC（AT車のみ）
+- BSM（ブラインドスポットモニタリング）統合
+- ドライバーモニタリング
+- レーンチェンジアシスト
+- HUD アラート（LDW / ステアリング要求）
+
+### FrogPilot 追加機能
+- **Always On Lateral (AOL)**: クルーズコントロールON中の常時ステアリング支援
+- **Conditional Experimental Mode (CEM)**: カーブ・渋滞・信号等で自動的にExperimental Modeに切り替え
+- **Speed Limit Controller (SLC)**: OpenStreetMap / Mapboxベースの自動速度制限対応
+- **Driving Personalities**: Traffic / Aggressive / Standard / Relaxed の4プロファイル
+- **カスタムテーマ**: カラースキーム・アイコン・サウンド・ウインカー演出
+- **カスタム追従距離**: 前車との距離調整
+- **ヒューマンライク加減速**: より自然な加速・カーブ減速・ブレーキ
+- **自動レーンチェンジ**
+- **高度なライブチューニング**: ステアリング・ガス/ブレーキのリアルタイム調整
+- **モデルセレクター**: 運転モデルの選択
+- **天候検出**
+- **C3 サポート・SDSU サポート・ZSS サポート**
+- **高品質録画・自動バージョンバックアップ**
+
+### YozoraPilot 独自機能（Mazda2 DJ MT 専用）
+- **MT 6速ギアポジション検知**: PEDALS (0x165) `GEAR_POS` から1速〜6速を直接読み取り
+- **クラッチペダル検知**: NEW_MSG_28 (0x166) `CLUTCH_PEDAL` からリアルタイム検出
+- **リバースギア検知**: PEDALS (0x165) `REVERSE_GEAR` から正確な後退検出
+- **クラッチ連動ディスエンゲージ**: クラッチ操作時の安全な制御解除
+- **ボタンベースEngage/Disengage**: メインボタン（MODE_X + MODE_Y）でのトグル制御
+- **SET_P / SET_M 速度調整**: ロンジチューディナル制御中の速度増減
+- **Experimental Longitudinal Control**: ビジョンベースACC（レーダーECU PROGRAMMING SESSION方式）
+- **LKAS Fault 3層防御**: 予防→伝播防止→検出緩和の多層対策
+- **ステアリング角度センサー二重化**: STEER2(プライマリ) + STEER(フォールバック)
+- **MT専用UI表示**: ギア段・クラッチ状態・ブレーキ・パーキングブレーク表示
+- **ドアロック状態監視**: DOOR_LOCK_FB (0x436) からのフィードバック監視
+- **i-stop状態監視**: ISTOP_STATUS (0x130) からのアイドリングストップ状態取得
+- **青信号アラート CEM非依存**: CEM無効時も青信号検出アラートが動作
+- **CANダンプツール**: [`can_dump.py`](can_dump.py) によるCANバスキャプチャユーティリティ
+
+---
+
+## 機能比較: openpilot vs FrogPilot vs YozoraPilot
+
+### 基本運転支援機能
+
+| 機能 | openpilot | FrogPilot | YozoraPilot |
+|------|:---------:|:---------:|:-----------:|
+| LKAS（車線維持） | ✅ | ✅ | ✅ |
+| ACC（アダプティブクルーズ） | ✅ | ✅ | ✅ |
+| BSM統合 | ✅ | ✅ | ✅ |
+| レーンチェンジアシスト | ✅ | ✅ | ✅ |
+| ドライバーモニタリング | ✅ | ✅ | ✅ |
+| Always On Lateral | ❌ | ✅ | ✅ |
+| Automatic Lane Changes | ❌ | ✅ | ✅ |
+| ステアリングトルク増加* | ❌ | ✅ | ✅ |
+
+*一部車種のみ
+
+### FrogPilot 独自機能
+
+| 機能 | openpilot | FrogPilot | YozoraPilot |
+|------|:---------:|:---------:|:-----------:|
+| Conditional Experimental Mode (CEM) | ❌ | ✅ | ✅ |
+| Speed Limit Controller (SLC) | ❌ | ✅ | ✅ |
+| Driving Personalities | ❌ | ✅ | ✅ |
+| カスタムテーマ・サウンド | ❌ | ✅ | ✅ |
+| ヒューマンライク加減速 | ❌ | ✅ | ✅ |
+| カスタム追従距離 | ❌ | ✅ | ✅ |
+| 高度なライブチューニング | ❌ | ✅ | ✅ |
+| 運転モデルセレクター | ❌ | ✅ | ✅ |
+| 天候検出 | ❌ | ✅ | ✅ |
+| C3 サポート | ❌ | ✅ | ✅ |
+| 高品質録画 | ❌ | ✅ | ✅ |
+| 自動バージョンバックアップ | ❌ | ✅ | ✅ |
+| comma Pedal サポート | ❌ | ✅ | ✅ |
+| SDSU / ZSS サポート | ❌ | ✅ | ✅ |
+
+### YozoraPilot 独自機能（Mazda2 DJ MT）
+
+| 機能 | openpilot | FrogPilot | YozoraPilot |
+|------|:---------:|:---------:|:-----------:|
+| Mazda2 DJ MT (6MT) 対応 | ❌ | ❌ | ✅ |
+| MT ギアポジション検知（1-6速） | ❌ | ❌ | ✅ |
+| クラッチペダル検知 | ❌ | ❌ | ✅ |
+| クラッチ連動ディスエンゲージ | ❌ | ❌ | ✅ |
+| リバースギア検知 | ❌ | ❌ | ✅ |
+| ボタンベース Engage/Disengage | ❌ | ❌ | ✅ |
+| SET_P / SET_M 速度調整 | ❌ | ❌ | ✅ |
+| Experimental Longitudinal (MT) | ❌ | ❌ | ✅ |
+| LKAS Fault 3層防御 | ❌ | ❌ | ✅ |
+| ステアリング角度センサー二重化 | ❌ | ❌ | ✅ |
+| MT専用UI（ギア・クラッチ表示） | ❌ | ❌ | ✅ |
+| ドアロック状態監視 | ❌ | ❌ | ✅ |
+| i-stop 状態監視 | ❌ | ❌ | ✅ |
+| 青信号アラート CEM非依存 | ❌ | ❌ | ✅ |
+| CANバスダンプツール | ❌ | ❌ | ✅ |
+| 自動ドアロック/アンロック（設定） | ❌ | ❌ | ⚙️* |
+| Auto i-stop Cancel（設定） | ❌ | ❌ | ⚙️* |
+
+⚙️* UI設定からトグル可能（実装は一部HS-CAN制約あり）
+
+### カスタマイズ・コミュニティ
+
+| 機能 | openpilot | FrogPilot | YozoraPilot |
+|------|:---------:|:---------:|:-----------:|
+| コミュニティ主導開発 | ❌ | ✅ | ✅ |
+| カスタムインストールURL | `openpilot.comma.ai` | `frogpilot.download` | `https://opkr.o-r.kr/fork/yozorakumo/test-mazda2-dj-mt-frog` |
+| ウェルカミングコミュニティ | ❌ | ✅ | ✅ |
+
+---
 
 ## 🚀 インストール方法 / Quick Start (Japanese)
 
@@ -67,6 +203,8 @@
 ### 💡 インストール時の注意点
 - 安定した電源供給とネットワーク環境での作業を推奨します。
 - もしインストールが失敗する場合は、ネットワーク接続やデバイスの空き容量を再度確認してください。
+
+---
 
 ## 🛠 開発・調査の記録
 今回の対応にあたって実施した CAN バス解析の詳細は、プロジェクト内の設計ドキュメントを参照してください。
@@ -88,11 +226,7 @@
 #### 3. デュアル信号ギアポジション判定 (`carstate.py`, `mazda_2_dj_mt.dbc`)
 - **問題**: MT車なのにAT用のGEAR信号を読んでいた。また単一信号ではリバース検出が不可能だった
 - **原因**: `GEAR`（AT用、`48|5@1+`）ではなく`GEAR_POS`（MT用、`55|8@0+`）を使用すべきだった
-- **修正**: NEW_MSG_28(0x166) + PEDALS(0x165) のデュアル信号方式に変更
-  - **NEW_MSG_28(0x166)**: GEAR_POSで大分類（Forward/Reverse/Neutral）
-    - DBC定義修正: `23|4@0+` → `20|4@0+`（実測データに基づくビットオフセット修正）
-    - `GEAR_POS=6` でリバース検出
-  - **PEDALS(0x165)**: GEAR_POSでギア段（1-6速）判定
+- **修正**: PEDALS(0x165) GEAR_POS でギア段判定 + REVERSE_GEAR でリバース検出
 - **ファイル**: [`selfdrive/car/mazda/carstate.py`](selfdrive/car/mazda/carstate.py), [`opendbc/mazda_2_dj_mt.dbc`](opendbc/mazda_2_dj_mt.dbc)
 - **値マッピング**: `2=6th`, `3=5th`, `4=4th`, `5=3rd`, `7=2nd`, `13=1st`
 
@@ -104,8 +238,8 @@
   - `CLUTCH_ALT` (0x09E byte0 bit5) → **常に0、クラッチ信号ではない**（DBCから削除済み）
   - `CLUTCH_SWITCH` (0x366 byte1 bit7) → **無関係な信号、クラッチ操作と不一致**（DBCから削除済み）
   - **解決策**: リアルタイムCAN信号キャプチャで特定。NEW_MSG_28 (0x166) byte[0] bit7がクラッチペダル直接信号（1=PRESSED/0=RELEASED）
-- **ニュートラル**: NEW_MSG_28のGEAR_POSがForward(4,5)以外で判定
-- **リバース**: NEW_MSG_28のGEAR_POS=6で判定（従来はリバース検出手段がなかった）
+- **ニュートラル**: クラッチ非踏下かつGEAR_POSが確定値でない場合に判定
+- **リバース**: PEDALS REVERSE_GEAR (byte3 bit0) で判定（従来はリバース検出手段がなかった）
 
 #### 5. pandaセーフティ MT対応 (`safety_mazda.h`)
 - **safetyParam**: MT車用に `MAZDA_PARAM_MT = 2` を追加
@@ -130,7 +264,7 @@
 
 #### 9. クラッチペダル信号の特定・修正 (`carstate.py`, `mazda_2_dj_mt.dbc`)
 - **問題**: クラッチペダル定義が間違っており、`CLUTCH_SWITCH` (0x366 byte1 bit7) は実際のクラッチ操作と無関係な信号を追跡していた
-- **調査手法**: commaデバイス (10.225.168.157) にSSH接続し、リアルタイムCAN信号キャプチャスクリプトを実行。ユーザーにクラッチを「1回だけ」「3回」押してもらい、全CAN IDの全ビット変化を追跡
+- **調査手法**: commaデバイスにSSH接続し、リアルタイムCAN信号キャプチャスクリプトを実行。ユーザーにクラッチを「1回だけ」「3回」押してもらい、全CAN IDの全ビット変化を追跡
 - **候補信号の比較**:
   - `0x43D byte[2]`: ユーザーが1回しか押していないのに複数回変化 → ❌ ノイズ・周期信号
   - `0x366 byte[1] bit7` (旧定義): 常時ランダムに変化 → ❌ 無関係
@@ -142,7 +276,7 @@
 
 #### 検証に使用した実データ
 - `Y:\Github\mazda2canbus\realdata` の rlog データ（43,135件のUDSメッセージ、359,174 CAN フレーム）
-- リアルタイムCAN信号キャプチャ: commaデバイス (10.225.168.157) 経由で6回の検証実施
+- リアルタイムCAN信号キャプチャ: commaデバイス経由で6回の検証実施
 
 ---
 
@@ -235,7 +369,42 @@ Mazda のストック ACC（MRCC）は **レーダーECU が縦方向を制御**
 
 - comma デバイスで CAN ダンプを取得し、PROGRAMMING モード中にレーダートラックデータ（`0x361`〜`0x366`）が流れているか検証
 - もし流れていれば、`RadarInterface` を実装してビジョン + レーダーの融合が可能になる（upstream PR #3355 の "Future Work" にも記載）
-- 
+
+---
+
+## 📊 CANメッセージ構成 (mazda_2_dj_mt.dbc)
+
+Mazda2 DJ MT 用カスタムDBCで定義されている主要メッセージ：
+
+| CAN ID | メッセージ名 | ECU/ソース | 主なシグナル |
+|--------|-------------|-----------|-------------|
+| `0x9F` (159) | MSG_11 | ボディ | PARKING_BRAKE |
+| `0x165` (357) | PEDALS | ペダルセンサー | GEAR_POS, BRAKE_ON, ACC_ACTIVE, REVERSE_GEAR, STANDSTILL |
+| `0x166` (358) | NEW_MSG_28 | yozorakumo追加 | CLUTCH_PEDAL |
+| `0x202` (514) | ENGINE_DATA | エンジンECU | RPM, SPEED, PEDAL_GAS |
+| `0x215` (533) | WHEEL_SPEEDS | ABS | FL, FR, RL, RR |
+| `0x075` (117) | STEER_RELATED | EPS | STEER_ANGLE_2, STEER_TORQUE |
+| `0x086` (134) | STEER2 | ステアリングセンサー | STEER_ANGLE (プライマリ) |
+| `0x082` (130) | STEER | ステアリングセンサー | STEER_ANGLE (フォールバック) |
+| `0x240` (576) | STEER_TORQUE | EPS | STEER_TORQUE_MOTOR, STEER_TORQUE_SENSOR |
+| `0x241` (577) | STEER_RATE | EPS | LKAS_BLOCK, LKAS_REQUEST, STEER_ANGLE_RATE |
+| `0x09A` (154) | BLINK_INFO | ボディ | LEFT_BLINK, RIGHT_BLINK, LOW_BEAMS, HIGH_BEAMS |
+| `0x091` (145) | TURN_SWITCH | ステアリングスイッチ | HAZARD, TURN_RIGHT_SWITCH, TURN_LEFT_SWITCH |
+| `0x477` (1143) | BSM | レーダー | LEFT_BS_STATUS, RIGHT_BS_STATUS |
+| `0x078` (120) | BRAKE | ABS | BRAKE_PRESSURE, VEHICLE_ACC_X, VEHICLE_ACC_Y |
+| `0x340` (832) | SEATBELT | ボディ | DRIVER_SEATBELT, PASSENGER_SEATBELT |
+| `0x43E` (1086) | DOORS | ボディ | FL, FR, BL, BR |
+| `0x420` (1056) | BCM | ボディ | DOOR_OPEN_FL, DOOR_OPEN_FR |
+| `0x436` (1078) | DOOR_LOCK_FB | ボディ | DOOR_LOCKED, DOOR_LOCK_CONFIRM |
+| `0x130` (304) | ISTOP_STATUS | エンジン | ISTOP_OFF |
+| `0x21B` (539) | CRZ_INFO | ロンジチューディナル | ACCEL_CMD, ACC_ACTIVE |
+| `0x21C` (540) | CRZ_CTRL | ロンジチューディナル | CRZ_ACTIVE, RADAR_HAS_LEAD |
+| `0x21F` (543) | CRZ_EVENTS | クルーズ | CRZ_SPEED |
+| `0x09D` (157) | CRZ_BTNS | ステアリングスイッチ | MODE_X, MODE_Y, SET_P, SET_M, CAN_OFF |
+| `0x243` (579) | CAM_LKAS | カメラ (Bus 2) | LKAS_REQUEST, ERR_BIT_1, ERR_BIT_2 |
+| `0x440` (1088) | CAM_LANEINFO | カメラ (Bus 2) | LANE_LINES, TJA |
+
+---
 
 ## CI/CD ワークフロー
 
@@ -244,13 +413,13 @@ Mazda のストック ACC（MRCC）は **レーダーECU が縦方向を制御**
 | ブランチ | 内容 | 用途 |
 |---|---|---|
 | `test-mazda2-dj-mt-frog` | **ソースコード** | 開発者がpushする先 |
-| `test-mazda2-dj-mt-frog-built` | **コンパイル済みバイナリ** | C3デバイスで実行する用 |
+| `test-mazda2-dj-mt-frog-Build` | **コンパイル済みバイナリ** | C3デバイスで実行する用 |
 
 ### ビルドフロー
 
 1. 開発者が `test-mazda2-dj-mt-frog` にpush
 2. C3デバイスのCIランナー（self-hosted）が自動的にビルドを実行
-3. ビルド成果物を `test-mazda2-dj-mt-frog-built` にforce push
+3. ビルド成果物を `test-mazda2-dj-mt-frog-Build` にforce push
 
 ### C3デバイスでビルド済みバイナリを使用する
 
@@ -258,16 +427,27 @@ CIビルド完了後、以下のコマンドでビルド済みバイナリを取
 
 ```bash
 cd /data/openpilot
-git fetch origin test-mazda2-dj-mt-frog-built
-git checkout test-mazda2-dj-mt-frog-built
+git fetch origin test-mazda2-dj-mt-frog-Build
+git checkout test-mazda2-dj-mt-frog-Build
 # openpilotを再起動
 ```
 
 ### 注意事項
 
 - CIランナーは常に `test-mazda2-dj-mt-frog` をcheckoutしておく必要があります（`get_branch` がローカルブランチ名を取得するため）
-- ビルド完了後、C3デバイスで実行する時だけ `test-mazda2-dj-mt-frog-built` に切り替えます
+- ビルド完了後、C3デバイスで実行する時だけ `test-mazda2-dj-mt-frog-Build` に切り替えます
 - ソースとバイナリを分離することで、`git pull --rebase` 時のコンフリクトや `Unpacking objects` の問題を回避しています
+
+---
+
+## 📂 DBCファイル構成
+
+| ファイル | 対象 | 用途 |
+|---------|------|------|
+| [`mazda_2_dj_mt.dbc`](opendbc/mazda_2_dj_mt.dbc) | Mazda 2 DJ MT | YozoraPilot カスタムDBC。MT信号（GEAR_POS, CLUTCH_PEDAL, REVERSE_GEAR）を定義 |
+| [`mazda_2017.dbc`](opendbc/mazda_2017.dbc) | Mazda GEN1 AT車全般 | CX-5, CX-9, Mazda3, Mazda6 用標準DBC |
+| [`mazda_3_2019.dbc`](opendbc/mazda_3_2019.dbc) | Mazda 3 2019 | GEN2 用DBC |
+| [`mazda_radar.dbc`](opendbc/mazda_radar.dbc) | Mazda レーダー | レーダートラックデータ定義（PROGRAMMING SESSION中は使用不可） |
 
 ---
 
@@ -644,6 +824,6 @@ I'll do my best to respond promptly, but not every request can be addressed righ
 Star History
 ------
 
-[![Star History Chart](https://api.star-history.com/svg?repos=FrogAi/FrogPilot&type=Date)](https://www.star-history.com/#FrogAi/FrogPilot&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=FrogAi/FrogPilot&type=Date)](https://www.star-history.com/#{FrogAi/FrogPilot&Date)
 
 ---
