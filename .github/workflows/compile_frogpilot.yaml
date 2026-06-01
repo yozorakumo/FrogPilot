@@ -78,8 +78,7 @@ jobs:
       - name: Get Current Branch
         id: get_branch
         run: |
-          cd "$BUILD_DIR"
-          echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> "$GITHUB_OUTPUT"
+          echo "branch=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
 
       - name: Get Python Version
         id: get_python_version
