@@ -97,12 +97,23 @@ class CarState(CarStateBase):
       # NEW_MSG_28 GEAR_POS (4-bit) was found to be an analog sensor that drifts
       # continuously, causing false Reverse detection during brake/clutch operation.
       #
-      # PEDALS GEAR_POS updates only when clutch is released (gear physically engaged).
-      # While clutch is pressed, hold the last confirmed gear position.
+      # PEDALS GEAR_POS is reliable when vehicle is moving AND clutch is released.
+      # When stopped, GEAR_POS may "settle" to a false value (e.g., 13=1st when in N).
+      # When clutch is pressed, GEAR_POS may show transitional values.
+      #
+      # Rules:
+      # 1. Only update last_gear_pos when clutch is NOT pressed (confirmed engagement)
+      # 2. When stopped + clutch released → always neutral (sensor unreliable at 0 speed)
+      # 3. When moving + clutch released → trust GEAR_POS
+      # 4. When clutch pressed → hold last confirmed gear
+
+      is_moving = ret.vEgo > 0.3  # ~1 kph threshold
+
       if reverse_gear:
         ret.gearShifter = car.CarState.GearShifter.reverse
         fp_ret.gearStep = 0
-      elif gear_pos in FORWARD_GEARS:
+      elif not ret.clutchPressed and is_moving and gear_pos in FORWARD_GEARS:
+        # Moving with clutch released — confirmed gear position
         self.last_gear_pos = gear_pos
         ret.gearShifter = car.CarState.GearShifter.drive
         fp_ret.gearStep = FORWARD_GEARS[gear_pos]
@@ -111,7 +122,7 @@ class CarState(CarStateBase):
         ret.gearShifter = car.CarState.GearShifter.drive
         fp_ret.gearStep = FORWARD_GEARS[self.last_gear_pos]
       else:
-        # No gear engaged and clutch not pressed (or no previous gear) — Neutral
+        # Stopped with clutch released, or unknown state — Neutral
         ret.gearShifter = car.CarState.GearShifter.neutral
         fp_ret.gearStep = 0  # N
 
