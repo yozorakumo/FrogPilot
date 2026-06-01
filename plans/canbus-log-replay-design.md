@@ -182,7 +182,7 @@ flowchart TD
 
 #### 起動方法
 
-- manager.pyにオプションプロセスとして登録（FrogPilotトグルで有効/無効）
+- manager.pyにオプションプロセスとして登録（YozoraPilotトグルで有効/無効）
 - または手動実行: `python -m frogpilot.can_log.can_logger`
 
 ### 3.3 CANプレーヤー: `frogpilot/can_log/can_player.py`

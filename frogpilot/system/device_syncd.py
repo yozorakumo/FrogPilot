@@ -240,7 +240,7 @@ def upload_toggles():
       timeout=10,
     ).raise_for_status()
 
-    print("Successfully uploaded toggles to FrogPilot.com")
+    print("Successfully uploaded toggles to YozoraPilot.com")
     return True
 
   except Exception as exception:

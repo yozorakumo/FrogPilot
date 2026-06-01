@@ -185,7 +185,7 @@ def send_stats():
 
     response = requests.post(f"{FROGPILOT_API}/stats", json=payload, headers={"Content-Type": "application/json", "User-Agent": "frogpilot-api/1.0"}, timeout=30)
     response.raise_for_status()
-    print("Successfully sent FrogPilot stats!")
+    print("Successfully sent YozoraPilot stats!")
 
   except Exception as exception:
-    print(f"Failed to send FrogPilot stats: {exception}")
+    print(f"Failed to send YozoraPilot stats: {exception}")

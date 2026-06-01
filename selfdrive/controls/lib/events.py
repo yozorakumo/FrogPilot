@@ -1102,13 +1102,13 @@ FROGPILOT_EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   FrogPilotEventName.openpilotCrashed: {
     ET.IMMEDIATE_DISABLE: Alert(
       "openpilot crashed",
-      "Please post the 'Error Log' in the FrogPilot Discord!",
+      "Please post the 'Error Log' in the YozoraPilot Discord!",
       AlertStatus.critical, AlertSize.mid,
       Priority.HIGHEST, VisualAlert.none, AudibleAlert.prompt, .1),
 
     ET.NO_ENTRY: Alert(
       "openpilot crashed",
-      "Please post the 'Error Log' in the FrogPilot Discord!",
+      "Please post the 'Error Log' in the YozoraPilot Discord!",
       AlertStatus.critical, AlertSize.mid,
       Priority.HIGHEST, VisualAlert.none, AudibleAlert.prompt, .1),
   },
@@ -1225,13 +1225,13 @@ FROGPILOT_EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   FrogPilotEventName.openpilotCrashedRandomEvent: {
     ET.IMMEDIATE_DISABLE: Alert(
       "openpilot crashed 💩",
-      "Please post the 'Error Log' in the FrogPilot Discord!",
+      "Please post the 'Error Log' in the YozoraPilot Discord!",
       AlertStatus.normal, AlertSize.mid,
       Priority.HIGHEST, VisualAlert.none, FrogPilotAudibleAlert.fart, 10.),
 
     ET.NO_ENTRY: Alert(
       "openpilot crashed 💩",
-      "Please post the 'Error Log' in the FrogPilot Discord!",
+      "Please post the 'Error Log' in the YozoraPilot Discord!",
       AlertStatus.normal, AlertSize.mid,
       Priority.HIGHEST, VisualAlert.none, FrogPilotAudibleAlert.fart, 10.),
   },

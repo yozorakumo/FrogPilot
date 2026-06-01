@@ -655,12 +655,12 @@
         <translation type="gpt-5-generated">Yeniden adlandırıldı!</translation>
     </message>
     <message>
-        <source>FrogPilot Backups</source>
-        <translation type="gpt-5-generated">FrogPilot Yedeklemeleri</translation>
+        <source>YozoraPilot Backups</source>
+        <translation type="gpt-5-generated">YozoraPilot Yedeklemeleri</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Create, delete, or restore FrogPilot backups.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;FrogPilot yedeklerini oluşturun, silin veya geri yükleyin.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Create, delete, or restore YozoraPilot backups.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;YozoraPilot yedeklerini oluşturun, silin veya geri yükleyin.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>BACKUP</source>
@@ -691,8 +691,8 @@
         <translation type="gpt-5-generated">Yedek oluşturuldu!</translation>
     </message>
     <message>
-        <source>Choose a FrogPilot backup to delete</source>
-        <translation type="gpt-5-generated">Silmek için bir FrogPilot yedeği seçin</translation>
+        <source>Choose a YozoraPilot backup to delete</source>
+        <translation type="gpt-5-generated">Silmek için bir YozoraPilot yedeği seçin</translation>
     </message>
     <message>
         <source>Delete this backup?</source>
@@ -743,12 +743,12 @@
         <translation type="gpt-5-generated">Silinecek bir yedek seçin</translation>
     </message>
     <message>
-        <source>FrogPilot Stats</source>
-        <translation type="gpt-5-generated">FrogPilot İstatistikleri</translation>
+        <source>YozoraPilot Stats</source>
+        <translation type="gpt-5-generated">YozoraPilot İstatistikleri</translation>
     </message>
     <message>
-        <source>&lt;b&gt;View your collected FrogPilot stats.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Topladığınız FrogPilot istatistiklerini görüntüleyin.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;View your collected YozoraPilot stats.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Topladığınız YozoraPilot istatistiklerini görüntüleyin.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>RESET</source>
@@ -759,8 +759,8 @@
         <translation type="gpt-5-generated">GÖRÜNÜM</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset all of your FrogPilot stats?</source>
-        <translation type="gpt-5-generated">Tüm FrogPilot istatistiklerinizi sıfırlamak istediğinizden emin misiniz?</translation>
+        <source>Are you sure you want to reset all of your YozoraPilot stats?</source>
+        <translation type="gpt-5-generated">Tüm YozoraPilot istatistiklerinizi sıfırlamak istediğinizden emin misiniz?</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -3222,8 +3222,8 @@
         <translation type="gpt-5-generated">Hız Sınırı Doldurucu</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, FrogPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Sürüş sırasında eksik veya hatalı hız sınırlarını otomatik olarak toplayın&lt;/b&gt;; hız sınırları, gösterge panelinizden (destekleniyorsa), Mapbox’tan ve "Navigate on openpilot"tan alınır.&lt;br&gt;&lt;br&gt;Aracınızı park ettiğinizde ve Wi‑Fi’ya bağlıyken, FrogPilot bu verileri otomatik olarak "SpeedLimitFiller.frogpilot.download" konumunda bulunan araçla kullanılacak bir dosyaya işler.&lt;br&gt;&lt;br&gt;Bu dosyayı "The Pond" içindeki "Download Speed Limits" menüsünden indirebilirsiniz.&lt;br&gt;&lt;br&gt;Adım adım bir rehbere mi ihtiyacınız var? FrogPilot Discord’unda &lt;b&gt;#speed-limit-filler&lt;/b&gt; kanalını ziyaret edin!</translation>
+        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, YozoraPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Sürüş sırasında eksik veya hatalı hız sınırlarını otomatik olarak toplayın&lt;/b&gt;; hız sınırları, gösterge panelinizden (destekleniyorsa), Mapbox’tan ve "Navigate on openpilot"tan alınır.&lt;br&gt;&lt;br&gt;Aracınızı park ettiğinizde ve Wi‑Fi’ya bağlıyken, YozoraPilot bu verileri otomatik olarak "SpeedLimitFiller.frogpilot.download" konumunda bulunan araçla kullanılacak bir dosyaya işler.&lt;br&gt;&lt;br&gt;Bu dosyayı "The Pond" içindeki "Download Speed Limits" menüsünden indirebilirsiniz.&lt;br&gt;&lt;br&gt;Adım adım bir rehbere mi ihtiyacınız var? YozoraPilot Discord’unda &lt;b&gt;#speed-limit-filler&lt;/b&gt; kanalını ziyaret edin!</translation>
     </message>
     <message>
         <source>Cancel the speed-limit update?</source>
@@ -3387,8 +3387,8 @@ It will reset in %1 hours and %2 minutes.</source>
         <translation type="gpt-5-generated">Sürüş Kontrolleri</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Fine-tune custom FrogPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Özel FrogPilot hızlanma, frenleme ve direksiyon kontrollerini ince ayarlayın.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Fine-tune custom YozoraPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Özel YozoraPilot hızlanma, frenleme ve direksiyon kontrollerini ince ayarlayın.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Navigation</source>
@@ -3403,8 +3403,8 @@ It will reset in %1 hours and %2 minutes.</source>
         <translation type="gpt-5-generated">Sistem Ayarları</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep FrogPilot running smoothly.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;FrogPilot’ın sorunsuz çalışmasını sağlamak için yedeklemeleri, cihaz ayarlarını, ekran seçeneklerini, depolamayı ve araçları yönetin.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep YozoraPilot running smoothly.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;YozoraPilot’ın sorunsuz çalışmasını sağlamak için yedeklemeleri, cihaz ayarlarını, ekran seçeneklerini, depolamayı ve araçları yönetin.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Theme and Appearance</source>
@@ -3532,12 +3532,12 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">&lt;b&gt;Acil dikkat gerektiren en yüksek sesli uyarıların ses seviyesini ayarlayın.&lt;/b&gt;&lt;br&gt;&lt;br&gt;Örnekler: "HEMEN DEVREDEN ÇIKARIN — Sürücü Dikkati Dağılmış", "HEMEN DEVREDEN ÇIKARIN — Sürücü Tepki Vermiyor".</translation>
     </message>
     <message>
-        <source>FrogPilot Alerts</source>
-        <translation type="gpt-5-generated">FrogPilot Uyarıları</translation>
+        <source>YozoraPilot Alerts</source>
+        <translation type="gpt-5-generated">YozoraPilot Uyarıları</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Optional FrogPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;İsteğe bağlı FrogPilot uyarıları&lt;/b&gt;, sürüş olaylarını daha belirgin bir şekilde vurgular.</translation>
+        <source>&lt;b&gt;Optional YozoraPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;İsteğe bağlı YozoraPilot uyarıları&lt;/b&gt;, sürüş olaylarını daha belirgin bir şekilde vurgular.</translation>
     </message>
     <message>
         <source>Goat Scream</source>
@@ -3886,8 +3886,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">Hata Ayıklama Modu</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Use FrogPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Bir sonraki sürüşünüzde FrogPilot'un geliştirici metriklerini kullanın&lt;/b&gt;; sorunları teşhis edin ve hata raporlarını iyileştirin.</translation>
+        <source>&lt;b&gt;Use YozoraPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Bir sonraki sürüşünüzde YozoraPilot'un geliştirici metriklerini kullanın&lt;/b&gt;; sorunları teşhis edin ve hata raporlarını iyileştirin.</translation>
     </message>
     <message>
         <source>Flash Panda</source>
@@ -4231,8 +4231,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">General Motors Ayarları</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for General Motors vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Genel Motors araçları için FrogPilot özellikleri.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for General Motors vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Genel Motors araçları için YozoraPilot özellikleri.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>FrogsGoMoo's Experimental Tune</source>
@@ -4263,8 +4263,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">Hyundai/Kia/Genesis Ayarları</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Genesis, Hyundai ve Kia araçları için FrogPilot özellikleri.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Genesis, Hyundai ve Kia araçları için YozoraPilot özellikleri.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>comma's New Longitudinal API</source>
@@ -4287,8 +4287,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">Toyota/Lexus Ayarları</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Lexus ve Toyota araçları için FrogPilot özellikleri.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Lexus ve Toyota araçları için YozoraPilot özellikleri.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Automatically Lock/Unlock Doors</source>
@@ -4431,8 +4431,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">Subaru Ayarları</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Subaru vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Subaru araçları için FrogPilot özellikleri.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Subaru vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Subaru araçları için YozoraPilot özellikleri.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Stop and Go</source>
@@ -4447,8 +4447,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">Acura/Honda Ayarları</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Acura ve Honda araçları için FrogPilot özellikleri.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Acura ve Honda araçları için YozoraPilot özellikleri.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Gentle Following</source>
@@ -4479,7 +4479,7 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Mazda vehicles.&lt;/b&gt;</source>
+        <source>&lt;b&gt;YozoraPilot features for Mazda vehicles.&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4846,8 +4846,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">Sürüş Ekranı Araç Gereçleri</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Custom FrogPilot widgets&lt;/b&gt; for the driving screen.</source>
-        <translation type="gpt-5-generated">Sürüş ekranı için &lt;b&gt;özel FrogPilot bileşenleri&lt;/b&gt;.</translation>
+        <source>&lt;b&gt;Custom YozoraPilot widgets&lt;/b&gt; for the driving screen.</source>
+        <translation type="gpt-5-generated">Sürüş ekranı için &lt;b&gt;özel YozoraPilot bileşenleri&lt;/b&gt;.</translation>
     </message>
     <message>
         <source>Acceleration Path</source>
@@ -4982,8 +4982,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">Harita Stili</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Official FrogPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
-        <translation type="gpt-5-generated">&lt;b&gt;"openpilot ile Navigasyon" (NOO) için harita stilini seçin&lt;/b&gt;:&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Varsayılan comma.ai stili&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Resmi FrogPilot harita stili&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standart sokak odaklı görünüm&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Açık hava ve arazi özelliklerini vurgular&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, parlak tema&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, koyu tema&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Gündüz navigasyon için optimize edilmiştir&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Gece navigasyon için optimize edilmiştir&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Yalnızca uydu görüntüleri&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Sokak etiketli hibrit uydu görüntüleri&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Trafik koşullarını vurgulayan koyu tema&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Özelleştirilmiş hibrit uydu görünümü</translation>
+        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Official YozoraPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
+        <translation type="gpt-5-generated">&lt;b&gt;"openpilot ile Navigasyon" (NOO) için harita stilini seçin&lt;/b&gt;:&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Varsayılan comma.ai stili&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Resmi YozoraPilot harita stili&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standart sokak odaklı görünüm&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Açık hava ve arazi özelliklerini vurgular&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, parlak tema&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, koyu tema&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Gündüz navigasyon için optimize edilmiştir&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Gece navigasyon için optimize edilmiştir&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Yalnızca uydu görüntüleri&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Sokak etiketli hibrit uydu görüntüleri&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Trafik koşullarını vurgulayan koyu tema&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Özelleştirilmiş hibrit uydu görünümü</translation>
     </message>
     <message>
         <source>Road Name</source>
@@ -5198,8 +5198,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">Stok openpilot</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot</translation>
     </message>
     <message>
         <source>Mapbox Streets</source>
@@ -5571,8 +5571,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">openpilot çöktü</translation>
     </message>
     <message>
-        <source>Please post the "Error Log" in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">Lütfen "Error Log"u FrogPilot Discord’unda paylaşın!</translation>
+        <source>Please post the "Error Log" in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">Lütfen "Error Log"u YozoraPilot Discord’unda paylaşın!</translation>
     </message>
     <message>
         <source>openpilot crashed 💩</source>
@@ -5700,8 +5700,8 @@ Geliştirici - Tecrübeli meraklılar için yüksek özelleştirilebilir ayarlar
         <translation type="gpt-5-generated">Geri Yükle</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot</translation>
     </message>
     <message>
         <source>0 MB</source>
@@ -5815,32 +5815,32 @@ Bu işlem bir dakika kadar sürebilir.</translation>
         <translation type="gpt-5-generated">← Geri</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">FrogPilot’a hoş geldiniz! openpilot’ta yeni olduğunuz için “Minimal” geçiş ön ayarı uygulandı, ancak bunu istediğiniz zaman “Tuning Level” düğmesiyle değiştirebilirsiniz!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">YozoraPilot’a hoş geldiniz! openpilot’ta yeni olduğunuz için “Minimal” geçiş ön ayarı uygulandı, ancak bunu istediğiniz zaman “Tuning Level” düğmesiyle değiştirebilirsiniz!</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">FrogPilot’a hoş geldiniz! FrogPilot’ta yeni olduğunuz için “Minimal” geçiş ön ayarı uygulandı, ancak bunu istediğiniz zaman “Tuning Level” düğmesi üzerinden değiştirebilirsiniz!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">YozoraPilot’a hoş geldiniz! YozoraPilot’ta yeni olduğunuz için “Minimal” geçiş ön ayarı uygulandı, ancak bunu istediğiniz zaman “Tuning Level” düğmesi üzerinden değiştirebilirsiniz!</translation>
     </message>
     <message>
-        <source>Since you're fairly new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">FrogPilot’a oldukça yeni olduğunuz için “Minimal” geçiş ön ayarı uygulandı, ancak bunu istediğiniz zaman “Tuning Level” düğmesi aracılığıyla değiştirebilirsiniz!</translation>
+        <source>Since you're fairly new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">YozoraPilot’a oldukça yeni olduğunuz için “Minimal” geçiş ön ayarı uygulandı, ancak bunu istediğiniz zaman “Tuning Level” düğmesi aracılığıyla değiştirebilirsiniz!</translation>
     </message>
     <message>
         <source>Since you're experienced with openpilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
         <translation type="gpt-5-generated">openpilot konusunda deneyimli olduğunuz için “Standart” geçiş ön ayarı uygulandı, ancak bunu dilediğiniz zaman “Ayarlama Düzeyi” düğmesi üzerinden değiştirebilirsiniz!</translation>
     </message>
     <message>
-        <source>Since you're experienced with FrogPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">FrogPilot konusunda deneyimli olduğunuz için “Standard” geçiş ön ayarı uygulandı, ancak bunu istediğiniz zaman “Tuning Level” düğmesi üzerinden değiştirebilirsiniz!</translation>
+        <source>Since you're experienced with YozoraPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">YozoraPilot konusunda deneyimli olduğunuz için “Standard” geçiş ön ayarı uygulandı, ancak bunu istediğiniz zaman “Tuning Level” düğmesi üzerinden değiştirebilirsiniz!</translation>
     </message>
     <message>
-        <source>Since you're very experienced with FrogPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">FrogPilot konusunda çok deneyimli olduğunuz için “Gelişmiş” geçiş ön ayarı uygulanmıştır, ancak bunu istediğiniz zaman “Ayarlama Düzeyi” düğmesi üzerinden değiştirebilirsiniz!</translation>
+        <source>Since you're very experienced with YozoraPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">YozoraPilot konusunda çok deneyimli olduğunuz için “Gelişmiş” geçiş ön ayarı uygulanmıştır, ancak bunu istediğiniz zaman “Ayarlama Düzeyi” düğmesi üzerinden değiştirebilirsiniz!</translation>
     </message>
 </context>
 <context>
@@ -6139,12 +6139,12 @@ Bu işlem bir dakika kadar sürebilir.</translation>
         <translation type="gpt-5-generated">Güncellemeler yalnızca araç kapalıyken veya park halindeyken indirilir.</translation>
     </message>
     <message>
-        <source>Automatically Update FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot’ı Otomatik Olarak Güncelle</translation>
+        <source>Automatically Update YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot’ı Otomatik Olarak Güncelle</translation>
     </message>
     <message>
-        <source>FrogPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
-        <translation type="gpt-5-generated">FrogPilot, offroad iken ve etkin bir internet bağlantınız varken kendisini ve varlıklarını otomatik olarak güncelleyecektir.</translation>
+        <source>YozoraPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
+        <translation type="gpt-5-generated">YozoraPilot, offroad iken ve etkin bir internet bağlantınız varken kendisini ve varlıklarını otomatik olarak güncelleyecektir.</translation>
     </message>
     <message>
         <source>This branch must be downloaded before switching. Would you like to download it now?</source>

@@ -570,7 +570,7 @@ FrogPilotThemesPanel::FrogPilotThemesPanel(FrogPilotSettingsWindow *parent) : Fr
       downloadStatusLabel = new LabelControl(title, tr("Idle"));
       themeToggle = downloadStatusLabel;
     } else if (param == "StartupAlert") {
-      FrogPilotButtonsControl *startupAlertButton = new FrogPilotButtonsControl(title, desc, icon, {tr("STOCK"), tr("FROGPILOT"), tr("CUSTOM"), tr("CLEAR")}, true);
+      FrogPilotButtonsControl *startupAlertButton = new FrogPilotButtonsControl(title, desc, icon, {tr("STOCK"), tr("YOZORAPILOT"), tr("CUSTOM"), tr("CLEAR")}, true);
 
       QString currentTop = QString::fromStdString(params.get("StartupMessageTop"));
       QString currentBottom = QString::fromStdString(params.get("StartupMessageBottom"));

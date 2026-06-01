@@ -20,7 +20,7 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
   ScrollView *dataMainPanel = new ScrollView(dataMainList, this);
   dataLayout->addWidget(dataMainPanel);
 
-  ParamControl *automaticBackupToggle = new ParamControl("AutomaticBackup", tr("Automatically Backup FrogPilot"),
+  ParamControl *automaticBackupToggle = new ParamControl("AutomaticBackup", tr("Automatically Backup YozoraPilot"),
     tr("<b>Automatically backup your configuration and models when you are offroad with an active internet connection.</b>"),
     "../../frogpilot/assets/toggle_icons/icon_backup.png");
   if (forceOpenDescriptions) {
@@ -220,7 +220,7 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
   }
   dataMainList->addItem(screenRecordingsButton);
 
-  FrogPilotButtonsControl *frogpilotBackupButton = new FrogPilotButtonsControl(tr("FrogPilot Backups"), tr("<b>Create, delete, or restore FrogPilot backups.</b>"), "", {tr("BACKUP"), tr("DELETE"), tr("DELETE ALL"), tr("RESTORE")});
+  FrogPilotButtonsControl *frogpilotBackupButton = new FrogPilotButtonsControl(tr("YozoraPilot Backups"), tr("<b>Create, delete, or restore YozoraPilot backups.</b>"), "", {tr("BACKUP"), tr("DELETE"), tr("DELETE ALL"), tr("RESTORE")});
   QObject::connect(frogpilotBackupButton, &FrogPilotButtonsControl::buttonClicked, [=](int id) {
     QDir backupDir("/data/backups");
     QStringList backupNames = backupDir.entryList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot, QDir::Name).filter(QRegularExpression("^(?!.*_in_progress(?:\\..*)?$).*$"));
@@ -293,7 +293,7 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
       }
 
     } else if (id == 1) {
-      QString selectionFriendly = MultiOptionDialog::getSelection(tr("Choose a FrogPilot backup to delete"), backupFriendlyMap.keys(), "", this);
+      QString selectionFriendly = MultiOptionDialog::getSelection(tr("Choose a YozoraPilot backup to delete"), backupFriendlyMap.keys(), "", this);
       if (!selectionFriendly.isEmpty()) {
         QString selection = backupFriendlyMap.value(selectionFriendly);
         if (ConfirmationDialog::confirm(tr("Delete this backup?"), tr("Delete"), this)) {
@@ -607,10 +607,10 @@ FrogPilotDataPanel::FrogPilotDataPanel(FrogPilotSettingsWindow *parent) : FrogPi
   }
   dataMainList->addItem(toggleBackupButton);
 
-  FrogPilotButtonsControl *viewStatsButton = new FrogPilotButtonsControl(tr("FrogPilot Stats"), tr("<b>View your collected FrogPilot stats.</b>"), "", {tr("RESET"), tr("VIEW")});
+  FrogPilotButtonsControl *viewStatsButton = new FrogPilotButtonsControl(tr("YozoraPilot Stats"), tr("<b>View your collected YozoraPilot stats.</b>"), "", {tr("RESET"), tr("VIEW")});
   QObject::connect(viewStatsButton, &FrogPilotButtonsControl::buttonClicked, [dataLayout, statsLabelsPanel, this](int id) {
     if (id == 0) {
-      if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all of your FrogPilot stats?"), tr("Reset"), this)) {
+      if (ConfirmationDialog::confirm(tr("Are you sure you want to reset all of your YozoraPilot stats?"), tr("Reset"), this)) {
         params.remove("FrogPilotStats");
         params_cache.remove("FrogPilotStats");
       }

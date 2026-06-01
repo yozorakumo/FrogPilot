@@ -1246,7 +1246,7 @@ def setup(app):
   @app.route("/api/themes/submit", methods=["POST"])
   def submit_theme():
     if not is_url_pingable(FROGPILOT_API):
-      return jsonify({"error": "FrogPilot API is not reachable"}), 503
+      return jsonify({"error": "YozoraPilot API is not reachable"}), 503
 
     try:
       theme_name = request.form.get("themeName")

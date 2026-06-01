@@ -607,8 +607,8 @@
         <translation>Перейменовано!</translation>
     </message>
     <message>
-        <source>FrogPilot Backups</source>
-        <translation>Бєкапи FrogPilot</translation>
+        <source>YozoraPilot Backups</source>
+        <translation>Бєкапи YozoraPilot</translation>
     </message>
     <message>
         <source>BACKUP</source>
@@ -703,8 +703,8 @@
         <translation>Імʼя вже використовується. Виберіть інше імʼя.</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Create, delete, or restore FrogPilot backups.&lt;/b&gt;</source>
-        <translation>&lt;b&gt;Створити, видалити чи відновити резервні копії FrogPilot.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Create, delete, or restore YozoraPilot backups.&lt;/b&gt;</source>
+        <translation>&lt;b&gt;Створити, видалити чи відновити резервні копії YozoraPilot.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Enter a name for this backup</source>
@@ -715,8 +715,8 @@
         <translation>Стиснути цю резервну копію? Це збереже місце і буде працювати в фоновому режиму але займе трохи більше часу.</translation>
     </message>
     <message>
-        <source>Choose a FrogPilot backup to delete</source>
-        <translation>Виберіть резервну копію FrogPilot для видалення</translation>
+        <source>Choose a YozoraPilot backup to delete</source>
+        <translation>Виберіть резервну копію YozoraPilot для видалення</translation>
     </message>
     <message>
         <source>Delete this backup?</source>
@@ -743,12 +743,12 @@
         <translation>Виберіть резервну копію для видалення</translation>
     </message>
     <message>
-        <source>FrogPilot Stats</source>
-        <translation type="gpt-5-generated">Статистика FrogPilot</translation>
+        <source>YozoraPilot Stats</source>
+        <translation type="gpt-5-generated">Статистика YozoraPilot</translation>
     </message>
     <message>
-        <source>&lt;b&gt;View your collected FrogPilot stats.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Перегляньте зібрану статистику FrogPilot.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;View your collected YozoraPilot stats.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Перегляньте зібрану статистику YozoraPilot.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>RESET</source>
@@ -759,8 +759,8 @@
         <translation type="gpt-5-generated">ПЕРЕГЛЯД</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset all of your FrogPilot stats?</source>
-        <translation type="gpt-5-generated">Ви впевнені, що хочете скинути всі ваші статистики FrogPilot?</translation>
+        <source>Are you sure you want to reset all of your YozoraPilot stats?</source>
+        <translation type="gpt-5-generated">Ви впевнені, що хочете скинути всі ваші статистики YozoraPilot?</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -3242,8 +3242,8 @@
         <translation>&lt;b&gt;Інструкції щодо налаштування Mapbox&lt;/b&gt; для «Навігації без Prime підписки від comma».</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, FrogPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the FrogPilot Discord!</source>
-        <translation>&lt;b&gt;Автоматично збирайте відсутні або неправильні обмеження швидкості під час руху&lt;/b&gt; за допомогою обмежень швидкості, отриманих з вашої приладової панелі (якщо це підтримується), Mapbox та «Navigate on openpilot».&lt;br&gt;&lt;br&gt;Коли ви припаркувалися і підключилися до Wi-Fi, FrogPilot автоматично обробляє ці дані у файл, який можна використовувати за допомогою інструменту, розташованого за адресою «SpeedLimitFiller.frogpilot.download». &lt;br&gt;&lt;br&gt;Ви можете завантажити цей файл з «The Pond» у меню «Завантажити обмеження швидкості».&lt;br&gt;&lt;br&gt;Потрібна покрокова інструкція? Відвідайте &lt;b&gt;#speed-limit-filler&lt;/b&gt; у FrogPilot Discord!</translation>
+        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, YozoraPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the YozoraPilot Discord!</source>
+        <translation>&lt;b&gt;Автоматично збирайте відсутні або неправильні обмеження швидкості під час руху&lt;/b&gt; за допомогою обмежень швидкості, отриманих з вашої приладової панелі (якщо це підтримується), Mapbox та «Navigate on openpilot».&lt;br&gt;&lt;br&gt;Коли ви припаркувалися і підключилися до Wi-Fi, YozoraPilot автоматично обробляє ці дані у файл, який можна використовувати за допомогою інструменту, розташованого за адресою «SpeedLimitFiller.frogpilot.download». &lt;br&gt;&lt;br&gt;Ви можете завантажити цей файл з «The Pond» у меню «Завантажити обмеження швидкості».&lt;br&gt;&lt;br&gt;Потрібна покрокова інструкція? Відвідайте &lt;b&gt;#speed-limit-filler&lt;/b&gt; у YozoraPilot Discord!</translation>
     </message>
     <message>
         <source>Cancel the speed-limit update?</source>
@@ -3416,8 +3416,8 @@ It will reset in %1 hours and %2 minutes.</source>
         <translation>&lt;b&gt;Налаштуйте гучність сповіщень та увімкніть персоналізовані сповіщення.&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Fine-tune custom FrogPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
-        <translation>&lt;b&gt;Точне налаштування користувацьких елементів керування прискоренням, гальмуванням та рульовим керуванням FrogPilot.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Fine-tune custom YozoraPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
+        <translation>&lt;b&gt;Точне налаштування користувацьких елементів керування прискоренням, гальмуванням та рульовим керуванням YozoraPilot.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>&lt;b&gt;Download map data for the "Speed Limit Controller" and configure "Navigate on openpilot" (NOO).&lt;/b&gt;</source>
@@ -3428,8 +3428,8 @@ It will reset in %1 hours and %2 minutes.</source>
         <translation>Налаштування системи</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep FrogPilot running smoothly.&lt;/b&gt;</source>
-        <translation>&lt;b&gt;Керуйте резервними копіями, налаштуваннями пристрою, параметрами екрана, сховищем та інструментами, щоб забезпечити безперебійну роботу FrogPilot.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep YozoraPilot running smoothly.&lt;/b&gt;</source>
+        <translation>&lt;b&gt;Керуйте резервними копіями, налаштуваннями пристрою, параметрами екрана, сховищем та інструментами, щоб забезпечити безперебійну роботу YozoraPilot.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>&lt;b&gt;Customize the look of the driving screen and interface, including themes!&lt;/b&gt;</source>
@@ -3497,8 +3497,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>Гучність негайн. сповіщ.</translation>
     </message>
     <message>
-        <source>FrogPilot Alerts</source>
-        <translation>Сповіщення FrogPilot</translation>
+        <source>YozoraPilot Alerts</source>
+        <translation>Сповіщення YozoraPilot</translation>
     </message>
     <message>
         <source>Green Light Alert</source>
@@ -3565,8 +3565,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>&lt;b&gt;Встановіть гучність для найгучніших попереджень, які вимагають негайної уваги.&lt;/b&gt;&lt;br&gt;&lt;br&gt;Приклади: «НЕГАЙНА ДЕАКТИВАЦІЯ — Водій відволікся», «НЕГАЙНА ДЕАКТИВАЦІЯ — Водій не реагує».</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Optional FrogPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
-        <translation>&lt;b&gt;Додаткові сповіщення FrogPilot&lt;/b&gt;, які більш помітно підкреслюють події під час руху.</translation>
+        <source>&lt;b&gt;Optional YozoraPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
+        <translation>&lt;b&gt;Додаткові сповіщення YozoraPilot&lt;/b&gt;, які більш помітно підкреслюють події під час руху.</translation>
     </message>
     <message>
         <source>Goat Scream</source>
@@ -4003,8 +4003,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>Ви впевнені, що хочете скинути всі налаштування, щоб вони відповідали стандартним налаштуванням openpilot?</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Use FrogPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
-        <translation>&lt;b&gt;Використовуйте показники розробника FrogPilot під час наступної поїздки&lt;/b&gt;, щоб діагностувати проблеми та поліпшити звіти про помилки.</translation>
+        <source>&lt;b&gt;Use YozoraPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
+        <translation>&lt;b&gt;Використовуйте показники розробника YozoraPilot під час наступної поїздки&lt;/b&gt;, щоб діагностувати проблеми та поліпшити звіти про помилки.</translation>
     </message>
     <message>
         <source>&lt;b&gt;Reinstall the Panda firmware&lt;/b&gt; to fix connection or reliability issues.</source>
@@ -4288,8 +4288,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>&lt;b&gt;Вимкніть поздовжне керування openpilot&lt;/b&gt; і замість цього використовуйте стандартну систему ACC автомобіля.</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for General Motors vehicles.&lt;/b&gt;</source>
-        <translation>&lt;b&gt;Функції FrogPilot для автомобілів General Motors.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for General Motors vehicles.&lt;/b&gt;</source>
+        <translation>&lt;b&gt;Функції YozoraPilot для автомобілів General Motors.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>&lt;b&gt;Experimental GM tune by FrogsGoMoo&lt;/b&gt; that attempts to smoothen stopping and takeoff control. Use at your own risk!</source>
@@ -4308,8 +4308,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>&lt;b&gt;Примусове зупинення та рушання&lt;/b&gt; на автомобілі Chevy Volt 2017 року.</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
-        <translation>&lt;b&gt;Функції FrogPilot для авто Genesis, Hyundai та Kia.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
+        <translation>&lt;b&gt;Функції YozoraPilot для авто Genesis, Hyundai та Kia.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>&lt;b&gt;comma's new gas and brake control system&lt;/b&gt; that improves acceleration and braking but may cause issues on some Genesis/Hyundai/Kia vehicles.</source>
@@ -4320,8 +4320,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>&lt;b&gt;Хак для підвищення крутного моменту рульового управління з «Taco Bell Run» від comma 2022 року.&lt;/b&gt; Призначений для підвищення крутного моменту рульового управління на низьких швидкостях при поворотах вліво і вправо.</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
-        <translation>&lt;b&gt;Функції FrogPilot для авто Lexus і Toyota.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
+        <translation>&lt;b&gt;Функції YozoraPilot для авто Lexus і Toyota.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>&lt;b&gt;Automatically lock/unlock doors&lt;/b&gt; when shifting in and out of drive.</source>
@@ -4432,8 +4432,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">Налаштування Acura/Honda</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Функції FrogPilot для автомобілів Acura та Honda.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Функції YozoraPilot для автомобілів Acura та Honda.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Gentle Following</source>
@@ -4464,8 +4464,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">Налаштування Subaru</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Subaru vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Функції FrogPilot для автомобілів Subaru.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Subaru vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Функції YozoraPilot для автомобілів Subaru.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Stop and Go</source>
@@ -4480,7 +4480,7 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Mazda vehicles.&lt;/b&gt;</source>
+        <source>&lt;b&gt;YozoraPilot features for Mazda vehicles.&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5175,8 +5175,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>&lt;b&gt;Відобразити всі точки радара&lt;/b&gt;, згенеровані радаром автомобіля.</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Custom FrogPilot widgets&lt;/b&gt; for the driving screen.</source>
-        <translation>&lt;b&gt;Спеціальні віджети FrogPilot&lt;/b&gt; для екрану водіння.</translation>
+        <source>&lt;b&gt;Custom YozoraPilot widgets&lt;/b&gt; for the driving screen.</source>
+        <translation>&lt;b&gt;Спеціальні віджети YozoraPilot&lt;/b&gt; для екрану водіння.</translation>
     </message>
     <message>
         <source>&lt;b&gt;Color the driving path by planned acceleration and braking.&lt;/b&gt;</source>
@@ -5243,8 +5243,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>&lt;b&gt;Збільште розмір карти&lt;/b&gt; для зручнішого читання навігації.</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Official FrogPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
-        <translation>&lt;b&gt;Виберіть стиль карти&lt;/b&gt; для «Навігація на openpilot» (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Стандартний openpilot&lt;/b&gt;: Стиль comma.ai за замовчуванням&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Офіційний стиль карти FrogPilot&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Стандартний вигляд з акцентом на вулицях&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Акцент на особливостях місцевості та ландшафту&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Мінімалістична, світла тема&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Мінімалістична, темна тема&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Оптимізовано для денної навігації&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Оптимізовано для нічної навігації&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Тільки супутникові знімки&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Гібридні супутникові знімки з позначками вулиць&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Темна тема, що підкреслює дорожні умови&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Індивідуальний гібридний супутниковий вигляд</translation>
+        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Official YozoraPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
+        <translation>&lt;b&gt;Виберіть стиль карти&lt;/b&gt; для «Навігація на openpilot» (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Стандартний openpilot&lt;/b&gt;: Стиль comma.ai за замовчуванням&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Офіційний стиль карти YozoraPilot&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Стандартний вигляд з акцентом на вулицях&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Акцент на особливостях місцевості та ландшафту&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Мінімалістична, світла тема&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Мінімалістична, темна тема&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Оптимізовано для денної навігації&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Оптимізовано для нічної навігації&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Тільки супутникові знімки&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Гібридні супутникові знімки з позначками вулиць&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Темна тема, що підкреслює дорожні умови&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Індивідуальний гібридний супутниковий вигляд</translation>
     </message>
     <message>
         <source>&lt;b&gt;Display the road name at the bottom of the driving screen&lt;/b&gt; using data from "OpenStreetMap (OSM)".</source>
@@ -5283,7 +5283,7 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>Сховай мапу</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
+        <source>YozoraPilot</source>
         <translation>ЖабоПілот</translation>
     </message>
     <message>
@@ -5554,8 +5554,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>openpilot завис 💩</translation>
     </message>
     <message>
-        <source>Please post the "Error Log" in the FrogPilot Discord!</source>
-        <translation>Будь ласка, відправте «Журнал помилок» у FrogPilot Discord!</translation>
+        <source>Please post the "Error Log" in the YozoraPilot Discord!</source>
+        <translation>Будь ласка, відправте «Журнал помилок» у YozoraPilot Discord!</translation>
     </message>
     <message>
         <source>openpilot crashed</source>
@@ -5681,7 +5681,7 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>Вихід</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
+        <source>YozoraPilot</source>
         <translation>ЖабоПілот</translation>
     </message>
     <message>
@@ -5824,32 +5824,32 @@ This may take up to a minute.</source>
         <translation>Програма</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
+        <source>YozoraPilot</source>
         <translation>ЖабоПілот</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation>Ласкаво просимо до FrogPilot! Оскільки ви новачок в openpilot, було застосовано попереднє налаштування «Мінімальне», але ви можете змінити його в будь-який час за допомогою кнопки «Рівень налаштування»!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation>Ласкаво просимо до YozoraPilot! Оскільки ви новачок в openpilot, було застосовано попереднє налаштування «Мінімальне», але ви можете змінити його в будь-який час за допомогою кнопки «Рівень налаштування»!</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation>Ласкаво просимо до FrogPilot! Оскільки ви новачок у FrogPilot, було застосовано попереднє налаштування «Мінімальне», але ви можете змінити його в будь-який час за допомогою кнопки «Рівень налаштування»!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation>Ласкаво просимо до YozoraPilot! Оскільки ви новачок у YozoraPilot, було застосовано попереднє налаштування «Мінімальне», але ви можете змінити його в будь-який час за допомогою кнопки «Рівень налаштування»!</translation>
     </message>
     <message>
-        <source>Since you're fairly new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation>Оскільки ви ще не дуже добре знайомі з FrogPilot, було застосовано попереднє налаштування «Мінімальне», але ви можете змінити його в будь-який час за допомогою кнопки «Рівень налаштування»!</translation>
+        <source>Since you're fairly new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation>Оскільки ви ще не дуже добре знайомі з YozoraPilot, було застосовано попереднє налаштування «Мінімальне», але ви можете змінити його в будь-який час за допомогою кнопки «Рівень налаштування»!</translation>
     </message>
     <message>
         <source>Since you're experienced with openpilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
         <translation>Оскільки ви маєте досвід роботи з openpilot, було застосовано попереднє налаштування «Стандарт», але ви можете змінити його в будь-який час за допомогою кнопки «Рівень налаштування»!</translation>
     </message>
     <message>
-        <source>Since you're experienced with FrogPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation>Оскільки ви маєте досвід роботи з FrogPilot, було застосовано стандартне попереднє налаштування «Standard», але ви можете змінити його в будь-який час за допомогою кнопки «Tuning Level»!</translation>
+        <source>Since you're experienced with YozoraPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation>Оскільки ви маєте досвід роботи з YozoraPilot, було застосовано стандартне попереднє налаштування «Standard», але ви можете змінити його в будь-який час за допомогою кнопки «Tuning Level»!</translation>
     </message>
     <message>
-        <source>Since you're very experienced with FrogPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation>Оскільки ви маєте великий досвід роботи з FrogPilot, було застосовано попереднє налаштування «Advanced», але ви можете змінити його в будь-який час за допомогою кнопки «Tuning Level»!</translation>
+        <source>Since you're very experienced with YozoraPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation>Оскільки ви маєте великий досвід роботи з YozoraPilot, було застосовано попереднє налаштування «Advanced», але ви можете змінити його в будь-який час за допомогою кнопки «Tuning Level»!</translation>
     </message>
 </context>
 <context>
@@ -6084,12 +6084,12 @@ This may take up to a minute.</source>
         <translation>Поточна версія</translation>
     </message>
     <message>
-        <source>Automatically Update FrogPilot</source>
-        <translation>Автоматично оновлювати FrogPilot</translation>
+        <source>Automatically Update YozoraPilot</source>
+        <translation>Автоматично оновлювати YozoraPilot</translation>
     </message>
     <message>
-        <source>FrogPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
-        <translation>FrogPilot автоматично оновлюватиме себе та свої ресурси, коли ви не в дорозі та маєте активне підключення до Інтернету.</translation>
+        <source>YozoraPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
+        <translation>YozoraPilot автоматично оновлюватиме себе та свої ресурси, коли ви не в дорозі та маєте активне підключення до Інтернету.</translation>
     </message>
     <message>
         <source>Download</source>

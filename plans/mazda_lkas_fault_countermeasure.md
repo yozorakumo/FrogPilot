@@ -2,7 +2,7 @@
 
 ## 1. 問題の概要
 
-Mazda 2 DJ MTでFrogPilot/openpilotによるステアリング制御中にLKAS Faultが発生すると、車両を再起動して約1分待たないとFaultが消えない。これにより利便性が大きく損なわれる。
+Mazda 2 DJ MTでYozoraPilot/openpilotによるステアリング制御中にLKAS Faultが発生すると、車両を再起動して約1分待たないとFaultが消えない。これにより利便性が大きく損なわれる。
 
 ## 2. エラー伝播チェーンの詳細分析
 

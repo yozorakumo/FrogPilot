@@ -655,12 +655,12 @@
         <translation type="gpt-5-generated">已重命名！</translation>
     </message>
     <message>
-        <source>FrogPilot Backups</source>
-        <translation type="gpt-5-generated">FrogPilot 备份</translation>
+        <source>YozoraPilot Backups</source>
+        <translation type="gpt-5-generated">YozoraPilot 备份</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Create, delete, or restore FrogPilot backups.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;创建、删除或恢复 FrogPilot 备份。&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Create, delete, or restore YozoraPilot backups.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;创建、删除或恢复 YozoraPilot 备份。&lt;/b&gt;</translation>
     </message>
     <message>
         <source>BACKUP</source>
@@ -691,8 +691,8 @@
         <translation type="gpt-5-generated">备份已创建！</translation>
     </message>
     <message>
-        <source>Choose a FrogPilot backup to delete</source>
-        <translation type="gpt-5-generated">选择要删除的FrogPilot备份</translation>
+        <source>Choose a YozoraPilot backup to delete</source>
+        <translation type="gpt-5-generated">选择要删除的YozoraPilot备份</translation>
     </message>
     <message>
         <source>Delete this backup?</source>
@@ -743,12 +743,12 @@
         <translation type="gpt-5-generated">选择要删除的备份</translation>
     </message>
     <message>
-        <source>FrogPilot Stats</source>
-        <translation type="gpt-5-generated">FrogPilot 统计</translation>
+        <source>YozoraPilot Stats</source>
+        <translation type="gpt-5-generated">YozoraPilot 统计</translation>
     </message>
     <message>
-        <source>&lt;b&gt;View your collected FrogPilot stats.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;查看您收集的FrogPilot统计数据。&lt;/b&gt;</translation>
+        <source>&lt;b&gt;View your collected YozoraPilot stats.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;查看您收集的YozoraPilot统计数据。&lt;/b&gt;</translation>
     </message>
     <message>
         <source>RESET</source>
@@ -759,8 +759,8 @@
         <translation type="gpt-5-generated">查看</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset all of your FrogPilot stats?</source>
-        <translation type="gpt-5-generated">你确定要重置你的所有FrogPilot统计数据吗？</translation>
+        <source>Are you sure you want to reset all of your YozoraPilot stats?</source>
+        <translation type="gpt-5-generated">你确定要重置你的所有YozoraPilot统计数据吗？</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -3222,8 +3222,8 @@
         <translation type="gpt-5-generated">限速填充器</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, FrogPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">&lt;b&gt;在驾驶时自动收集缺失或不正确的限速信息&lt;/b&gt;，限速数据来源于您的仪表盘（如果支持）、Mapbox，以及“Navigate on openpilot”。&lt;br&gt;&lt;br&gt;当您停车并连接到 Wi‑Fi 时，FrogPilot 将自动处理这些数据为一个文件，用于位于“SpeedLimitFiller.frogpilot.download”的工具。&lt;br&gt;&lt;br&gt;您可以在“The Pond”的“Download Speed Limits”菜单中下载此文件。&lt;br&gt;&lt;br&gt;需要一步步的指南？请访问 FrogPilot Discord 中的 &lt;b&gt;#speed-limit-filler&lt;/b&gt;！</translation>
+        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, YozoraPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">&lt;b&gt;在驾驶时自动收集缺失或不正确的限速信息&lt;/b&gt;，限速数据来源于您的仪表盘（如果支持）、Mapbox，以及“Navigate on openpilot”。&lt;br&gt;&lt;br&gt;当您停车并连接到 Wi‑Fi 时，YozoraPilot 将自动处理这些数据为一个文件，用于位于“SpeedLimitFiller.frogpilot.download”的工具。&lt;br&gt;&lt;br&gt;您可以在“The Pond”的“Download Speed Limits”菜单中下载此文件。&lt;br&gt;&lt;br&gt;需要一步步的指南？请访问 YozoraPilot Discord 中的 &lt;b&gt;#speed-limit-filler&lt;/b&gt;！</translation>
     </message>
     <message>
         <source>Cancel the speed-limit update?</source>
@@ -3388,8 +3388,8 @@ It will reset in %1 hours and %2 minutes.</source>
         <translation type="gpt-5-generated">驾驶控制</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Fine-tune custom FrogPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;微调自定义的 FrogPilot 加速、制动和转向控制。&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Fine-tune custom YozoraPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;微调自定义的 YozoraPilot 加速、制动和转向控制。&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Navigation</source>
@@ -3404,8 +3404,8 @@ It will reset in %1 hours and %2 minutes.</source>
         <translation type="gpt-5-generated">系统设置</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep FrogPilot running smoothly.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;管理备份、设备设置、屏幕选项、存储和工具，以保持 FrogPilot 运行顺畅。&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep YozoraPilot running smoothly.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;管理备份、设备设置、屏幕选项、存储和工具，以保持 YozoraPilot 运行顺畅。&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Theme and Appearance</source>
@@ -3533,12 +3533,12 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">&lt;b&gt;设置需要紧急注意的最响亮警报的音量。&lt;/b&gt;&lt;br&gt;&lt;br&gt;示例包括：“立即解除 — 驾驶员分心”，“立即解除 — 驾驶员无反应”。</translation>
     </message>
     <message>
-        <source>FrogPilot Alerts</source>
-        <translation type="gpt-5-generated">FrogPilot 警报</translation>
+        <source>YozoraPilot Alerts</source>
+        <translation type="gpt-5-generated">YozoraPilot 警报</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Optional FrogPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;可选的 FrogPilot 警报&lt;/b&gt;，以更醒目的方式突出驾驶事件。</translation>
+        <source>&lt;b&gt;Optional YozoraPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;可选的 YozoraPilot 警报&lt;/b&gt;，以更醒目的方式突出驾驶事件。</translation>
     </message>
     <message>
         <source>Goat Scream</source>
@@ -3887,8 +3887,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">调试模式</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Use FrogPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;在下次驾驶中使用 FrogPilot 的开发者指标&lt;/b&gt;，以诊断问题并改进错误报告。</translation>
+        <source>&lt;b&gt;Use YozoraPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;在下次驾驶中使用 YozoraPilot 的开发者指标&lt;/b&gt;，以诊断问题并改进错误报告。</translation>
     </message>
     <message>
         <source>Flash Panda</source>
@@ -4232,8 +4232,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">通用汽车设置</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for General Motors vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;适用于通用汽车车辆的 FrogPilot 功能。&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for General Motors vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;适用于通用汽车车辆的 YozoraPilot 功能。&lt;/b&gt;</translation>
     </message>
     <message>
         <source>FrogsGoMoo's Experimental Tune</source>
@@ -4264,8 +4264,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">现代/起亚/捷尼赛思设置</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;适用于Genesis、现代和起亚车辆的FrogPilot功能。&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;适用于Genesis、现代和起亚车辆的YozoraPilot功能。&lt;/b&gt;</translation>
     </message>
     <message>
         <source>comma's New Longitudinal API</source>
@@ -4288,8 +4288,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">Toyota/Lexus 设置</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Lexus 和 Toyota 车辆的 FrogPilot 功能。&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Lexus 和 Toyota 车辆的 YozoraPilot 功能。&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Automatically Lock/Unlock Doors</source>
@@ -4432,8 +4432,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">斯巴鲁设置</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Subaru vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;适用于斯巴鲁车辆的FrogPilot功能。&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Subaru vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;适用于斯巴鲁车辆的YozoraPilot功能。&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Stop and Go</source>
@@ -4448,8 +4448,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">Acura/Honda 设置</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;适用于讴歌和本田车辆的FrogPilot功能。&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;适用于讴歌和本田车辆的YozoraPilot功能。&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Gentle Following</source>
@@ -4480,7 +4480,7 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Mazda vehicles.&lt;/b&gt;</source>
+        <source>&lt;b&gt;YozoraPilot features for Mazda vehicles.&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4847,8 +4847,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">驾驶屏幕小部件</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Custom FrogPilot widgets&lt;/b&gt; for the driving screen.</source>
-        <translation type="gpt-5-generated">用于驾驶屏幕的&lt;b&gt;自定义 FrogPilot 小部件&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Custom YozoraPilot widgets&lt;/b&gt; for the driving screen.</source>
+        <translation type="gpt-5-generated">用于驾驶屏幕的&lt;b&gt;自定义 YozoraPilot 小部件&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Acceleration Path</source>
@@ -4983,8 +4983,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">地图样式</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Official FrogPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
-        <translation type="gpt-5-generated">&lt;b&gt;为“Navigate on openpilot”（NOO）选择地图样式&lt;/b&gt;：&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;：默认 comma.ai 样式&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;：FrogPilot 官方地图样式&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;：标准街道视图&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;：突出户外与地形特征&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;：极简明亮主题&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;：极简深色主题&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;：为白天导航优化&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;：为夜间导航优化&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;：仅卫星影像&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;：卫星与街道标签的混合视图&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;：强调交通状况的深色主题&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;：个性化混合卫星视图</translation>
+        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Official YozoraPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
+        <translation type="gpt-5-generated">&lt;b&gt;为“Navigate on openpilot”（NOO）选择地图样式&lt;/b&gt;：&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;：默认 comma.ai 样式&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;：YozoraPilot 官方地图样式&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;：标准街道视图&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;：突出户外与地形特征&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;：极简明亮主题&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;：极简深色主题&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;：为白天导航优化&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;：为夜间导航优化&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;：仅卫星影像&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;：卫星与街道标签的混合视图&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;：强调交通状况的深色主题&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;：个性化混合卫星视图</translation>
     </message>
     <message>
         <source>Road Name</source>
@@ -5199,8 +5199,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">原厂 openpilot</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot</translation>
     </message>
     <message>
         <source>Mapbox Streets</source>
@@ -5572,8 +5572,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">openpilot 崩溃了</translation>
     </message>
     <message>
-        <source>Please post the "Error Log" in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">请在 FrogPilot Discord 发布“Error Log”！</translation>
+        <source>Please post the "Error Log" in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">请在 YozoraPilot Discord 发布“Error Log”！</translation>
     </message>
     <message>
         <source>openpilot crashed 💩</source>
@@ -5701,8 +5701,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">恢复</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot</translation>
     </message>
     <message>
         <source>0 MB</source>
@@ -5816,32 +5816,32 @@ This may take up to a minute.</source>
         <translation type="gpt-5-generated">← 返回</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">欢迎使用 FrogPilot！由于您是 openpilot 新手，已应用“最低限度”切换预设，但您可随时通过“调校级别”按钮进行更改！</translation>
+        <source>Welcome to YozoraPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">欢迎使用 YozoraPilot！由于您是 openpilot 新手，已应用“最低限度”切换预设，但您可随时通过“调校级别”按钮进行更改！</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">欢迎使用FrogPilot！由于您是首次使用FrogPilot，已应用“最简”切换预设，但您可随时通过“Tuning Level”按钮进行更改！</translation>
+        <source>Welcome to YozoraPilot! Since you're new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">欢迎使用YozoraPilot！由于您是首次使用YozoraPilot，已应用“最简”切换预设，但您可随时通过“Tuning Level”按钮进行更改！</translation>
     </message>
     <message>
-        <source>Since you're fairly new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">由于您对FrogPilot还不太熟悉，已应用“最简”切换预设，但您可随时通过“调校级别”按钮进行更改！</translation>
+        <source>Since you're fairly new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">由于您对YozoraPilot还不太熟悉，已应用“最简”切换预设，但您可随时通过“调校级别”按钮进行更改！</translation>
     </message>
     <message>
         <source>Since you're experienced with openpilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
         <translation type="gpt-5-generated">由于你熟悉 openpilot，已应用“标准”切换预设，但你可随时通过“调校级别”按钮进行更改！</translation>
     </message>
     <message>
-        <source>Since you're experienced with FrogPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">由于你熟悉FrogPilot，已应用“标准”切换预设，你可随时通过“调校级别”按钮进行更改！</translation>
+        <source>Since you're experienced with YozoraPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">由于你熟悉YozoraPilot，已应用“标准”切换预设，你可随时通过“调校级别”按钮进行更改！</translation>
     </message>
     <message>
-        <source>Since you're very experienced with FrogPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">由于你对FrogPilot非常熟悉，已应用“高级”切换预设，但你可以随时通过“Tuning Level”按钮进行更改！</translation>
+        <source>Since you're very experienced with YozoraPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">由于你对YozoraPilot非常熟悉，已应用“高级”切换预设，但你可以随时通过“Tuning Level”按钮进行更改！</translation>
     </message>
 </context>
 <context>
@@ -6140,12 +6140,12 @@ This may take up to a minute.</source>
         <translation type="gpt-5-generated">仅在车辆熄火或处于驻车档时下载更新。</translation>
     </message>
     <message>
-        <source>Automatically Update FrogPilot</source>
-        <translation type="gpt-5-generated">自动更新 FrogPilot</translation>
+        <source>Automatically Update YozoraPilot</source>
+        <translation type="gpt-5-generated">自动更新 YozoraPilot</translation>
     </message>
     <message>
-        <source>FrogPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
-        <translation type="gpt-5-generated">当你离线行驶且有有效的互联网连接时，FrogPilot 会自动更新自身及其资源。</translation>
+        <source>YozoraPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
+        <translation type="gpt-5-generated">当你离线行驶且有有效的互联网连接时，YozoraPilot 会自动更新自身及其资源。</translation>
     </message>
     <message>
         <source>This branch must be downloaded before switching. Would you like to download it now?</source>

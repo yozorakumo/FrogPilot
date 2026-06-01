@@ -140,9 +140,9 @@ STOCK_OPENPILOT_TOGGLES = (
 
 SOFTWARE_TOGGLES = (
   ToggleDefinition(
-    title=("Automatically Update FrogPilot"),
+    title=("Automatically Update YozoraPilot"),
     param="AutomaticUpdates",
-    description=("FrogPilot will automatically update itself and its assets when you are offroad with an active internet connection."),
+    description=("YozoraPilot will automatically update itself and its assets when you are offroad with an active internet connection."),
     tuning_level=0,
   ),
 )
@@ -256,9 +256,9 @@ ALERTS_AND_SOUNDS_TOGGLES = (
     value_map={0: "Muted", 101: "Auto"},
   ),
   ToggleDefinition(
-    title=("FrogPilot Alerts"),
+    title=("YozoraPilot Alerts"),
     param="CustomAlerts",
-    description=("<b>Optional FrogPilot alerts</b> that highlight driving events in a more noticeable way."),
+    description=("<b>Optional YozoraPilot alerts</b> that highlight driving events in a more noticeable way."),
     icon="../../../frogpilot/assets/toggle_icons/icon_green_light.png",
     toggle_type=ToggleType.MANAGE,
     tuning_level=0,
@@ -1820,9 +1820,9 @@ DEVICE_CONTROLS_TOGGLES = (
     tuning_level=1,
   ),
   ToggleDefinition(
-    title=("Automatically Backup FrogPilot"),
+    title=("Automatically Backup YozoraPilot"),
     param="AutomaticBackup",
-    description=("FrogPilot will automatically backup your configuration and models when you are offroad with an active internet connection."),
+    description=("YozoraPilot will automatically backup your configuration and models when you are offroad with an active internet connection."),
     icon="../../../frogpilot/assets/toggle_icons/icon_backup.png",
     parent_param="DeviceManagement",
     tuning_level=0,
@@ -2087,7 +2087,7 @@ VEHICLE_SETTINGS_TOGGLES = (
     param="GMToggles",
     button_labels=["MANAGE"],
     car_params=["gm_brand"],
-    description=("<b>FrogPilot features for General Motors vehicles.</b>"),
+    description=("<b>YozoraPilot features for General Motors vehicles.</b>"),
     toggle_type=ToggleType.BUTTON,
     tuning_level=0,
   ),
@@ -2120,7 +2120,7 @@ VEHICLE_SETTINGS_TOGGLES = (
     param="HKGToggles",
     button_labels=["MANAGE"],
     car_params=["hyundai_brand"],
-    description=("<b>FrogPilot features for Genesis, Hyundai, and Kia vehicles.</b>"),
+    description=("<b>YozoraPilot features for Genesis, Hyundai, and Kia vehicles.</b>"),
     toggle_type=ToggleType.BUTTON,
     tuning_level=0,
   ),
@@ -2146,7 +2146,7 @@ VEHICLE_SETTINGS_TOGGLES = (
     param="HondaToggles",
     button_labels=["MANAGE"],
     car_params=["honda_brand"],
-    description=("<b>FrogPilot features for Acura and Honda vehicles.</b>"),
+    description=("<b>YozoraPilot features for Acura and Honda vehicles.</b>"),
     toggle_type=ToggleType.BUTTON,
     tuning_level=0,
   ),
@@ -2179,7 +2179,7 @@ VEHICLE_SETTINGS_TOGGLES = (
     param="SubaruToggles",
     button_labels=["MANAGE"],
     car_params=["subaru_brand"],
-    description=("<b>FrogPilot features for Subaru vehicles.</b>"),
+    description=("<b>YozoraPilot features for Subaru vehicles.</b>"),
     toggle_type=ToggleType.BUTTON,
     tuning_level=0,
   ),
@@ -2196,7 +2196,7 @@ VEHICLE_SETTINGS_TOGGLES = (
     param="ToyotaToggles",
     button_labels=["MANAGE"],
     car_params=["toyota_brand"],
-    description=("<b>FrogPilot features for Lexus and Toyota vehicles.</b>"),
+    description=("<b>YozoraPilot features for Lexus and Toyota vehicles.</b>"),
     toggle_type=ToggleType.BUTTON,
     tuning_level=0,
   ),
@@ -2268,7 +2268,7 @@ VEHICLE_SETTINGS_TOGGLES = (
     param="MazdaToggles",
     button_labels=["MANAGE"],
     car_params=["mazda_brand"],
-    description=("<b>FrogPilot features for Mazda vehicles.</b>"),
+    description=("<b>YozoraPilot features for Mazda vehicles.</b>"),
     toggle_type=ToggleType.BUTTON,
     tuning_level=0,
   ),
@@ -2624,7 +2624,7 @@ APPEARANCE_TOGGLES = (
   ToggleDefinition(
     title=("Driving Screen Widgets"),
     param="CustomUI",
-    description=("<b>Custom FrogPilot widgets</b> for the driving screen."),
+    description=("<b>Custom YozoraPilot widgets</b> for the driving screen."),
     icon="../assets/icons/calibration.png",
     toggle_type=ToggleType.MANAGE,
     tuning_level=1,
@@ -2794,7 +2794,7 @@ APPEARANCE_TOGGLES = (
   ToggleDefinition(
     title=("Map Style"),
     param="MapStyle",
-    description=("<b>Select the map style</b> for \"Navigate on openpilot\" (NOO):<br><br><b>Stock openpilot</b>: Default comma.ai style<br><b>FrogPilot</b>: Official FrogPilot map style<br><b>Mapbox Streets</b>: Standard street-focused view<br><b>Mapbox Outdoors</b>: Emphasizes outdoor and terrain features<br><b>Mapbox Light</b>: Minimalist, bright theme<br><b>Mapbox Dark</b>: Minimalist, dark theme<br><b>Mapbox Navigation Day</b>: Optimized for daytime navigation<br><b>Mapbox Navigation Night</b>: Optimized for nighttime navigation<br><b>Mapbox Satellite</b>: Satellite imagery only<br><b>Mapbox Satellite Streets</b>: Hybrid satellite imagery with street labels<br><b>Mapbox Traffic Night</b>: Dark theme emphasizing traffic conditions<br><b>Mike's Personalized Style</b>: Customized hybrid satellite view"),
+    description=("<b>Select the map style</b> for \"Navigate on openpilot\" (NOO):<br><br><b>Stock openpilot</b>: Default comma.ai style<br><b>YozoraPilot</b>: Official YozoraPilot map style<br><b>Mapbox Streets</b>: Standard street-focused view<br><b>Mapbox Outdoors</b>: Emphasizes outdoor and terrain features<br><b>Mapbox Light</b>: Minimalist, bright theme<br><b>Mapbox Dark</b>: Minimalist, dark theme<br><b>Mapbox Navigation Day</b>: Optimized for daytime navigation<br><b>Mapbox Navigation Night</b>: Optimized for nighttime navigation<br><b>Mapbox Satellite</b>: Satellite imagery only<br><b>Mapbox Satellite Streets</b>: Hybrid satellite imagery with street labels<br><b>Mapbox Traffic Night</b>: Dark theme emphasizing traffic conditions<br><b>Mike's Personalized Style</b>: Customized hybrid satellite view"),
     parent_param="NavigationUI",
     tuning_level=2,
   ),
@@ -2935,7 +2935,7 @@ NAVIGATION_TOGGLES = (
   ToggleDefinition(
     title=("Speed Limit Filler"),
     param="SpeedLimitFiller",
-    description=("<b>Automatically collect missing or incorrect speed limits while you drive</b> using speeds limits sourced from your dashboard (if supported), Mapbox, and \"Navigate on openpilot\".<br><br>When you're parked and connected to Wi-Fi, FrogPilot will automatically processes this data into a file to be used with the tool located at \"SpeedLimitFiller.frogpilot.com\".<br><br>You can download this file from \"The Pond\" in the \"Download Speed Limits\" menu.<br><br>Need a step-by-step guide? Visit <b>#speed-limit-filler</b> in the FrogPilot Discord!"),
+    description=("<b>Automatically collect missing or incorrect speed limits while you drive</b> using speeds limits sourced from your dashboard (if supported), Mapbox, and \"Navigate on openpilot\".<br><br>When you're parked and connected to Wi-Fi, YozoraPilot will automatically processes this data into a file to be used with the tool located at \"SpeedLimitFiller.frogpilot.com\".<br><br>You can download this file from \"The Pond\" in the \"Download Speed Limits\" menu.<br><br>Need a step-by-step guide? Visit <b>#speed-limit-filler</b> in the YozoraPilot Discord!"),
     tuning_level=0,
   ),
 )
@@ -2945,7 +2945,7 @@ UTILITIES_TOGGLES = (
   ToggleDefinition(
     title=("Debug Mode"),
     param="DebugMode",
-    description=("<b>Use all of FrogPilot's developer metrics on your next drive</b> to diagnose issues and improve bug reports."),
+    description=("<b>Use all of YozoraPilot's developer metrics on your next drive</b> to diagnose issues and improve bug reports."),
     tuning_level=0,
   ),
   ToggleDefinition(

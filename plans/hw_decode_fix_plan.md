@@ -1,8 +1,8 @@
-# FrogPilot ログ録画再生 HWデコード/エンコード 問題点と修正案
+# YozoraPilot ログ録画再生 HWデコード/エンコード 問題点と修正案
 
 ## 概要
 
-FrogPilotのCANログ再生機能（`can_player.py` + `video_player`）におけるHEVC動画のHWデコードが無効化されており、CPUデコード（SW）ではSDM845上で実用的なフレームレートが出ない問題を解決するための修正案。
+YozoraPilotのCANログ再生機能（`can_player.py` + `video_player`）におけるHEVC動画のHWデコードが無効化されており、CPUデコード（SW）ではSDM845上で実用的なフレームレートが出ない問題を解決するための修正案。
 
 ---
 
@@ -56,7 +56,7 @@ v4l2_buffer v4l_buf = {
 };
 ```
 
-- FrogPilotの `v4l_decoder.cc` は `V4L2_MEMORY_USERPTR` を使用
+- YozoraPilotの `v4l_decoder.cc` は `V4L2_MEMORY_USERPTR` を使用
 - SDM845のVenusドライバーはCAPTURE側で `V4L2_MEMORY_DMABUF` を要求
 - `USERPTR` はOUTPUT側でのみ使用可能、CAPTURE側は `DMABUF` または `MMAP` が必要
 

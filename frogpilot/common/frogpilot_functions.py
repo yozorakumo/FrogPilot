@@ -96,7 +96,7 @@ def backup_frogpilot(build_metadata):
   if free > minimum_backup_size * maximum_backups:
     directory = Path(BASEDIR)
     destination_directory = backup_path / f"{build_metadata.channel}_{build_metadata.openpilot.git_commit_date[12:-16]}_auto"
-    backup_directory(directory, destination_directory, f"Successfully backed up FrogPilot to {destination_directory}", f"Failed to backup FrogPilot to {destination_directory}", minimum_backup_size, compressed=True)
+    backup_directory(directory, destination_directory, f"Successfully backed up YozoraPilot to {destination_directory}", f"Failed to backup YozoraPilot to {destination_directory}", minimum_backup_size, compressed=True)
 
 def backup_toggles(params_cache):
   params_backup = Params("/data/params_backup")

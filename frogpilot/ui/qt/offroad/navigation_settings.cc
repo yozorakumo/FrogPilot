@@ -149,10 +149,10 @@ FrogPilotNavigationPanel::FrogPilotNavigationPanel(FrogPilotSettingsWindow *pare
   updateSpeedLimitsToggle = new FrogPilotButtonControl("SpeedLimitFiller", tr("Speed Limit Filler"),
                                                     tr("<b>Automatically collect missing or incorrect speed limits while you drive</b> using speeds limits sourced from your dashboard (if supported), "
                                                        "Mapbox, and \"Navigate on openpilot\".<br><br>"
-                                                       "When you're parked and connected to Wi-Fi, FrogPilot will automatically processes this data into a file "
+                                                       "When you're parked and connected to Wi-Fi, YozoraPilot will automatically processes this data into a file "
                                                        "to be used with the tool located at \"SpeedLimitFiller.frogpilot.download\".<br><br>"
                                                        "You can download this file from \"The Pond\" in the \"Download Speed Limits\" menu.<br><br>"
-                                                       "Need a step-by-step guide? Visit <b>#speed-limit-filler</b> in the FrogPilot Discord!"),
+                                                       "Need a step-by-step guide? Visit <b>#speed-limit-filler</b> in the YozoraPilot Discord!"),
                                                        "", filterButtonNames);
   QObject::connect(updateSpeedLimitsToggle, &FrogPilotButtonControl::buttonClicked, [this](int id) {
     if (id == 0) {

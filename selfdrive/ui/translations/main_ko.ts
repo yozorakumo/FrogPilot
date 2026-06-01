@@ -655,12 +655,12 @@
         <translation type="gpt-5-generated">이름이 변경되었습니다!</translation>
     </message>
     <message>
-        <source>FrogPilot Backups</source>
-        <translation type="gpt-5-generated">FrogPilot 백업</translation>
+        <source>YozoraPilot Backups</source>
+        <translation type="gpt-5-generated">YozoraPilot 백업</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Create, delete, or restore FrogPilot backups.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;FrogPilot 백업을 생성, 삭제 또는 복원하십시오.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Create, delete, or restore YozoraPilot backups.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;YozoraPilot 백업을 생성, 삭제 또는 복원하십시오.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>BACKUP</source>
@@ -691,8 +691,8 @@
         <translation type="gpt-5-generated">백업이 생성되었습니다!</translation>
     </message>
     <message>
-        <source>Choose a FrogPilot backup to delete</source>
-        <translation type="gpt-5-generated">삭제할 FrogPilot 백업을 선택하세요</translation>
+        <source>Choose a YozoraPilot backup to delete</source>
+        <translation type="gpt-5-generated">삭제할 YozoraPilot 백업을 선택하세요</translation>
     </message>
     <message>
         <source>Delete this backup?</source>
@@ -743,12 +743,12 @@
         <translation type="gpt-5-generated">삭제할 백업을 선택하세요</translation>
     </message>
     <message>
-        <source>FrogPilot Stats</source>
-        <translation type="gpt-5-generated">FrogPilot 통계</translation>
+        <source>YozoraPilot Stats</source>
+        <translation type="gpt-5-generated">YozoraPilot 통계</translation>
     </message>
     <message>
-        <source>&lt;b&gt;View your collected FrogPilot stats.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;수집된 FrogPilot 통계를 확인하세요.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;View your collected YozoraPilot stats.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;수집된 YozoraPilot 통계를 확인하세요.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>RESET</source>
@@ -759,8 +759,8 @@
         <translation type="gpt-5-generated">보기</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset all of your FrogPilot stats?</source>
-        <translation type="gpt-5-generated">FrogPilot 통계를 모두 재설정하시겠습니까?</translation>
+        <source>Are you sure you want to reset all of your YozoraPilot stats?</source>
+        <translation type="gpt-5-generated">YozoraPilot 통계를 모두 재설정하시겠습니까?</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -3222,8 +3222,8 @@
         <translation type="gpt-5-generated">속도 제한 채우기</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, FrogPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">&lt;b&gt;운전 중 누락되었거나 잘못된 제한 속도를 자동으로 수집합니다&lt;/b&gt;. (차량 대시보드에서 지원되는 경우) 대시보드, Mapbox, 그리고 "Navigate on openpilot"에서 제공되는 제한 속도 데이터를 사용합니다.&lt;br&gt;&lt;br&gt;주차하고 Wi‑Fi에 연결되면, FrogPilot이 이 데이터를 자동으로 처리하여 "SpeedLimitFiller.frogpilot.download"에 있는 도구와 함께 사용할 파일로 변환합니다.&lt;br&gt;&lt;br&gt;이 파일은 FrogPilot Discord의 "The Pond"에서 "Download Speed Limits" 메뉴를 통해 다운로드할 수 있습니다.&lt;br&gt;&lt;br&gt;단계별 가이드가 필요하신가요? FrogPilot Discord의 &lt;b&gt;#speed-limit-filler&lt;/b&gt;를 방문하세요!</translation>
+        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, YozoraPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">&lt;b&gt;운전 중 누락되었거나 잘못된 제한 속도를 자동으로 수집합니다&lt;/b&gt;. (차량 대시보드에서 지원되는 경우) 대시보드, Mapbox, 그리고 "Navigate on openpilot"에서 제공되는 제한 속도 데이터를 사용합니다.&lt;br&gt;&lt;br&gt;주차하고 Wi‑Fi에 연결되면, YozoraPilot이 이 데이터를 자동으로 처리하여 "SpeedLimitFiller.frogpilot.download"에 있는 도구와 함께 사용할 파일로 변환합니다.&lt;br&gt;&lt;br&gt;이 파일은 YozoraPilot Discord의 "The Pond"에서 "Download Speed Limits" 메뉴를 통해 다운로드할 수 있습니다.&lt;br&gt;&lt;br&gt;단계별 가이드가 필요하신가요? YozoraPilot Discord의 &lt;b&gt;#speed-limit-filler&lt;/b&gt;를 방문하세요!</translation>
     </message>
     <message>
         <source>Cancel the speed-limit update?</source>
@@ -3387,8 +3387,8 @@ It will reset in %1 hours and %2 minutes.</source>
         <translation type="gpt-5-generated">주행 제어</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Fine-tune custom FrogPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;사용자 지정 FrogPilot 가속, 제동, 조향 제어를 세밀하게 조정하세요.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Fine-tune custom YozoraPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;사용자 지정 YozoraPilot 가속, 제동, 조향 제어를 세밀하게 조정하세요.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Navigation</source>
@@ -3403,8 +3403,8 @@ It will reset in %1 hours and %2 minutes.</source>
         <translation type="gpt-5-generated">시스템 설정</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep FrogPilot running smoothly.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;FrogPilot을 원활하게 실행하기 위해 백업, 기기 설정, 화면 옵션, 저장소, 도구를 관리하세요.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep YozoraPilot running smoothly.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;YozoraPilot을 원활하게 실행하기 위해 백업, 기기 설정, 화면 옵션, 저장소, 도구를 관리하세요.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Theme and Appearance</source>
@@ -3532,12 +3532,12 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">&lt;b&gt;긴급한 주의가 필요한 가장 큰 경고의 볼륨을 설정합니다.&lt;/b&gt;&lt;br&gt;&lt;br&gt;예: "즉시 해제 — 운전자 주의 산만", "즉시 해제 — 운전자 무반응"</translation>
     </message>
     <message>
-        <source>FrogPilot Alerts</source>
-        <translation type="gpt-5-generated">FrogPilot 경고</translation>
+        <source>YozoraPilot Alerts</source>
+        <translation type="gpt-5-generated">YozoraPilot 경고</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Optional FrogPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;선택적 FrogPilot 경고&lt;/b&gt;로 운전 이벤트를 더 눈에 띄게 강조합니다.</translation>
+        <source>&lt;b&gt;Optional YozoraPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;선택적 YozoraPilot 경고&lt;/b&gt;로 운전 이벤트를 더 눈에 띄게 강조합니다.</translation>
     </message>
     <message>
         <source>Goat Scream</source>
@@ -3886,8 +3886,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">디버그 모드</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Use FrogPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;다음 주행에서 FrogPilot의 개발자 지표를 사용하여&lt;/b&gt; 문제를 진단하고 버그 보고서를 개선하세요.</translation>
+        <source>&lt;b&gt;Use YozoraPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;다음 주행에서 YozoraPilot의 개발자 지표를 사용하여&lt;/b&gt; 문제를 진단하고 버그 보고서를 개선하세요.</translation>
     </message>
     <message>
         <source>Flash Panda</source>
@@ -4231,8 +4231,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">General Motors 설정</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for General Motors vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;General Motors 차량을 위한 FrogPilot 기능.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for General Motors vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;General Motors 차량을 위한 YozoraPilot 기능.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>FrogsGoMoo's Experimental Tune</source>
@@ -4263,8 +4263,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">현대/기아/제네시스 설정</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Genesis, Hyundai, Kia 차량을 위한 FrogPilot 기능.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Genesis, Hyundai, Kia 차량을 위한 YozoraPilot 기능.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>comma's New Longitudinal API</source>
@@ -4287,8 +4287,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">Toyota/Lexus 설정</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Lexus 및 Toyota 차량용 FrogPilot 기능.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Lexus 및 Toyota 차량용 YozoraPilot 기능.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Automatically Lock/Unlock Doors</source>
@@ -4431,8 +4431,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">Subaru 설정</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Subaru vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Subaru 차량용 FrogPilot 기능.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Subaru vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Subaru 차량용 YozoraPilot 기능.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Stop and Go</source>
@@ -4447,8 +4447,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">Acura/Honda 설정</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Acura 및 Honda 차량을 위한 FrogPilot 기능.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Acura 및 Honda 차량을 위한 YozoraPilot 기능.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Gentle Following</source>
@@ -4479,7 +4479,7 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Mazda vehicles.&lt;/b&gt;</source>
+        <source>&lt;b&gt;YozoraPilot features for Mazda vehicles.&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4846,8 +4846,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">주행 화면 위젯</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Custom FrogPilot widgets&lt;/b&gt; for the driving screen.</source>
-        <translation type="gpt-5-generated">운전 화면을 위한 &lt;b&gt;맞춤 FrogPilot 위젯&lt;/b&gt;.</translation>
+        <source>&lt;b&gt;Custom YozoraPilot widgets&lt;/b&gt; for the driving screen.</source>
+        <translation type="gpt-5-generated">운전 화면을 위한 &lt;b&gt;맞춤 YozoraPilot 위젯&lt;/b&gt;.</translation>
     </message>
     <message>
         <source>Acceleration Path</source>
@@ -4982,8 +4982,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation>맵 스따일</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Official FrogPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
-        <translation type="gpt-5-generated">&lt;b&gt;"Navigate on openpilot"(NOO)용 지도 스타일을 선택하세요&lt;/b&gt;:&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: 기본 comma.ai 스타일&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: 공식 FrogPilot 지도 스타일&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: 표준 도로 중심 뷰&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: 야외 및 지형 특징 강조&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: 미니멀하고 밝은 테마&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: 미니멀하고 어두운 테마&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: 주간 내비게이션에 최적화&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: 야간 내비게이션에 최적화&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: 위성 이미지 전용&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: 도로 라벨이 포함된 하이브리드 위성 이미지&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: 교통 상황을 강조한 다크 테마&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: 맞춤 하이브리드 위성 뷰</translation>
+        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Official YozoraPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
+        <translation type="gpt-5-generated">&lt;b&gt;"Navigate on openpilot"(NOO)용 지도 스타일을 선택하세요&lt;/b&gt;:&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: 기본 comma.ai 스타일&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: 공식 YozoraPilot 지도 스타일&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: 표준 도로 중심 뷰&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: 야외 및 지형 특징 강조&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: 미니멀하고 밝은 테마&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: 미니멀하고 어두운 테마&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: 주간 내비게이션에 최적화&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: 야간 내비게이션에 최적화&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: 위성 이미지 전용&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: 도로 라벨이 포함된 하이브리드 위성 이미지&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: 교통 상황을 강조한 다크 테마&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: 맞춤 하이브리드 위성 뷰</translation>
     </message>
     <message>
         <source>Road Name</source>
@@ -5198,7 +5198,7 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">기본 openpilot</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
+        <source>YozoraPilot</source>
         <translation>개구리파일럿</translation>
     </message>
     <message>
@@ -5571,8 +5571,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">openpilot가 중단되었습니다</translation>
     </message>
     <message>
-        <source>Please post the "Error Log" in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">FrogPilot Discord에 "Error Log"를 게시해 주세요!</translation>
+        <source>Please post the "Error Log" in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">YozoraPilot Discord에 "Error Log"를 게시해 주세요!</translation>
     </message>
     <message>
         <source>openpilot crashed 💩</source>
@@ -5700,7 +5700,7 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">복원</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
+        <source>YozoraPilot</source>
         <translation>개구리파일럿</translation>
     </message>
     <message>
@@ -5815,32 +5815,32 @@ This may take up to a minute.</source>
         <translation>뒤로</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
+        <source>YozoraPilot</source>
         <translation>개구리파일럿</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">FrogPilot에 오신 것을 환영합니다! openpilot이 처음이므로 “Minimal” 토글 프리셋이 적용되었습니다. 언제든지 “Tuning Level” 버튼을 통해 변경할 수 있습니다!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">YozoraPilot에 오신 것을 환영합니다! openpilot이 처음이므로 “Minimal” 토글 프리셋이 적용되었습니다. 언제든지 “Tuning Level” 버튼을 통해 변경할 수 있습니다!</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">FrogPilot에 오신 것을 환영합니다! FrogPilot이 처음이므로 "Minimal" 토글 프리셋이 적용되었습니다. 필요하면 언제든지 "Tuning Level" 버튼을 통해 변경할 수 있습니다!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">YozoraPilot에 오신 것을 환영합니다! YozoraPilot이 처음이므로 "Minimal" 토글 프리셋이 적용되었습니다. 필요하면 언제든지 "Tuning Level" 버튼을 통해 변경할 수 있습니다!</translation>
     </message>
     <message>
-        <source>Since you're fairly new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">FrogPilot에 아직 익숙하지 않으므로 “Minimal” 토글 프리셋이 적용되었습니다. 언제든지 “Tuning Level” 버튼을 통해 변경할 수 있습니다!</translation>
+        <source>Since you're fairly new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">YozoraPilot에 아직 익숙하지 않으므로 “Minimal” 토글 프리셋이 적용되었습니다. 언제든지 “Tuning Level” 버튼을 통해 변경할 수 있습니다!</translation>
     </message>
     <message>
         <source>Since you're experienced with openpilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
         <translation type="gpt-5-generated">openpilot에 익숙하므로 "표준" 토글 프리셋이 적용되었습니다. 언제든지 "튜닝 수준" 버튼을 통해 변경할 수 있습니다!</translation>
     </message>
     <message>
-        <source>Since you're experienced with FrogPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">FrogPilot에 익숙하므로 "Standard" 토글 프리셋이 적용되었습니다. 언제든지 "Tuning Level" 버튼을 통해 변경할 수 있습니다!</translation>
+        <source>Since you're experienced with YozoraPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">YozoraPilot에 익숙하므로 "Standard" 토글 프리셋이 적용되었습니다. 언제든지 "Tuning Level" 버튼을 통해 변경할 수 있습니다!</translation>
     </message>
     <message>
-        <source>Since you're very experienced with FrogPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">FrogPilot에 익숙하신 것으로 판단되어 “고급” 토글 프리셋이 적용되었습니다. 언제든지 “튜닝 수준” 버튼을 통해 변경할 수 있습니다!</translation>
+        <source>Since you're very experienced with YozoraPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">YozoraPilot에 익숙하신 것으로 판단되어 “고급” 토글 프리셋이 적용되었습니다. 언제든지 “튜닝 수준” 버튼을 통해 변경할 수 있습니다!</translation>
     </message>
 </context>
 <context>
@@ -6139,12 +6139,12 @@ This may take up to a minute.</source>
         <translation>업데이트는 차량이 꺼져 있거나 주차되어 있을 때만 다운로드됩니다.</translation>
     </message>
     <message>
-        <source>Automatically Update FrogPilot</source>
+        <source>Automatically Update YozoraPilot</source>
         <translation>개구리파일럿 자동 업데이트</translation>
     </message>
     <message>
-        <source>FrogPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
-        <translation type="gpt-5-generated">FrogPilot은 오프로드 상태이며 활성 인터넷 연결이 있을 때 자체와 에셋을 자동으로 업데이트합니다.</translation>
+        <source>YozoraPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
+        <translation type="gpt-5-generated">YozoraPilot은 오프로드 상태이며 활성 인터넷 연결이 있을 때 자체와 에셋을 자동으로 업데이트합니다.</translation>
     </message>
     <message>
         <source>This branch must be downloaded before switching. Would you like to download it now?</source>

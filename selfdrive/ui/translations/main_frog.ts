@@ -655,12 +655,12 @@
         <translation type="gpt-5-generated">Ribbit! Name changed! Croak!</translation>
     </message>
     <message>
-        <source>FrogPilot Backups</source>
+        <source>YozoraPilot Backups</source>
         <translation type="gpt-5-generated">RibbitPilot Backups, croak!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Create, delete, or restore FrogPilot backups.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Make, croak-away, or revive FrogPilot backups.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Create, delete, or restore YozoraPilot backups.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Make, croak-away, or revive YozoraPilot backups.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>BACKUP</source>
@@ -691,8 +691,8 @@
         <translation type="gpt-5-generated">Ribbit! Backup spawned! Croak!</translation>
     </message>
     <message>
-        <source>Choose a FrogPilot backup to delete</source>
-        <translation type="gpt-5-generated">Ribbit! Pick a FrogPilot backup to croak-delete</translation>
+        <source>Choose a YozoraPilot backup to delete</source>
+        <translation type="gpt-5-generated">Ribbit! Pick a YozoraPilot backup to croak-delete</translation>
     </message>
     <message>
         <source>Delete this backup?</source>
@@ -743,12 +743,12 @@
         <translation type="gpt-5-generated">Ribbit! Choose a backup to delete, croak.</translation>
     </message>
     <message>
-        <source>FrogPilot Stats</source>
+        <source>YozoraPilot Stats</source>
         <translation type="gpt-5-generated">RibbitPilot Stats</translation>
     </message>
     <message>
-        <source>&lt;b&gt;View your collected FrogPilot stats.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Peek at your gathered FrogPilot stats, croak.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;View your collected YozoraPilot stats.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Peek at your gathered YozoraPilot stats, croak.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>RESET</source>
@@ -759,8 +759,8 @@
         <translation type="gpt-5-generated">Ribbit VIEW!</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset all of your FrogPilot stats?</source>
-        <translation type="gpt-5-generated">Ribbit! You sure you want to reset all your FrogPilot stats, croak?</translation>
+        <source>Are you sure you want to reset all of your YozoraPilot stats?</source>
+        <translation type="gpt-5-generated">Ribbit! You sure you want to reset all your YozoraPilot stats, croak?</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -3222,8 +3222,8 @@
         <translation type="gpt-5-generated">Ribbit Speed Limit Filler, croak!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, FrogPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Auto-snatch missing or wrong speed limits as you drive&lt;/b&gt; using speed limits from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When parked and on Wi‑Fi, FrogPilot will croak-croak process this data into a file for the tool at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;Hop to download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a lily-pad-by-lily-pad guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the FrogPilot Discord!</translation>
+        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, YozoraPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Auto-snatch missing or wrong speed limits as you drive&lt;/b&gt; using speed limits from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When parked and on Wi‑Fi, YozoraPilot will croak-croak process this data into a file for the tool at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;Hop to download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a lily-pad-by-lily-pad guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the YozoraPilot Discord!</translation>
     </message>
     <message>
         <source>Cancel the speed-limit update?</source>
@@ -3388,8 +3388,8 @@ It’ll reset in %1 hours and %2 minutes.</translation>
         <translation type="gpt-5-generated">Ribbit! Driving Controls, croak!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Fine-tune custom FrogPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Fine-tune your FrogPilot hops: acceleration, braking, and steering croak-control.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Fine-tune custom YozoraPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Fine-tune your YozoraPilot hops: acceleration, braking, and steering croak-control.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Navigation</source>
@@ -3404,8 +3404,8 @@ It’ll reset in %1 hours and %2 minutes.</translation>
         <translation type="gpt-5-generated">Ribbit System Settings croak</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep FrogPilot running smoothly.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Manage backups, device settings, screen options, storage, and tools to keep FrogPilot hopping smooth, croak.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep YozoraPilot running smoothly.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Manage backups, device settings, screen options, storage, and tools to keep YozoraPilot hopping smooth, croak.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Theme and Appearance</source>
@@ -3533,12 +3533,12 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Set the volume for the loudest croaks that need urgent attention.&lt;/b&gt;&lt;br&gt;&lt;br&gt;Examples include: "DISENGAGE IMMEDIATELY — Driver Distracted", "DISENGAGE IMMEDIATELY — Driver Unresponsive".</translation>
     </message>
     <message>
-        <source>FrogPilot Alerts</source>
+        <source>YozoraPilot Alerts</source>
         <translation type="gpt-5-generated">RibbitPilot Alerts</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Optional FrogPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Optional FrogPilot alerts&lt;/b&gt; that croak about driving events in a more splashy, ribbit-noticeable way.</translation>
+        <source>&lt;b&gt;Optional YozoraPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Optional YozoraPilot alerts&lt;/b&gt; that croak about driving events in a more splashy, ribbit-noticeable way.</translation>
     </message>
     <message>
         <source>Goat Scream</source>
@@ -3887,8 +3887,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit Debug Mode, croak!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Use FrogPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Use FrogPilot’s dev metrics next drive&lt;/b&gt; to sniff issues and leapfrog bug reports, croak!</translation>
+        <source>&lt;b&gt;Use YozoraPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Use YozoraPilot’s dev metrics next drive&lt;/b&gt; to sniff issues and leapfrog bug reports, croak!</translation>
     </message>
     <message>
         <source>Flash Panda</source>
@@ -4232,8 +4232,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit! General Motors Settings croak.</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for General Motors vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! FrogPilot features for General Motors vehicles, croak.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for General Motors vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! YozoraPilot features for General Motors vehicles, croak.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>FrogsGoMoo's Experimental Tune</source>
@@ -4264,8 +4264,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit! Hyundai/Kia/Genesis Settings, croak</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! FrogPilot tricks for Genesis, Hyundai, and Kia rides.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! YozoraPilot tricks for Genesis, Hyundai, and Kia rides.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>comma's New Longitudinal API</source>
@@ -4288,8 +4288,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit! Toyota/Lexus Settings croak</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! FrogPilot tricks for Lexus and Toyota rides, croak.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! YozoraPilot tricks for Lexus and Toyota rides, croak.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Automatically Lock/Unlock Doors</source>
@@ -4432,8 +4432,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit! Subaru Settings, croak!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Subaru vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! FrogPilot goodies for Subaru rides, croak!&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Subaru vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! YozoraPilot goodies for Subaru rides, croak!&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Stop and Go</source>
@@ -4448,8 +4448,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit! Acura/Honda Settings Croak!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! FrogPilot tricks for Acura and Honda rides, croak.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! YozoraPilot tricks for Acura and Honda rides, croak.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Gentle Following</source>
@@ -4480,7 +4480,7 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Mazda vehicles.&lt;/b&gt;</source>
+        <source>&lt;b&gt;YozoraPilot features for Mazda vehicles.&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4847,8 +4847,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit Road Hoppin’ Widgets</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Custom FrogPilot widgets&lt;/b&gt; for the driving screen.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Custom FrogPilot widgets&lt;/b&gt; for the driving pond, ribbit!</translation>
+        <source>&lt;b&gt;Custom YozoraPilot widgets&lt;/b&gt; for the driving screen.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Custom YozoraPilot widgets&lt;/b&gt; for the driving pond, ribbit!</translation>
     </message>
     <message>
         <source>Acceleration Path</source>
@@ -4983,8 +4983,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit Map Style croak</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Official FrogPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Pick the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai lily-pad look, croak&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Official FrogPilot swampy style, ribbit&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street view, hop-hop&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Terrain and trails, croak&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimal, bright pond sheen&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimal, night-swamp shade&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Tuned for sunny hops&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Tuned for moonlit hops&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Sky eyes only, ribbit&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Sky eyes with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark pond showing traffic ripples&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Custom hybrid sky-view, croak</translation>
+        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Official YozoraPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Ribbit! Pick the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai lily-pad look, croak&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Official YozoraPilot swampy style, ribbit&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street view, hop-hop&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Terrain and trails, croak&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimal, bright pond sheen&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimal, night-swamp shade&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Tuned for sunny hops&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Tuned for moonlit hops&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Sky eyes only, ribbit&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Sky eyes with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark pond showing traffic ripples&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Custom hybrid sky-view, croak</translation>
     </message>
     <message>
         <source>Road Name</source>
@@ -5199,8 +5199,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit! Stock openpilot, croak!</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot Ribbit!</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot Ribbit!</translation>
     </message>
     <message>
         <source>Mapbox Streets</source>
@@ -5553,8 +5553,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit! openpilot croaked and crashed. Croak!</translation>
     </message>
     <message>
-        <source>Please post the "Error Log" in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">Ribbit! Please post the "Error Log" in the FrogPilot Discord, croak!</translation>
+        <source>Please post the "Error Log" in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">Ribbit! Please post the "Error Log" in the YozoraPilot Discord, croak!</translation>
     </message>
     <message>
         <source>openpilot Unavailable</source>
@@ -5680,8 +5680,8 @@ Developer - Highly customizable settings for seasoned swamp pros</translation>
         <translation type="gpt-5-generated">Ribbit Exit</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot ribbit!</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot ribbit!</translation>
     </message>
     <message>
         <source>now</source>
@@ -5820,32 +5820,32 @@ This may take up to a minute, croak.</translation>
         <translation type="gpt-5-generated">Ribbitware</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot ribbit</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot ribbit</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">Ribbit! Welcome to FrogPilot! Since you’re new to openpilot, the "Minimal" toggle preset is on—croak! Change it anytime via the "Tuning Level" button!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">Ribbit! Welcome to YozoraPilot! Since you’re new to openpilot, the "Minimal" toggle preset is on—croak! Change it anytime via the "Tuning Level" button!</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">Ribbit! Welcome to FrogPilot! Since you’re new to FrogPilot, the “Minimal” toggle preset has been applied—croak! But you can change it anytime via the “Tuning Level” button!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">Ribbit! Welcome to YozoraPilot! Since you’re new to YozoraPilot, the “Minimal” toggle preset has been applied—croak! But you can change it anytime via the “Tuning Level” button!</translation>
     </message>
     <message>
-        <source>Since you're fairly new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">Ribbit! Since you’re new to FrogPilot, the "Minimal" toggle preset is on—but you can hop and change it anytime via the "Tuning Level" button! Croak!</translation>
+        <source>Since you're fairly new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">Ribbit! Since you’re new to YozoraPilot, the "Minimal" toggle preset is on—but you can hop and change it anytime via the "Tuning Level" button! Croak!</translation>
     </message>
     <message>
         <source>Since you're experienced with openpilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
         <translation type="gpt-5-generated">Ribbit! Since you’re savvy with openpilot, the "Standard" toggle preset is on, but you can hop and change it anytime via the "Tuning Level" button! Croak!</translation>
     </message>
     <message>
-        <source>Since you're experienced with FrogPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">Ribbit! Since you’re versed in FrogPilot, the "Standard" toggle preset is set—croak! Change it anytime with the "Tuning Level" button!</translation>
+        <source>Since you're experienced with YozoraPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">Ribbit! Since you’re versed in YozoraPilot, the "Standard" toggle preset is set—croak! Change it anytime with the "Tuning Level" button!</translation>
     </message>
     <message>
-        <source>Since you're very experienced with FrogPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">Ribbit! Since you’re savvy with FrogPilot, the “Advanced” toggle preset is on—croak! Change it anytime via the “Tuning Level” button!</translation>
+        <source>Since you're very experienced with YozoraPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">Ribbit! Since you’re savvy with YozoraPilot, the “Advanced” toggle preset is on—croak! Change it anytime via the “Tuning Level” button!</translation>
     </message>
 </context>
 <context>
@@ -6080,12 +6080,12 @@ This may take up to a minute, croak.</translation>
         <translation type="gpt-5-generated">Ribbit! Current Version croak.</translation>
     </message>
     <message>
-        <source>Automatically Update FrogPilot</source>
-        <translation type="gpt-5-generated">Ribbit! Auto-update FrogPilot, croak!</translation>
+        <source>Automatically Update YozoraPilot</source>
+        <translation type="gpt-5-generated">Ribbit! Auto-update YozoraPilot, croak!</translation>
     </message>
     <message>
-        <source>FrogPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
-        <translation type="gpt-5-generated">Ribbit! FrogPilot auto-updates itself and its assets when you’re offroad with an active internet connection. Croak!</translation>
+        <source>YozoraPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
+        <translation type="gpt-5-generated">Ribbit! YozoraPilot auto-updates itself and its assets when you’re offroad with an active internet connection. Croak!</translation>
     </message>
     <message>
         <source>Download</source>

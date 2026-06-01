@@ -655,12 +655,12 @@
         <translation type="gpt-5-generated">Quack-named!</translation>
     </message>
     <message>
-        <source>FrogPilot Backups</source>
+        <source>YozoraPilot Backups</source>
         <translation type="gpt-5-generated">QuackPilot Backups, quack!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Create, delete, or restore FrogPilot backups.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! Create, delete, or restore FrogPilot backups, waddle-waddle.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Create, delete, or restore YozoraPilot backups.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! Create, delete, or restore YozoraPilot backups, waddle-waddle.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>BACKUP</source>
@@ -691,8 +691,8 @@
         <translation type="gpt-5-generated">Quack! Backup hatched!</translation>
     </message>
     <message>
-        <source>Choose a FrogPilot backup to delete</source>
-        <translation type="gpt-5-generated">Quack! Pick a FrogPilot backup to delete, waddle-waddle!</translation>
+        <source>Choose a YozoraPilot backup to delete</source>
+        <translation type="gpt-5-generated">Quack! Pick a YozoraPilot backup to delete, waddle-waddle!</translation>
     </message>
     <message>
         <source>Delete this backup?</source>
@@ -743,12 +743,12 @@
         <translation type="gpt-5-generated">Quack! Pick a backup to delete, waddle!</translation>
     </message>
     <message>
-        <source>FrogPilot Stats</source>
+        <source>YozoraPilot Stats</source>
         <translation type="gpt-5-generated">QuackPilot Stats, quack!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;View your collected FrogPilot stats.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! Peek at your snazzy FrogPilot stats, waddle-waddle.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;View your collected YozoraPilot stats.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! Peek at your snazzy YozoraPilot stats, waddle-waddle.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>RESET</source>
@@ -759,8 +759,8 @@
         <translation type="gpt-5-generated">Quack VIEW! Waddle-waddle!</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset all of your FrogPilot stats?</source>
-        <translation type="gpt-5-generated">Quack! Are you sure you want to reset all your FrogPilot stats, waddle-waddle?</translation>
+        <source>Are you sure you want to reset all of your YozoraPilot stats?</source>
+        <translation type="gpt-5-generated">Quack! Are you sure you want to reset all your YozoraPilot stats, waddle-waddle?</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -3224,8 +3224,8 @@
         <translation type="gpt-5-generated">Quack-Speed Limit Filler, waddle!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, FrogPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! Auto-snatch missing or wonky speed limits while you drive&lt;/b&gt;, using speed limits from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you’re parked and on Wi‑Fi, FrogPilot will quack-quack process this data into a file for the tool at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can snag this file from "The Pond" in the "Download Speed Limits" menu. Waddle on!&lt;br&gt;&lt;br&gt;Need a step-by-step? Paddle to &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the FrogPilot Discord!</translation>
+        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, YozoraPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! Auto-snatch missing or wonky speed limits while you drive&lt;/b&gt;, using speed limits from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you’re parked and on Wi‑Fi, YozoraPilot will quack-quack process this data into a file for the tool at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can snag this file from "The Pond" in the "Download Speed Limits" menu. Waddle on!&lt;br&gt;&lt;br&gt;Need a step-by-step? Paddle to &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the YozoraPilot Discord!</translation>
     </message>
     <message>
         <source>Cancel the speed-limit update?</source>
@@ -3390,8 +3390,8 @@ Waddle back later—resets in %1 hours and %2 minutes.</translation>
         <translation type="gpt-5-generated">Driving Quack-trols</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Fine-tune custom FrogPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! Fine-tune your FrogPilot zoom-zoom, stop-stop, and swishy steering controls, waddle waddle.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Fine-tune custom YozoraPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! Fine-tune your YozoraPilot zoom-zoom, stop-stop, and swishy steering controls, waddle waddle.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Navigation</source>
@@ -3406,8 +3406,8 @@ Waddle back later—resets in %1 hours and %2 minutes.</translation>
         <translation type="gpt-5-generated">Quack! System Settings, waddle-waddle!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep FrogPilot running smoothly.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! Manage backups, device settings, screen options, storage, and tools to keep FrogPilot waddling smoothly.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep YozoraPilot running smoothly.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! Manage backups, device settings, screen options, storage, and tools to keep YozoraPilot waddling smoothly.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Theme and Appearance</source>
@@ -3535,12 +3535,12 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">&lt;b&gt;Quack! Set the boom for the loudest honks that need urgent pecks of attention.&lt;/b&gt;&lt;br&gt;&lt;br&gt;Examples include: "DISENGAGE IMMEDIATELY — Driver Distracted", "DISENGAGE IMMEDIATELY — Driver Unresponsive".</translation>
     </message>
     <message>
-        <source>FrogPilot Alerts</source>
+        <source>YozoraPilot Alerts</source>
         <translation type="gpt-5-generated">QuackPilot Alerts, quack!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Optional FrogPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Optional FrogPilot alerts&lt;/b&gt; that quack-highlight driving events in a more noticeable way.</translation>
+        <source>&lt;b&gt;Optional YozoraPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Optional YozoraPilot alerts&lt;/b&gt; that quack-highlight driving events in a more noticeable way.</translation>
     </message>
     <message>
         <source>Goat Scream</source>
@@ -3889,8 +3889,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack Debug Mode, waddle!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Use FrogPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! Use FrogPilot's developer metrics on your next drive&lt;/b&gt; to sniff out quirks and quack up better bug reports.</translation>
+        <source>&lt;b&gt;Use YozoraPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! Use YozoraPilot's developer metrics on your next drive&lt;/b&gt; to sniff out quirks and quack up better bug reports.</translation>
     </message>
     <message>
         <source>Flash Panda</source>
@@ -4234,8 +4234,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack! General Motors Settings, waddling into view!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for General Motors vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! FrogPilot goodies for General Motors rides, waddlity-waddle.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for General Motors vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! YozoraPilot goodies for General Motors rides, waddlity-waddle.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>FrogsGoMoo's Experimental Tune</source>
@@ -4266,8 +4266,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack! Hyundai/Kia/Genesis Settings—waddle in!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! FrogPilot goodies for Genesis, Hyundai, and Kia—waddle on in!&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! YozoraPilot goodies for Genesis, Hyundai, and Kia—waddle on in!&lt;/b&gt;</translation>
     </message>
     <message>
         <source>comma's New Longitudinal API</source>
@@ -4290,8 +4290,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack-quack! Toyota/Lexus Settings, waddle on in!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! FrogPilot goodies for Lexus and Toyota rides, waddles!&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! YozoraPilot goodies for Lexus and Toyota rides, waddles!&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Automatically Lock/Unlock Doors</source>
@@ -4434,8 +4434,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack-quack Subaru Settings, waddle on!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Subaru vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! FrogPilot goodies for Subaru rides, waddle-waddle.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Subaru vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! YozoraPilot goodies for Subaru rides, waddle-waddle.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Stop and Go</source>
@@ -4450,8 +4450,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack! Acura/Honda Settings, waddle-waddle!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! FrogPilot goodies for Acura and Honda rides, waddle-waddle.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! YozoraPilot goodies for Acura and Honda rides, waddle-waddle.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Gentle Following</source>
@@ -4482,7 +4482,7 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Mazda vehicles.&lt;/b&gt;</source>
+        <source>&lt;b&gt;YozoraPilot features for Mazda vehicles.&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4849,8 +4849,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack! Driving Screen Widgets, waddle-waddle!</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Custom FrogPilot widgets&lt;/b&gt; for the driving screen.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Custom FrogPilot widgets&lt;/b&gt; on the driving screen, quack! Waddle on in!</translation>
+        <source>&lt;b&gt;Custom YozoraPilot widgets&lt;/b&gt; for the driving screen.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Custom YozoraPilot widgets&lt;/b&gt; on the driving screen, quack! Waddle on in!</translation>
     </message>
     <message>
         <source>Acceleration Path</source>
@@ -4985,8 +4985,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack Map Style</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Official FrogPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
-        <translation type="gpt-5-generated">&lt;b&gt;Quack! Pick a map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai vibe, quack&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Official FrogPilot map style, waddle&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view, quack-quack&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Highlights outdoor and terrain, waddle on&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme, quack bright&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme, night-quack&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Tuned for daytime navigation, waddles in sun&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Tuned for nighttime navigation, moon-quack&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only, sky-quack&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite with street labels, waddly hybrid&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme showing traffic, honk-quack&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view, duck’s choice</translation>
+        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Official YozoraPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
+        <translation type="gpt-5-generated">&lt;b&gt;Quack! Pick a map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai vibe, quack&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Official YozoraPilot map style, waddle&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view, quack-quack&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Highlights outdoor and terrain, waddle on&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme, quack bright&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme, night-quack&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Tuned for daytime navigation, waddles in sun&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Tuned for nighttime navigation, moon-quack&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only, sky-quack&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite with street labels, waddly hybrid&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme showing traffic, honk-quack&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view, duck’s choice</translation>
     </message>
     <message>
         <source>Road Name</source>
@@ -5201,8 +5201,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack-Quack openpilot</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot quack!</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot quack!</translation>
     </message>
     <message>
         <source>Mapbox Streets</source>
@@ -5555,8 +5555,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack! openpilot belly-flopped. Waddle-whoops!</translation>
     </message>
     <message>
-        <source>Please post the "Error Log" in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">Quack! Please splash the "Error Log" into the FrogPilot Discord, waddle-waddle!</translation>
+        <source>Please post the "Error Log" in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">Quack! Please splash the "Error Log" into the YozoraPilot Discord, waddle-waddle!</translation>
     </message>
     <message>
         <source>openpilot Unavailable</source>
@@ -5682,8 +5682,8 @@ Developer - Ultra-custom settings for seasoned duckthusiasts</translation>
         <translation type="gpt-5-generated">Quack out!</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot-quack</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot-quack</translation>
     </message>
     <message>
         <source>now</source>
@@ -5822,32 +5822,32 @@ Waddle-wait, this may take up to a minute.</translation>
         <translation type="gpt-5-generated">Quackware</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot-quack!</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot-quack!</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">Quack-come to FrogPilot! Since you’re new to openpilot, the “Minimal” toggle preset is on—quack—but you can change it anytime with the “Tuning Level” button, waddle!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">Quack-come to YozoraPilot! Since you’re new to openpilot, the “Minimal” toggle preset is on—quack—but you can change it anytime with the “Tuning Level” button, waddle!</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">Quack-hello to FrogPilot! Since you’re new, the "Minimal" toggle preset is on—waddle-waddle—but you can change it anytime via the "Tuning Level" button, quack!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">Quack-hello to YozoraPilot! Since you’re new, the "Minimal" toggle preset is on—waddle-waddle—but you can change it anytime via the "Tuning Level" button, quack!</translation>
     </message>
     <message>
-        <source>Since you're fairly new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">Quack! You’re new to FrogPilot, so the “Minimal” toggle preset is on—waddle over and change it anytime with the “Tuning Level” button!</translation>
+        <source>Since you're fairly new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">Quack! You’re new to YozoraPilot, so the “Minimal” toggle preset is on—waddle over and change it anytime with the “Tuning Level” button!</translation>
     </message>
     <message>
         <source>Since you're experienced with openpilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
         <translation type="gpt-5-generated">Quack! Since you’re savvy with openpilot, the “Standard” toggle preset is on—waddle-waddle! Change it anytime with the “Tuning Level” button, quack!</translation>
     </message>
     <message>
-        <source>Since you're experienced with FrogPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">Quack! Since you’re savvy with FrogPilot, the “Standard” toggle preset is on. Waddle anytime to change it via the “Tuning Level” button!</translation>
+        <source>Since you're experienced with YozoraPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">Quack! Since you’re savvy with YozoraPilot, the “Standard” toggle preset is on. Waddle anytime to change it via the “Tuning Level” button!</translation>
     </message>
     <message>
-        <source>Since you're very experienced with FrogPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">Quack! Since you’re super seasoned with FrogPilot, the "Advanced" toggle preset is on—waddle anytime to switch it via the "Tuning Level" button!</translation>
+        <source>Since you're very experienced with YozoraPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">Quack! Since you’re super seasoned with YozoraPilot, the "Advanced" toggle preset is on—waddle anytime to switch it via the "Tuning Level" button!</translation>
     </message>
 </context>
 <context>
@@ -6082,12 +6082,12 @@ Waddle-wait, this may take up to a minute.</translation>
         <translation type="gpt-5-generated">Quack-tastic Version</translation>
     </message>
     <message>
-        <source>Automatically Update FrogPilot</source>
-        <translation type="gpt-5-generated">Quack! Auto-Update FrogPilot, waddle-waddle!</translation>
+        <source>Automatically Update YozoraPilot</source>
+        <translation type="gpt-5-generated">Quack! Auto-Update YozoraPilot, waddle-waddle!</translation>
     </message>
     <message>
-        <source>FrogPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
-        <translation type="gpt-5-generated">Quack! FrogPilot will auto-update itself and its assets when you’re offroad with an active internet connection, waddle-waddle.</translation>
+        <source>YozoraPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
+        <translation type="gpt-5-generated">Quack! YozoraPilot will auto-update itself and its assets when you’re offroad with an active internet connection, waddle-waddle.</translation>
     </message>
     <message>
         <source>Download</source>

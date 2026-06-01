@@ -10,7 +10,7 @@
 - name: Commit and Push Build
   run: |
     git add -f .                                                    # .gitignoreを無視して全ファイルを強制追加
-    git diff-index --quiet HEAD || git commit -m "Compile FrogPilot [skip ci]"
+    git diff-index --quiet HEAD || git commit -m "Compile YozoraPilot [skip ci]"
     git push --force origin HEAD                                    # 同一ブランチにforce push
 ```
 
@@ -30,9 +30,9 @@
 
 [`update_pr_branch.yaml`](.github/workflows/update_pr_branch.yaml:36) では、`MAKE-PRS-HERE` への同期時に "Compile FrogPilot" コミットを **revert** している:
 ```yaml
-- name: Revert "Compile FrogPilot"
+- name: Revert "Compile YozoraPilot"
   run: |
-    COMPILE_COMMIT=$(git rev-list HEAD -n 1 --grep="Compile FrogPilot" || true)
+    COMPILE_COMMIT=$(git rev-list HEAD -n 1 --grep="Compile YozoraPilot" || true)
     git revert --no-edit "$COMPILE_COMMIT"
 ```
 → これは**別ブランチへの同期時の回避策**に過ぎず、元ブランチの問題は未解決
@@ -126,21 +126,21 @@ sequenceDiagram
 
     # ソースブランチのHEADからprebuiltブランチを作成/更新
     git add -f .
-    git diff-index --quiet HEAD || git commit -m "Compile FrogPilot [skip ci]"
+    git diff-index --quiet HEAD || git commit -m "Compile YozoraPilot [skip ci]"
 
     # prebuiltブランチにpush（ソースブランチは変更しない）
     git push --force origin "HEAD:${PREBUILT_BRANCH}"
 
     if [ "${{ inputs.publish_frogpilot }}" = "true" ]; then
-      git push --force origin HEAD:FrogPilot
+      git push --force origin HEAD:YozoraPilot
     fi
 
     if [ "${{ inputs.publish_staging }}" = "true" ]; then
-      git push --force origin HEAD:FrogPilot-Staging
+      git push --force origin HEAD:YozoraPilot-Staging
     fi
 
     if [ "${{ inputs.publish_testing }}" = "true" ]; then
-      git push --force origin HEAD:FrogPilot-Testing
+      git push --force origin HEAD:YozoraPilot-Testing
     fi
 
     if [ -n "$CUSTOM_BRANCH" ]; then
@@ -151,7 +151,7 @@ sequenceDiagram
 **変更のポイント:**
 - `git push --force origin HEAD`（ソースブランチへのforce push）を削除
 - 代わりに `git push --force origin "HEAD:${PREBUILT_BRANCH}"` で `-prebuilt` サフィックス付きブランチにpush
-- FrogPilot / Staging / Testing へのpublishは従来通り維持（これらはリリース用なので問題なし）
+- YozoraPilot / Staging / Testing へのpublishは従来通り維持（これらはリリース用なので問題なし）
 
 #### 変更2: CIトリガーの調整（オプション）
 
@@ -216,9 +216,9 @@ git branch --set-upstream-to=origin/test-mazda2-dj-mt-frog-prebuilt test-mazda2-
 git pull
 ```
 
-### FrogPilotのUIからの更新の場合
+### YozoraPilotのUIからの更新の場合
 
-FrogPilotのUIにブランチ選択機能がある場合、そちらの設定も変更が必要になる可能性があります。この場合、FrogPilotのソースコード内でブランチ名をハードコードしている部分を確認する必要があります。
+YozoraPilotのUIにブランチ選択機能がある場合、そちらの設定も変更が必要になる可能性があります。この場合、YozoraPilotのソースコード内でブランチ名をハードコードしている部分を確認する必要があります。
 
 ---
 

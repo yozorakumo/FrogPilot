@@ -655,12 +655,12 @@
         <translation type="gpt-5-generated">เปลี่ยนชื่อแล้ว!</translation>
     </message>
     <message>
-        <source>FrogPilot Backups</source>
-        <translation type="gpt-5-generated">การสำรองข้อมูล FrogPilot</translation>
+        <source>YozoraPilot Backups</source>
+        <translation type="gpt-5-generated">การสำรองข้อมูล YozoraPilot</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Create, delete, or restore FrogPilot backups.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;สร้าง ลบ หรือกู้คืนการสำรองข้อมูลของ FrogPilot&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Create, delete, or restore YozoraPilot backups.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;สร้าง ลบ หรือกู้คืนการสำรองข้อมูลของ YozoraPilot&lt;/b&gt;</translation>
     </message>
     <message>
         <source>BACKUP</source>
@@ -691,8 +691,8 @@
         <translation type="gpt-5-generated">สร้างการสำรองข้อมูลแล้ว!</translation>
     </message>
     <message>
-        <source>Choose a FrogPilot backup to delete</source>
-        <translation type="gpt-5-generated">เลือกสำรองข้อมูล FrogPilot ที่จะลบ</translation>
+        <source>Choose a YozoraPilot backup to delete</source>
+        <translation type="gpt-5-generated">เลือกสำรองข้อมูล YozoraPilot ที่จะลบ</translation>
     </message>
     <message>
         <source>Delete this backup?</source>
@@ -743,12 +743,12 @@
         <translation type="gpt-5-generated">เลือกข้อมูลสำรองที่จะลบ</translation>
     </message>
     <message>
-        <source>FrogPilot Stats</source>
-        <translation type="gpt-5-generated">สถิติ FrogPilot</translation>
+        <source>YozoraPilot Stats</source>
+        <translation type="gpt-5-generated">สถิติ YozoraPilot</translation>
     </message>
     <message>
-        <source>&lt;b&gt;View your collected FrogPilot stats.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;ดูสถิติ FrogPilot ที่คุณเก็บรวบรวม&lt;/b&gt;</translation>
+        <source>&lt;b&gt;View your collected YozoraPilot stats.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;ดูสถิติ YozoraPilot ที่คุณเก็บรวบรวม&lt;/b&gt;</translation>
     </message>
     <message>
         <source>RESET</source>
@@ -759,8 +759,8 @@
         <translation type="gpt-5-generated">ดู</translation>
     </message>
     <message>
-        <source>Are you sure you want to reset all of your FrogPilot stats?</source>
-        <translation type="gpt-5-generated">คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตสถิติ FrogPilot ทั้งหมดของคุณ?</translation>
+        <source>Are you sure you want to reset all of your YozoraPilot stats?</source>
+        <translation type="gpt-5-generated">คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตสถิติ YozoraPilot ทั้งหมดของคุณ?</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -3222,8 +3222,8 @@
         <translation type="gpt-5-generated">ตัวเติมจำกัดความเร็ว</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, FrogPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">&lt;b&gt;รวบรวมข้อมูลจำกัดความเร็วที่ขาดหายหรือไม่ถูกต้องโดยอัตโนมัติขณะคุณขับ&lt;/b&gt; โดยใช้ข้อมูลจำกัดความเร็วจากแผงหน้าปัดของคุณ (หากรองรับ), Mapbox และ "Navigate on openpilot"&lt;br&gt;&lt;br&gt;เมื่อคุณจอดและเชื่อมต่อกับ Wi‑Fi แล้ว FrogPilot จะประมวลผลข้อมูลนี้โดยอัตโนมัติเป็นไฟล์เพื่อใช้กับเครื่องมือที่อยู่ที่ "SpeedLimitFiller.frogpilot.download"&lt;br&gt;&lt;br&gt;คุณสามารถดาวน์โหลดไฟล์นี้ได้จาก "The Pond" ในเมนู "Download Speed Limits"&lt;br&gt;&lt;br&gt;ต้องการคำแนะนำทีละขั้นตอนหรือไม่? ไปที่ &lt;b&gt;#speed-limit-filler&lt;/b&gt; ใน FrogPilot Discord!</translation>
+        <source>&lt;b&gt;Automatically collect missing or incorrect speed limits while you drive&lt;/b&gt; using speeds limits sourced from your dashboard (if supported), Mapbox, and "Navigate on openpilot".&lt;br&gt;&lt;br&gt;When you're parked and connected to Wi-Fi, YozoraPilot will automatically processes this data into a file to be used with the tool located at "SpeedLimitFiller.frogpilot.download".&lt;br&gt;&lt;br&gt;You can download this file from "The Pond" in the "Download Speed Limits" menu.&lt;br&gt;&lt;br&gt;Need a step-by-step guide? Visit &lt;b&gt;#speed-limit-filler&lt;/b&gt; in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">&lt;b&gt;รวบรวมข้อมูลจำกัดความเร็วที่ขาดหายหรือไม่ถูกต้องโดยอัตโนมัติขณะคุณขับ&lt;/b&gt; โดยใช้ข้อมูลจำกัดความเร็วจากแผงหน้าปัดของคุณ (หากรองรับ), Mapbox และ "Navigate on openpilot"&lt;br&gt;&lt;br&gt;เมื่อคุณจอดและเชื่อมต่อกับ Wi‑Fi แล้ว YozoraPilot จะประมวลผลข้อมูลนี้โดยอัตโนมัติเป็นไฟล์เพื่อใช้กับเครื่องมือที่อยู่ที่ "SpeedLimitFiller.frogpilot.download"&lt;br&gt;&lt;br&gt;คุณสามารถดาวน์โหลดไฟล์นี้ได้จาก "The Pond" ในเมนู "Download Speed Limits"&lt;br&gt;&lt;br&gt;ต้องการคำแนะนำทีละขั้นตอนหรือไม่? ไปที่ &lt;b&gt;#speed-limit-filler&lt;/b&gt; ใน YozoraPilot Discord!</translation>
     </message>
     <message>
         <source>Cancel the speed-limit update?</source>
@@ -3388,8 +3388,8 @@ It will reset in %1 hours and %2 minutes.</source>
         <translation type="gpt-5-generated">การควบคุมการขับขี่</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Fine-tune custom FrogPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;ปรับจูนละเอียดการควบคุมการเร่ง การเบรก และการบังคับเลี้ยวของ FrogPilot แบบกำหนดเอง&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Fine-tune custom YozoraPilot acceleration, braking, and steering controls.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;ปรับจูนละเอียดการควบคุมการเร่ง การเบรก และการบังคับเลี้ยวของ YozoraPilot แบบกำหนดเอง&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Navigation</source>
@@ -3404,8 +3404,8 @@ It will reset in %1 hours and %2 minutes.</source>
         <translation type="gpt-5-generated">การตั้งค่าระบบ</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep FrogPilot running smoothly.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;จัดการการสำรองข้อมูล การตั้งค่าอุปกรณ์ ตัวเลือกหน้าจอ ที่จัดเก็บข้อมูล และเครื่องมือต่างๆ เพื่อให้ FrogPilot ทำงานได้อย่างราบรื่น&lt;/b&gt;</translation>
+        <source>&lt;b&gt;Manage backups, device settings, screen options, storage, and tools to keep YozoraPilot running smoothly.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;จัดการการสำรองข้อมูล การตั้งค่าอุปกรณ์ ตัวเลือกหน้าจอ ที่จัดเก็บข้อมูล และเครื่องมือต่างๆ เพื่อให้ YozoraPilot ทำงานได้อย่างราบรื่น&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Theme and Appearance</source>
@@ -3533,12 +3533,12 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">&lt;b&gt;ตั้งค่าระดับเสียงสำหรับคำเตือนที่ดังที่สุดซึ่งต้องการความสนใจเร่งด่วน&lt;/b&gt;&lt;br&gt;&lt;br&gt;ตัวอย่าง ได้แก่: "DISENGAGE IMMEDIATELY — Driver Distracted", "DISENGAGE IMMEDIATELY — Driver Unresponsive"</translation>
     </message>
     <message>
-        <source>FrogPilot Alerts</source>
-        <translation type="gpt-5-generated">การแจ้งเตือน FrogPilot</translation>
+        <source>YozoraPilot Alerts</source>
+        <translation type="gpt-5-generated">การแจ้งเตือน YozoraPilot</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Optional FrogPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;การแจ้งเตือน FrogPilot แบบเลือกใช้&lt;/b&gt; ที่เน้นเหตุการณ์ขณะขับขี่ให้สังเกตเห็นได้ชัดเจนยิ่งขึ้น</translation>
+        <source>&lt;b&gt;Optional YozoraPilot alerts&lt;/b&gt; that highlight driving events in a more noticeable way.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;การแจ้งเตือน YozoraPilot แบบเลือกใช้&lt;/b&gt; ที่เน้นเหตุการณ์ขณะขับขี่ให้สังเกตเห็นได้ชัดเจนยิ่งขึ้น</translation>
     </message>
     <message>
         <source>Goat Scream</source>
@@ -3887,8 +3887,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">โหมดดีบัก</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Use FrogPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;ใช้ตัวชี้วัดสำหรับนักพัฒนาของ FrogPilot ในการขับครั้งถัดไปของคุณ&lt;/b&gt; เพื่อวินิจฉัยปัญหาและปรับปรุงรายงานบั๊ก</translation>
+        <source>&lt;b&gt;Use YozoraPilot's developer metrics on your next drive&lt;/b&gt; to diagnose issues and improve bug reports.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;ใช้ตัวชี้วัดสำหรับนักพัฒนาของ YozoraPilot ในการขับครั้งถัดไปของคุณ&lt;/b&gt; เพื่อวินิจฉัยปัญหาและปรับปรุงรายงานบั๊ก</translation>
     </message>
     <message>
         <source>Flash Panda</source>
@@ -4232,8 +4232,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">การตั้งค่า General Motors</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for General Motors vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;ฟีเจอร์ FrogPilot สำหรับรถยนต์ General Motors.&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for General Motors vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;ฟีเจอร์ YozoraPilot สำหรับรถยนต์ General Motors.&lt;/b&gt;</translation>
     </message>
     <message>
         <source>FrogsGoMoo's Experimental Tune</source>
@@ -4264,8 +4264,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">การตั้งค่า Hyundai/Kia/Genesis</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;คุณสมบัติ FrogPilot สำหรับรถยนต์ Genesis, Hyundai และ Kia&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Genesis, Hyundai, and Kia vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;คุณสมบัติ YozoraPilot สำหรับรถยนต์ Genesis, Hyundai และ Kia&lt;/b&gt;</translation>
     </message>
     <message>
         <source>comma's New Longitudinal API</source>
@@ -4288,8 +4288,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">การตั้งค่า Toyota/Lexus</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;ฟีเจอร์ FrogPilot สำหรับรถยนต์ Lexus และ Toyota&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Lexus and Toyota vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;ฟีเจอร์ YozoraPilot สำหรับรถยนต์ Lexus และ Toyota&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Automatically Lock/Unlock Doors</source>
@@ -4432,8 +4432,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">การตั้งค่า Subaru</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Subaru vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;คุณสมบัติ FrogPilot สำหรับรถยนต์ Subaru&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Subaru vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;คุณสมบัติ YozoraPilot สำหรับรถยนต์ Subaru&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Stop and Go</source>
@@ -4448,8 +4448,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">การตั้งค่า Acura/Honda</translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
-        <translation type="gpt-5-generated">&lt;b&gt;ฟีเจอร์ FrogPilot สำหรับรถยนต์ Acura และ Honda&lt;/b&gt;</translation>
+        <source>&lt;b&gt;YozoraPilot features for Acura and Honda vehicles.&lt;/b&gt;</source>
+        <translation type="gpt-5-generated">&lt;b&gt;ฟีเจอร์ YozoraPilot สำหรับรถยนต์ Acura และ Honda&lt;/b&gt;</translation>
     </message>
     <message>
         <source>Gentle Following</source>
@@ -4480,7 +4480,7 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>&lt;b&gt;FrogPilot features for Mazda vehicles.&lt;/b&gt;</source>
+        <source>&lt;b&gt;YozoraPilot features for Mazda vehicles.&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4847,8 +4847,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">วิดเจ็ตหน้าจอการขับขี่</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Custom FrogPilot widgets&lt;/b&gt; for the driving screen.</source>
-        <translation type="gpt-5-generated">&lt;b&gt;วิดเจ็ต FrogPilot แบบกำหนดเอง&lt;/b&gt; สำหรับหน้าจอการขับขี่</translation>
+        <source>&lt;b&gt;Custom YozoraPilot widgets&lt;/b&gt; for the driving screen.</source>
+        <translation type="gpt-5-generated">&lt;b&gt;วิดเจ็ต YozoraPilot แบบกำหนดเอง&lt;/b&gt; สำหรับหน้าจอการขับขี่</translation>
     </message>
     <message>
         <source>Acceleration Path</source>
@@ -4983,8 +4983,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">สไตล์แผนที่</translation>
     </message>
     <message>
-        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: Official FrogPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
-        <translation type="gpt-5-generated">&lt;b&gt;เลือกสไตล์แผนที่&lt;/b&gt; สำหรับ "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: สไตล์เริ่มต้นของ comma.ai&lt;br&gt;&lt;b&gt;FrogPilot&lt;/b&gt;: สไตล์แผนที่อย่างเป็นทางการของ FrogPilot&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: มุมมองมาตรฐานที่เน้นถนน&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: เน้นกิจกรรมกลางแจ้งและลักษณะภูมิประเทศ&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: ธีมมินิมอล โทนสว่าง&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: ธีมมินิมอล โทนมืด&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: ปรับให้เหมาะกับการนำทางตอนกลางวัน&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: ปรับให้เหมาะกับการนำทางตอนกลางคืน&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: เฉพาะภาพถ่ายดาวเทียม&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: มุมมองไฮบริดภาพถ่ายดาวเทียมพร้อมป้ายถนน&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: ธีมมืดที่เน้นสภาพการจราจร&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: มุมมองไฮบริดภาพถ่ายดาวเทียมแบบปรับแต่งเอง</translation>
+        <source>&lt;b&gt;Select the map style&lt;/b&gt; for "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: Default comma.ai style&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: Official YozoraPilot map style&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: Standard street-focused view&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: Emphasizes outdoor and terrain features&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: Minimalist, bright theme&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: Minimalist, dark theme&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: Optimized for daytime navigation&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: Optimized for nighttime navigation&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: Satellite imagery only&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: Hybrid satellite imagery with street labels&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: Dark theme emphasizing traffic conditions&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: Customized hybrid satellite view</source>
+        <translation type="gpt-5-generated">&lt;b&gt;เลือกสไตล์แผนที่&lt;/b&gt; สำหรับ "Navigate on openpilot" (NOO):&lt;br&gt;&lt;br&gt;&lt;b&gt;Stock openpilot&lt;/b&gt;: สไตล์เริ่มต้นของ comma.ai&lt;br&gt;&lt;b&gt;YozoraPilot&lt;/b&gt;: สไตล์แผนที่อย่างเป็นทางการของ YozoraPilot&lt;br&gt;&lt;b&gt;Mapbox Streets&lt;/b&gt;: มุมมองมาตรฐานที่เน้นถนน&lt;br&gt;&lt;b&gt;Mapbox Outdoors&lt;/b&gt;: เน้นกิจกรรมกลางแจ้งและลักษณะภูมิประเทศ&lt;br&gt;&lt;b&gt;Mapbox Light&lt;/b&gt;: ธีมมินิมอล โทนสว่าง&lt;br&gt;&lt;b&gt;Mapbox Dark&lt;/b&gt;: ธีมมินิมอล โทนมืด&lt;br&gt;&lt;b&gt;Mapbox Navigation Day&lt;/b&gt;: ปรับให้เหมาะกับการนำทางตอนกลางวัน&lt;br&gt;&lt;b&gt;Mapbox Navigation Night&lt;/b&gt;: ปรับให้เหมาะกับการนำทางตอนกลางคืน&lt;br&gt;&lt;b&gt;Mapbox Satellite&lt;/b&gt;: เฉพาะภาพถ่ายดาวเทียม&lt;br&gt;&lt;b&gt;Mapbox Satellite Streets&lt;/b&gt;: มุมมองไฮบริดภาพถ่ายดาวเทียมพร้อมป้ายถนน&lt;br&gt;&lt;b&gt;Mapbox Traffic Night&lt;/b&gt;: ธีมมืดที่เน้นสภาพการจราจร&lt;br&gt;&lt;b&gt;Mike's Personalized Style&lt;/b&gt;: มุมมองไฮบริดภาพถ่ายดาวเทียมแบบปรับแต่งเอง</translation>
     </message>
     <message>
         <source>Road Name</source>
@@ -5199,8 +5199,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">openpilot มาตรฐาน</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot</translation>
     </message>
     <message>
         <source>Mapbox Streets</source>
@@ -5572,8 +5572,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">openpilot ขัดข้อง</translation>
     </message>
     <message>
-        <source>Please post the "Error Log" in the FrogPilot Discord!</source>
-        <translation type="gpt-5-generated">โปรดโพสต์ "Error Log" ใน Discord ของ FrogPilot!</translation>
+        <source>Please post the "Error Log" in the YozoraPilot Discord!</source>
+        <translation type="gpt-5-generated">โปรดโพสต์ "Error Log" ใน Discord ของ YozoraPilot!</translation>
     </message>
     <message>
         <source>openpilot crashed 💩</source>
@@ -5701,8 +5701,8 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <translation type="gpt-5-generated">กู้คืน</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot</translation>
     </message>
     <message>
         <source>0 MB</source>
@@ -5816,32 +5816,32 @@ This may take up to a minute.</source>
         <translation type="gpt-5-generated">← กลับ</translation>
     </message>
     <message>
-        <source>FrogPilot</source>
-        <translation type="gpt-5-generated">FrogPilot</translation>
+        <source>YozoraPilot</source>
+        <translation type="gpt-5-generated">YozoraPilot</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">ยินดีต้อนรับสู่ FrogPilot! เนื่องจากคุณยังใหม่กับ openpilot จึงได้ใช้การตั้งค่าพรีเซ็ต "Minimal" แต่คุณสามารถเปลี่ยนได้ตลอดเวลาผ่านปุ่ม "Tuning Level"!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to openpilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">ยินดีต้อนรับสู่ YozoraPilot! เนื่องจากคุณยังใหม่กับ openpilot จึงได้ใช้การตั้งค่าพรีเซ็ต "Minimal" แต่คุณสามารถเปลี่ยนได้ตลอดเวลาผ่านปุ่ม "Tuning Level"!</translation>
     </message>
     <message>
-        <source>Welcome to FrogPilot! Since you're new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">ยินดีต้อนรับสู่ FrogPilot! เนื่องจากคุณยังใหม่กับ FrogPilot จึงได้ใช้พรีเซ็ตสลับ “Minimal” ไว้แล้ว แต่คุณสามารถเปลี่ยนได้ตลอดเวลาโดยใช้ปุ่ม “Tuning Level”!</translation>
+        <source>Welcome to YozoraPilot! Since you're new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">ยินดีต้อนรับสู่ YozoraPilot! เนื่องจากคุณยังใหม่กับ YozoraPilot จึงได้ใช้พรีเซ็ตสลับ “Minimal” ไว้แล้ว แต่คุณสามารถเปลี่ยนได้ตลอดเวลาโดยใช้ปุ่ม “Tuning Level”!</translation>
     </message>
     <message>
-        <source>Since you're fairly new to FrogPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">เนื่องจากคุณยังใหม่กับ FrogPilot จึงได้ใช้พรีเซ็ตสลับ “Minimal” ไว้ แต่คุณสามารถเปลี่ยนได้ทุกเมื่อผ่านปุ่ม “Tuning Level”!</translation>
+        <source>Since you're fairly new to YozoraPilot, the "Minimal" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">เนื่องจากคุณยังใหม่กับ YozoraPilot จึงได้ใช้พรีเซ็ตสลับ “Minimal” ไว้ แต่คุณสามารถเปลี่ยนได้ทุกเมื่อผ่านปุ่ม “Tuning Level”!</translation>
     </message>
     <message>
         <source>Since you're experienced with openpilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
         <translation type="gpt-5-generated">เนื่องจากคุณคุ้นเคยกับ openpilot จึงได้ใช้พรีเซ็ตสลับ “Standard” แล้ว แต่คุณสามารถเปลี่ยนได้ตลอดเวลาโดยใช้ปุ่ม “Tuning Level”!</translation>
     </message>
     <message>
-        <source>Since you're experienced with FrogPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">เนื่องจากคุณคุ้นเคยกับ FrogPilot จึงได้ใช้พรีเซ็ตสวิตช์ “Standard” แล้ว แต่คุณสามารถเปลี่ยนได้ทุกเมื่อผ่านปุ่ม “Tuning Level”!</translation>
+        <source>Since you're experienced with YozoraPilot, the "Standard" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">เนื่องจากคุณคุ้นเคยกับ YozoraPilot จึงได้ใช้พรีเซ็ตสวิตช์ “Standard” แล้ว แต่คุณสามารถเปลี่ยนได้ทุกเมื่อผ่านปุ่ม “Tuning Level”!</translation>
     </message>
     <message>
-        <source>Since you're very experienced with FrogPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
-        <translation type="gpt-5-generated">เนื่องจากคุณมีประสบการณ์กับ FrogPilot ระดับหนึ่งแล้ว ค่าพรีเซ็ต "Advanced" จึงถูกใช้ให้โดยอัตโนมัติ แต่คุณสามารถเปลี่ยนได้ตลอดเวลาโดยใช้ปุ่ม "Tuning Level"!</translation>
+        <source>Since you're very experienced with YozoraPilot, the "Advanced" toggle preset has been applied, but you can change this at any time via the "Tuning Level" button!</source>
+        <translation type="gpt-5-generated">เนื่องจากคุณมีประสบการณ์กับ YozoraPilot ระดับหนึ่งแล้ว ค่าพรีเซ็ต "Advanced" จึงถูกใช้ให้โดยอัตโนมัติ แต่คุณสามารถเปลี่ยนได้ตลอดเวลาโดยใช้ปุ่ม "Tuning Level"!</translation>
     </message>
 </context>
 <context>
@@ -6140,12 +6140,12 @@ This may take up to a minute.</source>
         <translation type="gpt-5-generated">จะดาวน์โหลดอัปเดตได้เฉพาะตอนที่รถดับหรืออยู่ในเกียร์จอดเท่านั้น</translation>
     </message>
     <message>
-        <source>Automatically Update FrogPilot</source>
-        <translation type="gpt-5-generated">อัปเดต FrogPilot อัตโนมัติ</translation>
+        <source>Automatically Update YozoraPilot</source>
+        <translation type="gpt-5-generated">อัปเดต YozoraPilot อัตโนมัติ</translation>
     </message>
     <message>
-        <source>FrogPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
-        <translation type="gpt-5-generated">FrogPilot จะอัปเดตตัวเองและแอสเซ็ตโดยอัตโนมัติเมื่อคุณอยู่นอกถนนและมีการเชื่อมต่ออินเทอร์เน็ตที่ใช้งานอยู่</translation>
+        <source>YozoraPilot will automatically update itself and it's assets when you're offroad and have an active internet connection.</source>
+        <translation type="gpt-5-generated">YozoraPilot จะอัปเดตตัวเองและแอสเซ็ตโดยอัตโนมัติเมื่อคุณอยู่นอกถนนและมีการเชื่อมต่ออินเทอร์เน็ตที่ใช้งานอยู่</translation>
     </message>
     <message>
         <source>This branch must be downloaded before switching. Would you like to download it now?</source>

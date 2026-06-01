@@ -1,10 +1,10 @@
-# FrogPilot (Mazda2 DJ MT カスタム版)
+# YozoraPilot (Mazda2 DJ MT カスタム版)
 
-このリポジトリは、[yozorakumo/FrogPilot](https://github.com/yozorakumo/FrogPilot) による、**マツダ Mazda2 (DJ) 6MT モデル** への完全対応を行ったカスタムブランチです。
+このリポジトリは、[yozorakumo/YozoraPilot](https://github.com/yozorakumo/YozoraPilot) による、**マツダ Mazda2 (DJ) 6MT モデル** への完全対応を行ったカスタムブランチです。
 
 ## 🌟 主な追加機能と修正点
 
-本ブランチ (`FrogPilot`) では、マニュアルトランスミッション（MT）車両特有の挙動をサポートするために以下の実装を行っています。
+本ブランチ (`YozoraPilot`) では、マニュアルトランスミッション（MT）車両特有の挙動をサポートするために以下の実装を行っています。
 
 ### 1. デュアル信号ギアポジション認識
 車両のネイティブ CAN 信号の解析により、2つの信号を組み合わせた高精度なギア判定を実現しました。
@@ -71,7 +71,7 @@
 ## 🛠 開発・調査の記録
 今回の対応にあたって実施した CAN バス解析の詳細は、プロジェクト内の設計ドキュメントを参照してください。
 
-### Mazda 2 DJ MT (FrogPilot) 修正履歴
+### Mazda 2 DJ MT (YozoraPilot) 修正履歴
 
 #### 1. ISO-TP Flow Control許可の追加 (`safety_mazda.h`)
 - **問題**: バイトオフセット修正（`data[1]==0x3E`）後、"Can Error Check connections"エラーが発生
@@ -157,20 +157,20 @@
 - `dev-mazda2-dj-mt-frog`
 
 ### 自動ビルドの流れ
-1. **プッシュ → CIトリガー**: 対象ブランチにコードをプッシュすると、[Compile FrogPilot](.github/workflows/compile_frogpilot.yaml) ワークフローが自動起動します。
+1. **プッシュ → CIトリガー**: 対象ブランチにコードをプッシュすると、[Compile YozoraPilot](.github/workflows/compile_frogpilot.yaml) ワークフローが自動起動します。
 2. **セルフホストランナーでビルド**: comma デバイス（c3/c3x）自体がセルフホストランナーとして動作し、`/data/openpilot` 上で以下を実行します:
    - `git fetch` → `git reset --hard` で最新コードを取得
    - `poetry install` で依存関係を解決
    - `scons` でネイティブビルドを実行
-3. **ビルド成果物をコミット**: ビルドが完了すると、成果物をコミット（メッセージ: `Compile FrogPilot [skip ci]`）し、`git push --force` でリポジトリに反映します。
+3. **ビルド成果物をコミット**: ビルドが完了すると、成果物をコミット（メッセージ: `Compile YozoraPilot [skip ci]`）し、`git push --force` でリポジトリに反映します。
 4. **`[skip ci]` による無限ループ防止**: ビルドコミットには `[skip ci]` を付与しており、CI が再トリガーされるのを防ぎます。
 
 ### 手動実行（workflow_dispatch）
 GitHub の Actions タブから手動でワークフローを実行することも可能です。以下のオプションを指定できます:
 - **runner**: `c3` または `c3x` を選択
-- **publish_frogpilot**: `FrogPilot` ブランチへプッシュ
-- **publish_staging**: `FrogPilot-Staging` ブランチへプッシュ
-- **publish_testing**: `FrogPilot-Testing` ブランチへプッシュ
+- **publish_frogpilot**: `YozoraPilot` ブランチへプッシュ
+- **publish_staging**: `YozoraPilot-Staging` ブランチへプッシュ
+- **publish_testing**: `YozoraPilot-Testing` ブランチへプッシュ
 - **update_translations**: 翻訳の自動更新を実行
 
 ### その他のワークフロー
@@ -292,7 +292,7 @@ fingerprintが認識されている場合でも未認識の場合でも、ログ
 
 以下のいずれかの場合、ログ記録プロセス（loggerd, encoderd等）が停止します：
 
-1. **「Disable Logging」がON** → FrogPilot設定 → Device Management で確認
+1. **「Disable Logging」がON** → YozoraPilot設定 → Device Management で確認
 2. **「Force Onroad」が有効** → 強制オンロード時は `no_logging = True` になる
 3. **`DisableLogging` パラメータが設定**（notCar/bodyボットのみ）
 
@@ -310,7 +310,7 @@ fingerprintが認識されている場合でも未認識の場合でも、ログ
 
 ### CANデータ等を確実に記録する手順
 
-1. FrogPilot設定 → Device Management → **「Disable Logging」をOFF**にする
+1. YozoraPilot設定 → Device Management → **「Disable Logging」をOFF**にする
 2. **「Force Onroad」を使用しない**（使用中は `no_logging = True` になる）
 3. イグニッションON → 自動的に全データが記録される
 
@@ -347,7 +347,7 @@ fingerprintが認識されている場合でも未認識の場合でも、ログ
 ## Mazda LKAS Fault 対策
 
 ### 問題の概要
-Mazda車（GEN1）でopenpilot/FrogPilotによるステアリング制御中、ドライバーのハンドルトルク不足により車両EPSがLKAS_BLOCK信号を送信し、LKAS Fault（steerFaultPermanent）が発生する。一度Faultが発生すると車両再起動+1分待機が必要。
+Mazda車（GEN1）でopenpilot/YozoraPilotによるステアリング制御中、ドライバーのハンドルトルク不足により車両EPSがLKAS_BLOCK信号を送信し、LKAS Fault（steerFaultPermanent）が発生する。一度Faultが発生すると車両再起動+1分待機が必要。
 
 ### 根本原因
 1. ドライバーのハンドルトルク不足 → EPSがLKAS_BLOCK信号を送信（STEER_RATE 0x241）
