@@ -184,7 +184,7 @@
 | 機能 | openpilot | FrogPilot | YozoraPilot |
 |------|:---------:|:---------:|:-----------:|
 | コミュニティ主導開発 | ❌ | ✅ | ✅ |
-| カスタムインストールURL | `openpilot.comma.ai` | `frogpilot.download` | `https://opkr.o-r.kr/fork/yozorakumo/test-mazda2-dj-mt-frog` |
+| カスタムインストールURL | `openpilot.comma.ai` | `frogpilot.download` | `https://opkr.o-r.kr/fork/yozorakumo/Yozorapilot-Testing-Build` |
 | ウェルカミングコミュニティ | ❌ | ✅ | ✅ |
 
 ---
@@ -197,7 +197,7 @@
 2.  再起動後のセットアップ画面で **[Custom Software]** (またはカスタムURL入力) を選択します。
 3.  以下の URL を入力します：
     ```
-    https://opkr.o-r.kr/fork/yozorakumo/test-mazda2-dj-mt-frog
+    https://opkr.o-r.kr/fork/yozorakumo/Yozorapilot-Testing-Build
     ```
 
 ### 💡 インストール時の注意点
