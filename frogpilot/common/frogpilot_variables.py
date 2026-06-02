@@ -215,7 +215,7 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("CurvatureData", "", 2, ""),
   ("CurveSpeedController", "1", 1, "0"),
   ("CustomAlerts", "0", 0, "0"),
-  ("CustomColors", "frog", 0, "stock"),
+  ("CustomColors", "yozora_dark", 0, "stock"),
   ("CustomCruise", "1", 2, "1"),
   ("CustomCruiseLong", "5", 2, "5"),
   ("CustomDistanceIcons", "stock", 0, "stock"),

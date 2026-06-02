@@ -19,6 +19,7 @@ DOWNLOAD_PROGRESS_PARAM = "ThemeDownloadProgress"
 
 HOLIDAY_THEME_PATH = Path(__file__).parent / "holiday_themes"
 STOCKOP_THEME_PATH = Path(__file__).parent / "stock_theme"
+YOZORA_THEME_PATH = Path(__file__).parent / "yozora_themes"
 
 HOLIDAY_SLUGS = {
   "new_years": "New Year's",
@@ -481,6 +482,8 @@ class ThemeManager:
       asset_location = HOLIDAY_THEME_PATH / theme / asset_type
     elif f"{theme}_week" in HOLIDAY_SLUGS:
       asset_location = HOLIDAY_THEME_PATH / f"{theme}_week" / asset_type
+    elif (YOZORA_THEME_PATH / theme / asset_type).exists():
+      asset_location = YOZORA_THEME_PATH / theme / asset_type
     else:
       asset_location = THEME_SAVE_PATH / "theme_packs" / theme / asset_type
 

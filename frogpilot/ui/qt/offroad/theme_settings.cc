@@ -97,6 +97,12 @@ QStringList getHolidayThemes() {
          << "Christmas";
 }
 
+QStringList getYozoraThemes() {
+  return QStringList()
+         << "Yozora Dark"
+         << "Yozora Light";
+}
+
 QStringList getThemeList(const bool &randomThemes, const QDir &themePacksDirectory, const QString &subFolder, const QString &assetParam, Params &params) {
   bool useFiles = subFolder.isEmpty();
 
@@ -295,6 +301,7 @@ FrogPilotThemesPanel::FrogPilotThemesPanel(FrogPilotSettingsWindow *parent) : Fr
         } else if (id == 2) {
           colorSchemes.append("Stock");
           colorSchemes.append(getHolidayThemes());
+          colorSchemes.append(getYozoraThemes());
           colorSchemes.sort();
 
           QString colorSchemeToSelect = MultiOptionDialog::getSelection(tr("Select a color scheme"), colorSchemes, getThemeName("CustomColors", params), this);

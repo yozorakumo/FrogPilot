@@ -1,0 +1,9 @@
+{
+  "LaneLines":  {"red": 120, "green": 100, "blue": 80, "alpha": 200},
+  "LeadMarker": {"red": 220, "green": 60, "blue": 20, "alpha": 255},
+  "Path":       {"red": 255, "green": 120, "blue": 0, "alpha": 255},
+  "PathEdge":   {"red": 200, "green": 90, "blue": 0, "alpha": 255},
+  "Sidebar1":   {"red": 255, "green": 180, "blue": 100, "alpha": 178},
+  "Sidebar2":   {"red": 240, "green": 130, "blue": 40, "alpha": 255},
+  "Sidebar3":   {"red": 220, "green": 100, "blue": 20, "alpha": 255}
+}
