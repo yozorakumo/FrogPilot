@@ -77,6 +77,9 @@ selfdrive/modeld/models/*.pkl
 
 *.bz2
 
+*.elf
+frogpilot/can_log/video_player
+
 build/
 
 !**/.gitkeep
