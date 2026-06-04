@@ -11,7 +11,7 @@ def create_steering_control(packer, CP, frame, apply_steer, lkas):
   # copy values from camera
   b1 = int(lkas["BIT_1"])
   er1 = 0  # Force clear ERR_BIT_1 to prevent EPS lockup (LKAS Fault workaround)
-  lnv = 0
+  lnv = int(lkas["LINE_NOT_VISIBLE"])
   ldw = 0
   er2 = int(lkas["ERR_BIT_2"])
 
@@ -85,6 +85,8 @@ def create_alert_command(packer, cam_msg: dict, ldw: bool, steer_required: bool)
       "NO_ERR_BIT",
       "S1",
       "S1_HBEAM",
+      "TJA",
+      "TJA_TRANSITION",
     ]})
     values.update({
       "HANDS_WARN_3_BITS": 0b111 if steer_required else 0,
