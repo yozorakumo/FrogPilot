@@ -2406,6 +2406,13 @@ APPEARANCE_TOGGLES = (
     tuning_level=2,
   ),
   ToggleDefinition(
+    title=("Alert Auto-Dismiss Seconds"),
+    param="AlertDismissSeconds",
+    description=("<b>Automatically dismiss alert messages</b> after the specified number of seconds. Set to 0 to disable auto-dismiss."),
+    parent_param="AdvancedCustomUI",
+    tuning_level=2,
+  ),
+  ToggleDefinition(
     title=("Hide Speed Limits"),
     param="HideSpeedLimit",
     car_params=["openpilot_longitudinal"],

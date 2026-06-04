@@ -39,7 +39,6 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   stacked_layout->addWidget(split_wrapper);
 
   alerts = new OnroadAlerts(this);
-  alerts->setAttribute(Qt::WA_TransparentForMouseEvents, true);
   stacked_layout->addWidget(alerts);
 
   // setup stacking order

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QTimer>
 #include <QWidget>
 
 #include "selfdrive/ui/ui.h"
@@ -8,7 +9,14 @@ class OnroadAlerts : public QWidget {
   Q_OBJECT
 
 public:
-  OnroadAlerts(QWidget *parent = 0) : QWidget(parent) {}
+  OnroadAlerts(QWidget *parent = 0) : QWidget(parent) {
+    dismiss_timer = new QTimer(this);
+    dismiss_timer->setSingleShot(true);
+    QObject::connect(dismiss_timer, &QTimer::timeout, this, &OnroadAlerts::clear);
+
+    // Start transparent to mouse events; enabled when alert is shown
+    setAttribute(Qt::WA_TransparentForMouseEvents, true);
+  }
   void updateState(const UIState &s, const FrogPilotUIState &fs);
   void clear();
 
@@ -45,6 +53,7 @@ protected:
   };
 
   void paintEvent(QPaintEvent*) override;
+  void mousePressEvent(QMouseEvent *event) override;
   OnroadAlerts::Alert getAlert(const SubMaster &sm, const SubMaster &fpsm, uint64_t started_frame, QJsonObject &frogpilot_toggles);
 
   QColor bg;
@@ -52,6 +61,9 @@ protected:
 
   // FrogPilot variables
   bool sidebarsOpen;
+  QTimer *dismiss_timer;
+  QRect alert_rect;
+  QRect close_btn_rect;
 
   QPixmap ferg = loadPixmap("../../frogpilot/assets/random_events/icons/ferg.png", {1080, 720});
 };

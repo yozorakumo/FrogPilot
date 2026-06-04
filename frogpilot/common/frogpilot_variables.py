@@ -169,6 +169,7 @@ frogpilot_default_params: list[tuple[str, str | bytes, int, str]] = [
   ("AggressiveJerkSpeed", "50", 3, "50"),
   ("AggressiveJerkSpeedDecrease", "50", 3, "50"),
   ("AggressivePersonalityProfile", "1", 2, "0"),
+  ("AlertDismissSeconds", "0", 2, "0"),  # 0=disabled, N=auto-dismiss after N seconds
   ("AlertVolumeControl", "0", 2, "0"),
   ("AlwaysOnDM", "0", 0, "0"),
   ("AlwaysOnLateral", "1", 0, "0"),

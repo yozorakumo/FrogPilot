@@ -1,5 +1,6 @@
 #include "selfdrive/ui/qt/onroad/alerts.h"
 
+#include <QMouseEvent>
 #include <QPainter>
 #include <map>
 
@@ -13,6 +14,17 @@ void OnroadAlerts::updateState(const UIState &s, const FrogPilotUIState &fs) {
     } else {
       alert = a;
 
+      // Start auto-dismiss timer if configured
+      int dismiss_sec = fs.frogpilot_toggles.value("alert_dismiss_seconds").toInt(0);
+      if (dismiss_sec > 0 && alert.size != cereal::ControlsState::AlertSize::NONE) {
+        dismiss_timer->start(dismiss_sec * 1000);
+      } else {
+        dismiss_timer->stop();
+      }
+
+      // Enable mouse events so close button can be clicked
+      setAttribute(Qt::WA_TransparentForMouseEvents, false);
+
       update();
     }
   }
@@ -25,6 +37,11 @@ void OnroadAlerts::clear() {
   alertHeight = 0;
 
   alert = {};
+  dismiss_timer->stop();
+
+  // Restore mouse transparency so clicks pass through to underlying widgets
+  setAttribute(Qt::WA_TransparentForMouseEvents, true);
+
   update();
 }
 
@@ -116,6 +133,11 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
   }
   alertHeight -= margin;
   QRect r = QRect(0 + margin, height() - h + margin, width() - margin*2, h - margin*2);
+  alert_rect = r;
+
+  // Close button rect (top-right corner)
+  int btn_size = 44;
+  close_btn_rect = QRect(r.right() - btn_size - 8, r.top() + 8, btn_size, btn_size);
 
   QPainter p(this);
 
@@ -133,6 +155,14 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
   p.setBrush(QBrush(g));
   p.drawRoundedRect(r, radius, radius);
   p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+  // close button
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(0, 0, 0, 80));
+  p.drawRoundedRect(close_btn_rect, 8, 8);
+  p.setPen(QPen(QColor(0xff, 0xff, 0xff, 180), 3));
+  p.setFont(InterFont(24, QFont::Bold));
+  p.drawText(close_btn_rect, Qt::AlignCenter, "✕");
 
   // text
   const QPoint c = r.center();
@@ -155,5 +185,11 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
     p.drawText(QRect(0, r.y() + (l ? 240 : 270), width(), 600), Qt::AlignHCenter | Qt::TextWordWrap, alert.text1);
     p.setFont(InterFont(88));
     p.drawText(QRect(0, r.height() - (l ? 361 : 420), width(), 300), Qt::AlignHCenter | Qt::TextWordWrap, alert.text2);
+  }
+}
+
+void OnroadAlerts::mousePressEvent(QMouseEvent *event) {
+  if (close_btn_rect.contains(event->pos())) {
+    clear();
   }
 }

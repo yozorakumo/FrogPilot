@@ -56,6 +56,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(FrogPilotSettingsWindow *parent) : 
     {"HideMapIcon", tr("Hide Map Settings Button"), tr("<b>Hide the map settings button or map</b> from the driving screen."), ""},
     {"HideMaxSpeed", tr("Hide Max Speed"), tr("<b>Hide the max speed</b> from the driving screen."), ""},
     {"HideAlerts", tr("Hide Non-Critical Alerts"), tr("<b>Hide non-critical alerts</b> from the driving screen."), ""},
+    {"AlertDismissSeconds", tr("Alert Auto-Dismiss Seconds"), tr("<b>Automatically dismiss alert messages</b> after the specified number of seconds. Set to 0 to disable auto-dismiss."), ""},
     {"HideSpeedLimit", tr("Hide Speed Limits"), tr("<b>Hide posted speed limits</b> from the driving screen."), ""},
     {"WheelSpeed", tr("Use Wheel Speed"), tr("<b>Use the vehicle's wheel speed</b> instead of the cluster speed. This is purely a visual change and doesn't impact how openpilot drives!"), ""},
 
@@ -332,6 +333,8 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(FrogPilotSettingsWindow *parent) : 
         visualsLayout->setCurrentWidget(qualityOfLifePanel);
       });
       visualToggle = qolToggle;
+    } else if (param == "AlertDismissSeconds") {
+      visualToggle = new FrogPilotParamValueControl(param, title, desc, icon, 0, 60, tr(" seconds"));
     } else if (param == "CameraView") {
       std::vector<QString> cameraOptions{tr("Auto"), tr("Driver"), tr("Standard"), tr("Wide")};
       ButtonParamControl *cameraSelection = new ButtonParamControl(param, title, desc, icon, cameraOptions);
