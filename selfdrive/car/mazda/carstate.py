@@ -24,6 +24,8 @@ class CarState(CarStateBase):
     self.doorLocked = False  # Door lock status from 0x436 DOOR_LOCK_FB
     self.iStopEnabled = False  # i-stop status from 0x130 ISTOP_STATUS (True = i-stop active)
     self.lkas_disabled = False
+    self.lkas_blocked_count = 0  # Consecutive LKAS_BLOCK frames for debounce
+    self.lkas_was_active = False  # Track if LKAS has ever been active
     self.steering_angle_prev = 0.0
 
     self.prev_distance_button = 0
@@ -235,8 +237,24 @@ class CarState(CarStateBase):
 
     # Check if LKAS is disabled due to lack of driver torque when all other states indicate
     # it should be enabled (steer lockout). Don't warn until we actually get lkas active
-    # and lose it again, i.e, after initial lkas activation
-    ret.steerFaultTemporary = self.lkas_allowed_speed and lkas_blocked
+    # and lose it again, i.e, after initial lkas activation.
+    #
+    # LKAS_BLOCK is normally 1 when LKAS is inactive (below min speed, cruise off).
+    # It goes to 0 when LKAS is actively controlling. When MRCC disengages (e.g. brake
+    # press), the camera briefly asserts LKAS_BLOCK (~1s) - this is normal behavior,
+    # not a fault. Debounce prevents false "LKAS Failed" alerts.
+    lkas_active_now = self.lkas_allowed_speed and not lkas_blocked
+    if lkas_active_now:
+      self.lkas_was_active = True
+      self.lkas_blocked_count = 0
+    elif lkas_blocked:
+      self.lkas_blocked_count += 1
+    else:
+      self.lkas_blocked_count = 0
+
+    # STEER_RATE is at 83Hz. Require ~1.5s (125 frames) of continuous LKAS_BLOCK
+    # after LKAS was active to consider it a real fault.
+    ret.steerFaultTemporary = self.lkas_was_active and self.lkas_blocked_count > 125
 
     self.acc_active_last = ret.cruiseState.enabled
 
