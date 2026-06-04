@@ -8,17 +8,14 @@ def create_steering_control(packer, CP, frame, apply_steer, lkas):
   lo = tmp & 0xFF
   hi = tmp >> 8
 
-  # copy values from camera
   b1 = int(lkas["BIT_1"])
-  er1 = 0  # Force clear ERR_BIT_1 to prevent EPS lockup (LKAS Fault workaround)
+  er1 = 0
   lnv = int(lkas["LINE_NOT_VISIBLE"])
-  ldw = 0
+  ldw = int(lkas["LDW"])
   er2 = int(lkas["ERR_BIT_2"])
 
-  # Some older models do have these, newer models don't.
-  # Either way, they all work just fine if set to zero.
-  steering_angle = 0
-  b2 = 0
+  steering_angle = int(lkas.get("STEERING_ANGLE", 0))
+  b2 = int(lkas.get("ANGLE_ENABLED", 0))
 
   tmp = steering_angle + 2048
   ahi = tmp >> 10
