@@ -3,9 +3,6 @@ name: Compile FrogPilot
 on:
   push:
     branches:
-      - feat-mazda2-dj-mt-frog
-      - test-mazda2-dj-mt-frog
-      - dev-mazda2-dj-mt-frog
       - Yozorapilot-Testing
       - Yozorapilot-Release
       - Yozorapilot-Staging
