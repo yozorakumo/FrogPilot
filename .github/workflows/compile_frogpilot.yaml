@@ -333,6 +333,9 @@ jobs:
           BRANCH="${{ needs.get_branch.outputs.branch }}"
           BUILT_BRANCH="${BRANCH}-Build"
 
+          # Remove large build-only binaries that cause OOM on push
+          rm -f panda/board/jungle/obj/*.elf body/board/obj/*.elf frogpilot/can_log/video_player
+
           git add -f .
           git diff-index --quiet HEAD || git commit -m "Compile FrogPilot [skip ci]"
 
