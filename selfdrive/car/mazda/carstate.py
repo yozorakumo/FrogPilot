@@ -19,6 +19,8 @@ class CarState(CarStateBase):
     self.low_speed_alert = False
     self.lkas_allowed_speed = False
     self.last_gear_pos = 0  # For clutch gear hold: remembers last confirmed gear
+    self.prev_gear_pos = 0  # Previous frame's gear_pos for stability tracking
+    self.gear_stable_count = 0  # Consecutive frames with same gear_pos
     self.doorLocked = False  # Door lock status from 0x436 DOOR_LOCK_FB
     self.iStopEnabled = False  # i-stop status from 0x130 ISTOP_STATUS (True = i-stop active)
     self.lkas_disabled = False
@@ -93,41 +95,52 @@ class CarState(CarStateBase):
       # Verified by CAN capture: N=0, R=1 (clean 1-bit signal)
       reverse_gear = cp.vl["PEDALS"]["REVERSE_GEAR"] == 1
 
-      # Gear detection using PEDALS (0x165) GEAR_POS — stable discrete values
-      # NEW_MSG_28 GEAR_POS (4-bit) was found to be an analog sensor that drifts
-      # continuously, causing false Reverse detection during brake/clutch operation.
+      # DBC GEAR_POS values: 2=6th, 3=5th, 4=4th, 5=3rd, 7=2nd, 13=1st, 14=Neutral/Clutch
+      # Transitional (clutch pressed during shift): 6,8,9,10,11,12
       #
-      # PEDALS GEAR_POS is reliable when vehicle is moving AND clutch is released.
-      # When stopped, GEAR_POS may "settle" to a false value (e.g., 13=1st when in N).
-      # When clutch is pressed, GEAR_POS may show transitional values.
-      #
-      # Rules:
-      # 1. Only update last_gear_pos when clutch is NOT pressed (confirmed engagement)
-      # 2. When stopped + clutch released → always neutral (sensor unreliable at 0 speed)
-      # 3. When moving + clutch released → trust GEAR_POS
-      # 4. When clutch pressed → hold last confirmed gear
+      # Stability tracking: gear_pos can glitch momentarily when clutch is pressed
+      # (e.g. 5→4 in 3rd gear) BEFORE the clutchPressed signal updates. This causes
+      # last_gear_pos to be corrupted with a wrong gear value.
+      if gear_pos == self.prev_gear_pos:
+        self.gear_stable_count += 1
+      else:
+        self.gear_stable_count = 0
+      self.prev_gear_pos = gear_pos
 
-      is_moving = ret.vEgo > 0.3  # ~1 kph threshold
+      is_moving = ret.vEgo > 0.3
 
       if reverse_gear:
         ret.gearShifter = car.CarState.GearShifter.reverse
-        fp_ret.gearStep = 0
-      elif not ret.clutchPressed and is_moving and gear_pos in FORWARD_GEARS:
-        # Moving with clutch released — confirmed gear position
-        self.last_gear_pos = gear_pos
-        ret.gearShifter = car.CarState.GearShifter.drive
-        fp_ret.gearStep = FORWARD_GEARS[gear_pos]
-      elif ret.clutchPressed and self.last_gear_pos in FORWARD_GEARS:
-        # Clutch pressed — hold last confirmed gear
-        ret.gearShifter = car.CarState.GearShifter.drive
-        fp_ret.gearStep = FORWARD_GEARS[self.last_gear_pos]
+        fp_ret.gearStep = 15
+        self.last_gear_pos = 0
+      elif ret.clutchPressed:
+        # Clutch pressed: if gear_pos shows a stable forward gear value,
+        # the shifter is still in that gear detent → show it.
+        # Otherwise (transitional values or N=14) → show N.
+        if gear_pos in FORWARD_GEARS and self.gear_stable_count >= 2:
+          self.last_gear_pos = gear_pos
+          ret.gearShifter = car.CarState.GearShifter.drive
+          fp_ret.gearStep = FORWARD_GEARS[gear_pos]
+        else:
+          ret.gearShifter = car.CarState.GearShifter.neutral
+          fp_ret.gearStep = 0
+      elif is_moving and gear_pos in FORWARD_GEARS:
+        # Moving with clutch released — only update after stable reading
+        if self.gear_stable_count >= 2:
+          self.last_gear_pos = gear_pos
+        if self.last_gear_pos in FORWARD_GEARS:
+          ret.gearShifter = car.CarState.GearShifter.drive
+          fp_ret.gearStep = FORWARD_GEARS[self.last_gear_pos]
+        else:
+          ret.gearShifter = car.CarState.GearShifter.neutral
+          fp_ret.gearStep = 0
       else:
-        # Stopped with clutch released, or unknown state — Neutral
+        # Stopped or unknown state — Neutral
         ret.gearShifter = car.CarState.GearShifter.neutral
-        fp_ret.gearStep = 0  # N
+        fp_ret.gearStep = 0
 
       # Debug logging for MT gear and clutch detection
-      cloudlog.debug(f"MT gear: PEDALS.GEAR_POS={gear_pos}, last={self.last_gear_pos}, clutch={ret.clutchPressed}, reverse={reverse_gear}, shifter={ret.gearShifter}")
+      cloudlog.debug(f"MT gear: PEDALS.GEAR_POS={gear_pos}, last={self.last_gear_pos}, clutch={ret.clutchPressed}, reverse={reverse_gear}, stable={self.gear_stable_count}, shifter={ret.gearShifter}")
 
       # Door lock feedback from 0x436 DOOR_LOCK_FB (MT only)
       self.doorLocked = bool(cp.vl["DOOR_LOCK_FB"]["DOOR_LOCKED"])
