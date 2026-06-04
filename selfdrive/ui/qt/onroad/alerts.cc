@@ -8,6 +8,17 @@
 
 void OnroadAlerts::updateState(const UIState &s, const FrogPilotUIState &fs) {
   Alert a = getAlert(*(s.sm), *(fs.sm), s.scene.started_frame, fs.frogpilot_toggles);
+
+  // Suppress re-display of a dismissed alert until a different alert arrives
+  if (a.equal(dismissed_alert) && a.size != cereal::ControlsState::AlertSize::NONE) {
+    alertHeight = 0;
+    return;
+  }
+  // New alert arrived - clear dismissed state
+  if (dismissed_alert.size != cereal::ControlsState::AlertSize::NONE && !a.equal(dismissed_alert)) {
+    dismissed_alert = {};
+  }
+
   if (!alert.equal(a)) {
     if ((alert.status == cereal::ControlsState::AlertStatus::NORMAL && fs.frogpilot_toggles.value("hide_alerts").toBool()) ||
         a.size == cereal::ControlsState::AlertSize::NONE) {
@@ -36,6 +47,11 @@ void OnroadAlerts::updateState(const UIState &s, const FrogPilotUIState &fs) {
 }
 
 void OnroadAlerts::clear() {
+  // Remember this alert so we don't immediately re-display it
+  if (alert.size != cereal::ControlsState::AlertSize::NONE) {
+    dismissed_alert = alert;
+  }
+
   alertHeight = 0;
 
   alert = {};

@@ -58,6 +58,7 @@ protected:
 
   QColor bg;
   Alert alert = {};
+  Alert dismissed_alert = {};  // Suppress re-display after manual/timer dismiss
 
   // FrogPilot variables
   bool sidebarsOpen;
