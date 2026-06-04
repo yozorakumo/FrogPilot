@@ -663,6 +663,7 @@ class FrogPilotVariables:
 
     advanced_custom_ui = params.get_bool("AdvancedCustomUI") if toggle.tuning_level >= level["AdvancedCustomUI"] else default.get_bool("AdvancedCustomUI")
     toggle.hide_alerts = advanced_custom_ui and (params.get_bool("HideAlerts") if toggle.tuning_level >= level["HideAlerts"] else default.get_bool("HideAlerts")) and not toggle.debug_mode
+    toggle.alert_dismiss_seconds = advanced_custom_ui and (params.get_int("AlertDismissSeconds") if toggle.tuning_level >= level["AlertDismissSeconds"] else default.get_int("AlertDismissSeconds"))
     toggle.hide_lead_marker = toggle.openpilot_longitudinal and (advanced_custom_ui and (params.get_bool("HideLeadMarker") if toggle.tuning_level >= level["HideLeadMarker"] else default.get_bool("HideLeadMarker")) and not toggle.debug_mode)
     toggle.hide_map_icon = advanced_custom_ui and (params.get_bool("HideMapIcon") if toggle.tuning_level >= level["HideMapIcon"] else default.get_bool("HideMapIcon"))
     toggle.hide_map = toggle.hide_map_icon and (params.get_bool("HideMap") if toggle.tuning_level >= level["HideMap"] else default.get_bool("HideMap"))

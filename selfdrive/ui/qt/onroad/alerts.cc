@@ -9,7 +9,8 @@
 void OnroadAlerts::updateState(const UIState &s, const FrogPilotUIState &fs) {
   Alert a = getAlert(*(s.sm), *(fs.sm), s.scene.started_frame, fs.frogpilot_toggles);
   if (!alert.equal(a)) {
-    if (alert.status == cereal::ControlsState::AlertStatus::NORMAL && fs.frogpilot_toggles.value("hide_alerts").toBool()) {
+    if ((alert.status == cereal::ControlsState::AlertStatus::NORMAL && fs.frogpilot_toggles.value("hide_alerts").toBool()) ||
+        a.size == cereal::ControlsState::AlertSize::NONE) {
       clear();
     } else {
       alert = a;
@@ -22,11 +23,12 @@ void OnroadAlerts::updateState(const UIState &s, const FrogPilotUIState &fs) {
         dismiss_timer->stop();
       }
 
-      // Enable mouse events so close button can be clicked
-      setAttribute(Qt::WA_TransparentForMouseEvents, false);
-
+      alertHeight = 0; // will be recalculated in paintEvent
       update();
     }
+  }
+  if (alert.size != cereal::ControlsState::AlertSize::NONE) {
+    alertHeight = 0; // will be recalculated in paintEvent
   }
 
   // FrogPilot variables
@@ -115,8 +117,11 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
   }
   if (alert.size == cereal::ControlsState::AlertSize::NONE) {
     alertHeight = 0;
+    setAttribute(Qt::WA_TransparentForMouseEvents, true);
     return;
   }
+  setAttribute(Qt::WA_TransparentForMouseEvents, false);
+  raise();  // Ensure alerts stays on top of frogpilot_onroad
   static std::map<cereal::ControlsState::AlertSize, const int> alert_heights = {
     {cereal::ControlsState::AlertSize::SMALL, 271},
     {cereal::ControlsState::AlertSize::MID, 420},
