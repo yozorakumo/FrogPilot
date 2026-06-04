@@ -231,6 +231,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"AggressiveJerkSpeedDecrease", PERSISTENT},
     {"AggressivePersonalityProfile", PERSISTENT},
     {"AlertVolumeControl", PERSISTENT},
+    {"AlertDismissSeconds", PERSISTENT},
     {"AlwaysOnLateral", PERSISTENT},
     {"AlwaysOnLateralLKAS", PERSISTENT},
     {"AlwaysOnLateralMain", PERSISTENT},
