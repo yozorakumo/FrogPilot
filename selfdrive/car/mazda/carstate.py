@@ -41,8 +41,6 @@ class CarState(CarStateBase):
     self.prev_set_minus = False
     self.set_minus = False
 
-    self.acc_main_on = False
-
   def update(self, cp, cp_cam, frogpilot_toggles):
 
     ret = car.CarState.new_message()
@@ -61,13 +59,6 @@ class CarState(CarStateBase):
     self.set_plus = cp.vl["CRZ_BTNS"]["SET_P"] == 1
     self.prev_set_minus = self.set_minus
     self.set_minus = cp.vl["CRZ_BTNS"]["SET_M"] == 1
-
-    # MT mode: toggle acc_main_on on main button rising edge, cancel turns off
-    if self.CP.flags & MazdaFlags.MT:
-      if self.main_button and not self.prev_main_button:
-        self.acc_main_on = not self.acc_main_on
-      if self.cancel_button and not self.prev_cancel_button:
-        self.acc_main_on = False
 
     ret.wheelSpeeds = self.get_wheel_speeds(
       cp.vl["WHEEL_SPEEDS"]["FL"],
@@ -212,13 +203,7 @@ class CarState(CarStateBase):
 
     # TODO: the signal used for available seems to be the adaptive cruise signal, instead of the main on
     #       it should be used for carState.cruiseState.nonAdaptive instead
-    if self.CP.flags & MazdaFlags.MT:
-      # MT mode: button-based cruise state detection
-      # PEDALS ACC signals are always 0 on MT cars without factory ACC
-      ret.cruiseState.available = self.acc_main_on
-      ret.cruiseState.enabled = self.acc_main_on
-    elif self.CP.openpilotLongitudinalControl:
-      # AT longitudinal: PEDALS-based cruise state detection
+    if self.CP.openpilotLongitudinalControl:
       acc_armed = cp.vl["PEDALS"]["ACC_OFF"] == 1
       acc_active = cp.vl["PEDALS"]["ACC_ACTIVE"] == 1
       ret.cruiseState.available = acc_armed or acc_active
@@ -301,10 +286,13 @@ class CarState(CarStateBase):
         ("BSM", 10),
       ]
 
-    # CRZ_CTRL is only available on AT cars with factory ACC
-    if CP.flags & MazdaFlags.GEN1 and not (CP.flags & MazdaFlags.MT):
+    if CP.flags & MazdaFlags.GEN1:
       messages += [
         ("CRZ_CTRL", 50),
+      ]
+
+    if CP.flags & MazdaFlags.GEN1 and not (CP.flags & MazdaFlags.MT):
+      messages += [
         ("GEAR", 20),
       ]
 

@@ -92,24 +92,10 @@ class CarInterface(CarInterfaceBase):
       button_events += create_button_events(self.CS.set_plus, self.CS.prev_set_plus, {True: ButtonType.accelCruise})
       button_events += create_button_events(self.CS.set_minus, self.CS.prev_set_minus, {True: ButtonType.decelCruise})
 
-      # MAIN button: toggle engagement on rising edge
-      if self.CS.main_button and not self.CS.prev_main_button:
-        if self.CS.acc_main_on:
-          button_events.append(car.CarState.ButtonEvent(pressed=True, type=ButtonType.accelCruise))
-        else:
-          button_events.append(car.CarState.ButtonEvent(pressed=True, type=ButtonType.cancel))
-
     ret.buttonEvents = button_events
 
     # events
     events = self.create_common_events(ret)
-
-    # MT mode: MAIN button rising edge → force engagement (pcmCruise blocks buttonEnable)
-    if self.CP.openpilotLongitudinalControl and self.CS.main_button and not self.CS.prev_main_button and self.CS.acc_main_on:
-      events.add(EventName.buttonEnable)
-    # MAIN button falling edge → disengage
-    if self.CP.openpilotLongitudinalControl and self.CS.main_button and not self.CS.prev_main_button and not self.CS.acc_main_on:
-      events.add(EventName.buttonCancel)
 
     if self.CS.lkas_disabled:
       events.add(EventName.lkasDisabled)
