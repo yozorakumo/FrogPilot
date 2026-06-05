@@ -24,8 +24,9 @@ class CarState(CarStateBase):
     self.doorLocked = False  # Door lock status from 0x436 DOOR_LOCK_FB
     self.iStopEnabled = False  # i-stop status from 0x130 ISTOP_STATUS (True = i-stop active)
     self.lkas_disabled = False
-    self.lkas_blocked_count = 0  # Consecutive LKAS_BLOCK frames for debounce
-    self.lkas_was_active = False  # Track if LKAS has ever been active
+    self.lkas_blocked_count = 0
+    self.lkas_was_active = False
+    self.cam_lkas_raw = None
     self.steering_angle_prev = 0.0
 
     self.prev_distance_button = 0

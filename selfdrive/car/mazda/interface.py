@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import cereal.messaging as messaging
 from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.mazda.values import CAR, LKAS_LIMITS
@@ -75,6 +76,26 @@ class CarInterface(CarInterfaceBase):
   def deinit(CP, logcan, sendcan):
     if CP.openpilotLongitudinalControl:
       return
+
+  CAM_LKAS_ADDR = 0x243
+  CAM_BUS = 2
+
+  def update(self, c, can_strings, frogpilot_toggles):
+    self.CS.cam_lkas_raw = self._extract_raw(can_strings, self.CAM_LKAS_ADDR, self.CAM_BUS)
+    return super().update(c, can_strings, frogpilot_toggles)
+
+  @staticmethod
+  def _extract_raw(can_strings, address, bus):
+    raw = None
+    for s in can_strings:
+      try:
+        event = messaging.log_from_bytes(s)
+        for m in event.can:
+          if m.address == address and m.src == bus:
+            raw = bytes(m.dat)
+      except Exception:
+        pass
+    return raw
 
   # returns a car.CarState
   def _update(self, c, frogpilot_toggles):

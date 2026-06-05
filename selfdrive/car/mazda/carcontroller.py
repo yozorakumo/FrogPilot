@@ -175,7 +175,8 @@ class CarController(CarControllerBase):
     # send steering command at ~17Hz to match stock camera rate (100Hz causes EPS fault)
     if self.frame % 6 == 0:
       can_sends.append(mazdacan.create_steering_control(self.packer, self.CP,
-                                                        self.frame, apply_steer, CS.cam_lkas))
+                                                        self.frame, apply_steer, CS.cam_lkas,
+                                                        CS.cam_lkas_raw))
 
     new_actuators = CC.actuators.as_builder()
     new_actuators.steer = apply_steer / CarControllerParams.STEER_MAX

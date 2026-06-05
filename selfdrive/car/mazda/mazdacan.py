@@ -1,7 +1,34 @@
 from openpilot.selfdrive.car.mazda.values import Buttons, MazdaFlags
 
+CAM_LKAS_ADDR = 0x243
 
-def create_steering_control(packer, CP, frame, apply_steer, lkas):
+
+def _patch_cam_lkas_raw(cam_lkas_raw, frame, apply_steer):
+  raw = bytearray(cam_lkas_raw)
+
+  old_sum = raw[0] + raw[1] + raw[2]
+
+  tmp = apply_steer + 2048
+  ctr = frame % 16
+  raw[0] = (ctr << 4) | ((tmp >> 8) & 0x0F)
+  raw[1] = tmp & 0xFF
+  raw[2] &= ~0x01
+
+  new_sum = raw[0] + raw[1] + raw[2]
+  delta = new_sum - old_sum
+
+  old_chk = raw[7]
+  new_chk = old_chk - delta
+  while new_chk < 0:
+    new_chk += 256
+  raw[7] = new_chk % 256
+
+  return (CAM_LKAS_ADDR, 0, bytes(raw))
+
+
+def create_steering_control(packer, CP, frame, apply_steer, lkas, cam_lkas_raw=None):
+  if cam_lkas_raw is not None and len(cam_lkas_raw) == 8:
+    return _patch_cam_lkas_raw(cam_lkas_raw, frame, apply_steer)
 
   tmp = apply_steer + 2048
 
@@ -24,10 +51,7 @@ def create_steering_control(packer, CP, frame, apply_steer, lkas):
   alo = (tmp & 0x3) << 2
 
   ctr = frame % 16
-  # bytes:     [    1  ] [ 2 ] [             3               ]  [           4         ]
   csum = 249 - ctr - hi - lo - (lnv << 3) - er1 - (ldw << 7) - ( er2 << 4) - (b1 << 5)
-
-  # bytes      [ 5 ] [ 6 ] [    7   ]
   csum = csum - ahi - amd - alo - b2
 
   if ahi == 1:
@@ -60,16 +84,10 @@ def create_steering_control(packer, CP, frame, apply_steer, lkas):
 
 
 def create_alert_command(packer, cam_msg: dict, ldw: bool, steer_required: bool):
-  # LANE_LINES exists in all Mazda CAM_LANEINFO DBC definitions
   values = {
     "LANE_LINES": cam_msg.get("LANE_LINES", 0),
   }
 
-  # Check if this DBC has the full CAM_LANEINFO signal set.
-  # mazda_2017.dbc defines LINE_VISIBLE and many other signals in CAM_LANEINFO,
-  # but mazda_2_dj_mt.dbc only defines LANE_LINES.
-  # Sending undefined signals to the packer causes massive log spam (26+ errors/sec)
-  # which can trigger UI watchdog timeouts and device reboots.
   has_full_laneinfo = "LINE_VISIBLE" in cam_msg
 
   if has_full_laneinfo:
@@ -134,7 +152,3 @@ def create_button_cmd(packer, CP, counter, button):
     }
 
     return packer.make_can_msg("CRZ_BTNS", 0, values)
-
-# NOTE: Door lock and i-stop cancel commands are NOT functional on Mazda 2 DJ MT.
-# The BCM (0x420) is a status TX message and does not accept commands on HS-CAN.
-# These functions are kept as placeholders for future MS-CAN/UDS implementation.
