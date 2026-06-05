@@ -23,7 +23,7 @@ def _patch_cam_lkas_raw(cam_lkas_raw, frame, apply_steer):
     new_chk += 256
   raw[7] = new_chk % 256
 
-  return (CAM_LKAS_ADDR, 0, bytes(raw))
+  return [CAM_LKAS_ADDR, 0, bytes(raw), 0]
 
 
 def create_steering_control(packer, CP, frame, apply_steer, lkas, cam_lkas_raw=None):
