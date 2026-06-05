@@ -1,35 +1,7 @@
 from openpilot.selfdrive.car.mazda.values import Buttons, MazdaFlags
 
-CAM_LKAS_ADDR = 0x243
 
-
-def _patch_cam_lkas_raw(cam_lkas_raw, frame, apply_steer):
-  raw = bytearray(cam_lkas_raw)
-
-  old_sum = raw[0] + raw[1] + raw[2]
-
-  tmp = apply_steer + 2048
-  ctr = frame % 16
-  raw[0] = (ctr << 4) | ((tmp >> 8) & 0x0F)
-  raw[1] = tmp & 0xFF
-  raw[2] &= ~0x01
-
-  new_sum = raw[0] + raw[1] + raw[2]
-  delta = new_sum - old_sum
-
-  old_chk = raw[7]
-  new_chk = old_chk - delta
-  while new_chk < 0:
-    new_chk += 256
-  raw[7] = new_chk % 256
-
-  return [CAM_LKAS_ADDR, 0, bytes(raw), 0]
-
-
-def create_steering_control(packer, CP, frame, apply_steer, lkas, cam_lkas_raw=None):
-  if cam_lkas_raw is not None and len(cam_lkas_raw) == 8:
-    return _patch_cam_lkas_raw(cam_lkas_raw, frame, apply_steer)
-
+def create_steering_control(packer, CP, frame, apply_steer, lkas):
   tmp = apply_steer + 2048
 
   lo = tmp & 0xFF
@@ -51,7 +23,7 @@ def create_steering_control(packer, CP, frame, apply_steer, lkas, cam_lkas_raw=N
   alo = (tmp & 0x3) << 2
 
   ctr = frame % 16
-  csum = 249 - ctr - hi - lo - (lnv << 3) - er1 - (ldw << 7) - ( er2 << 4) - (b1 << 5)
+  csum = 249 - ctr - hi - lo - (lnv << 3) - er1 - (ldw << 7) - (er2 << 6) - (b1 << 5)
   csum = csum - ahi - amd - alo - b2
 
   if ahi == 1:

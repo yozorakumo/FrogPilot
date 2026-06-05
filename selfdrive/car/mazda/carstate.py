@@ -26,7 +26,6 @@ class CarState(CarStateBase):
     self.lkas_disabled = False
     self.lkas_blocked_count = 0
     self.lkas_was_active = False
-    self.cam_lkas_raw = None
     self.steering_angle_prev = 0.0
 
     self.prev_distance_button = 0
