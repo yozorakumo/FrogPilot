@@ -46,7 +46,7 @@ class MazdaLongitudinalProfile(StrEnum):
 
 
 CRZ_CTRL_TEMPLATES: dict[MazdaLongitudinalProfile, bytes] = {
-  MazdaLongitudinalProfile.STANDBY: bytes.fromhex("02010b0000000000"),
+  MazdaLongitudinalProfile.STANDBY: bytes.fromhex("02018b0000000000"),
   MazdaLongitudinalProfile.ENGAGED_CRUISE: bytes.fromhex("0a018b2000001000"),
   MazdaLongitudinalProfile.ENGAGED_FOLLOW: bytes.fromhex("0a018b4000001000"),
   MazdaLongitudinalProfile.STOP_GO_HOLD: bytes.fromhex("0a018b6000001000"),
