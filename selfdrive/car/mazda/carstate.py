@@ -24,8 +24,6 @@ class CarState(CarStateBase):
     self.doorLocked = False  # Door lock status from 0x436 DOOR_LOCK_FB
     self.iStopEnabled = False  # i-stop status from 0x130 ISTOP_STATUS (True = i-stop active)
     self.lkas_disabled = False
-    self.lkas_blocked_count = 0
-    self.lkas_was_active = False
     self.steering_angle_prev = 0.0
 
     self.prev_distance_button = 0
@@ -220,26 +218,7 @@ class CarState(CarStateBase):
       else:
         self.low_speed_alert = False
 
-    # Check if LKAS is disabled due to lack of driver torque when all other states indicate
-    # it should be enabled (steer lockout). Don't warn until we actually get lkas active
-    # and lose it again, i.e, after initial lkas activation.
-    #
-    # LKAS_BLOCK is normally 1 when LKAS is inactive (below min speed, cruise off).
-    # It goes to 0 when LKAS is actively controlling. When MRCC disengages (e.g. brake
-    # press), the camera briefly asserts LKAS_BLOCK (~1s) - this is normal behavior,
-    # not a fault. Debounce prevents false "LKAS Failed" alerts.
-    lkas_active_now = self.lkas_allowed_speed and not lkas_blocked
-    if lkas_active_now:
-      self.lkas_was_active = True
-      self.lkas_blocked_count = 0
-    elif lkas_blocked:
-      self.lkas_blocked_count += 1
-    else:
-      self.lkas_blocked_count = 0
-
-    # STEER_RATE is at 83Hz. Require ~1.5s (125 frames) of continuous LKAS_BLOCK
-    # after LKAS was active to consider it a real fault.
-    ret.steerFaultTemporary = self.lkas_was_active and self.lkas_blocked_count > 125
+    ret.steerFaultTemporary = self.lkas_allowed_speed and lkas_blocked
 
     self.acc_active_last = ret.cruiseState.enabled
 
@@ -249,7 +228,7 @@ class CarState(CarStateBase):
     self.lkas_disabled = cp_cam.vl["CAM_LANEINFO"]["LANE_LINES"] == 0
     self.cam_lkas = cp_cam.vl["CAM_LKAS"]
     self.cam_laneinfo = cp_cam.vl["CAM_LANEINFO"]
-    ret.steerFaultPermanent = False  # ERR_BIT_1 workaround: prevent permanent fault that requires car restart
+    ret.steerFaultPermanent = cp_cam.vl["CAM_LKAS"]["ERR_BIT_1"] == 1
 
     # FrogPilot CarState functions
     self.lkas_previously_enabled = self.lkas_enabled

@@ -2,19 +2,20 @@ from openpilot.selfdrive.car.mazda.values import Buttons, MazdaFlags
 
 
 def create_steering_control(packer, CP, frame, apply_steer, lkas):
+
   tmp = apply_steer + 2048
 
   lo = tmp & 0xFF
   hi = tmp >> 8
 
   b1 = int(lkas["BIT_1"])
-  er1 = 0
-  lnv = int(lkas["LINE_NOT_VISIBLE"])
-  ldw = int(lkas["LDW"])
+  er1 = int(lkas["ERR_BIT_1"])
+  lnv = 0
+  ldw = 0
   er2 = int(lkas["ERR_BIT_2"])
 
-  steering_angle = int(lkas.get("STEERING_ANGLE", 0))
-  b2 = int(lkas.get("ANGLE_ENABLED", 0))
+  steering_angle = 0
+  b2 = 0
 
   tmp = steering_angle + 2048
   ahi = tmp >> 10
@@ -23,7 +24,7 @@ def create_steering_control(packer, CP, frame, apply_steer, lkas):
   alo = (tmp & 0x3) << 2
 
   ctr = frame % 16
-  csum = 249 - ctr - hi - lo - (lnv << 3) - er1 - (ldw << 7) - (er2 << 6) - (b1 << 5)
+  csum = 249 - ctr - hi - lo - (lnv << 3) - er1 - (ldw << 7) - ( er2 << 4) - (b1 << 5)
   csum = csum - ahi - amd - alo - b2
 
   if ahi == 1:
@@ -56,33 +57,24 @@ def create_steering_control(packer, CP, frame, apply_steer, lkas):
 
 
 def create_alert_command(packer, cam_msg: dict, ldw: bool, steer_required: bool):
-  values = {
-    "LANE_LINES": cam_msg.get("LANE_LINES", 0),
-  }
-
-  has_full_laneinfo = "LINE_VISIBLE" in cam_msg
-
-  if has_full_laneinfo:
-    values.update({s: cam_msg.get(s, 0) for s in [
-      "LINE_VISIBLE",
-      "LINE_NOT_VISIBLE",
-      "BIT1",
-      "BIT2",
-      "BIT3",
-      "NO_ERR_BIT",
-      "S1",
-      "S1_HBEAM",
-      "TJA",
-      "TJA_TRANSITION",
-    ]})
-    values.update({
-      "HANDS_WARN_3_BITS": 0b111 if steer_required else 0,
-      "HANDS_ON_STEER_WARN": steer_required,
-      "HANDS_ON_STEER_WARN_2": steer_required,
-      "LDW_WARN_LL": 0,
-      "LDW_WARN_RL": 0,
-    })
-
+  values = {s: cam_msg[s] for s in [
+    "LINE_VISIBLE",
+    "LINE_NOT_VISIBLE",
+    "LANE_LINES",
+    "BIT1",
+    "BIT2",
+    "BIT3",
+    "NO_ERR_BIT",
+    "S1",
+    "S1_HBEAM",
+  ]}
+  values.update({
+    "HANDS_WARN_3_BITS": 0b111 if steer_required else 0,
+    "HANDS_ON_STEER_WARN": steer_required,
+    "HANDS_ON_STEER_WARN_2": steer_required,
+    "LDW_WARN_LL": 0,
+    "LDW_WARN_RL": 0,
+  })
   return packer.make_can_msg("CAM_LANEINFO", 0, values)
 
 
