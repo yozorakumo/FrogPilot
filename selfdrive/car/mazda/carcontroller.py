@@ -58,7 +58,7 @@ class CarController(CarControllerBase):
 
     # Longitudinal control
     if self.CP.openpilotLongitudinalControl:
-      long_active = CC.longActive
+      long_active = CC.longActive or CS.out.cruiseState.enabled
 
       # Stop-and-Go state management
       stopping = long_active and CS.out.vEgo < 0.5
