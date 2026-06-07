@@ -52,10 +52,12 @@
 - Mazda2 DJ MT モデル固有の ECU（カメラ、レーダー、EPS、エンジン、ABS）のファームウェアバージョンをデータベースに登録。
 - MT 車に存在しない TCM（トランスミッション制御モジュール）を定義から除外することで、迅速かつ正確な車両識別を可能にしました。
 
-### 9. LKAS Fault 3層防御
-- **予防層** ([`carcontroller.py`](selfdrive/car/mazda/carcontroller.py)): LKAS_BLOCK中はステアリング要求を0に
-- **伝播防止層** ([`mazdacan.py`](selfdrive/car/mazda/mazdacan.py)): `er1 = 0`（ERR_BIT_1を0に固定）
-- **検出緩和層** ([`carstate.py`](selfdrive/car/mazda/carstate.py)): `steerFaultPermanent = False`
+### 9. LKAS Fault 3層防御 + 高度保護
+- **予防層** ([`carcontroller.py`](selfdrive/car/mazda/carcontroller.py)): LKAS_BLOCK検出時に5フレーム段階的トルクランプダウン。急激なトルク変化によるEPS異常検知を防止
+- **伝播防止層** ([`mazdacan.py`](selfdrive/car/mazda/mazdacan.py)): `er1 = 0`（ERR_BIT_1を0に固定）+ `er2 = 0`（ERR_BIT_2も0に固定）。カメラからのエラービットをEPSに一切転送しない
+- **検出緩和層** ([`carstate.py`](selfdrive/car/mazda/carstate.py)): `steerFaultPermanent = False`。ERR_BIT_1の状態はcloudlogに記録しリモート診断可能
+- **デバウンス処理**: LKAS_BLOCK信号の3フレーム連続検出でノイズ除去
+- **診断ログ**: ERR_BIT_1の立ち上がり/立ち下がりエッジをLKAS_BLOCK状態・車速とともにcloudlogに記録
 
 ### 10. カスタムスピードメーターウィジェット（6種類）
 車両情報（速度・RPM・ギア）を統合表示するスピードメーターウィジェットを実装。設定画面から6種類のスタイルを選択可能:
@@ -583,19 +585,29 @@ openpilot → CAM_LKAS送信(Bus 0) → EPS → STEER_RATE送信(Bus 0)
 
 | 層 | ファイル | 変更内容 | 効果 |
 |---|---|---|---|
-| **予防層** | `carcontroller.py` | LKAS_BLOCK中はステアリング要求を0に | ERR_BIT_1への遷移を予防 |
-| **伝播防止層** | `mazdacan.py` | `er1 = 0`（ERR_BIT_1を0に固定） | 車両のLKAS Fault警告灯を防止 |
+| **予防層** | `carcontroller.py` | LKAS_BLOCK検出時に5フレーム段階的トルクランプダウン | 急激なトルク変化によるEPS異常検知を防止 |
+| **伝播防止層** | `mazdacan.py` | `er1 = 0` + `er2 = 0`（ERR_BIT_1/2を0に固定） | 車両のLKAS Fault警告灯を防止 |
 | **検出緩和層** | `carstate.py` | `steerFaultPermanent = False` | 再起動不要に |
+
+### 追加保護機能
+
+| 機能 | ファイル | 内容 | 効果 |
+|---|---|---|---|
+| **デバウンス** | `carstate.py` | LKAS_BLOCK 3フレーム連続検出 | 信号ノイズによる誤検出防止 |
+| **段階的ランプダウン** | `carcontroller.py` | LKAS_BLOCK時5フレームでトルクを段階的に0に | トルク急断によるEPSエラー誘発防止 |
+| **診断ログ** | `carstate.py` | ERR_BIT_1遷移をcloudlogに記録 | リモートデバッグ・原因追跡可能 |
 
 ### 他プロジェクトの対応状況
 - **上流commaai/openpilot**: LKAS Fault時は即時無効化+「Restart the Car」アラートのみ。回避策なし
-- **MoreTore/openpilot**: TORQUE_INTERCEPTOR（ハードウェア）使用時に`steerFaultPermanent = False`。ソフトウェアワークアラウンドなし
+- **FrogAi/FrogPilot**: 上流と同一。回避策なし
+- **Hana2736/openpilot**: TORQUE_INTERCEPTOR（ハードウェア）使用時に`steerFaultPermanent = False`。ソフトウェアのみでは回避策なし
 - **全GEN1 Mazda車種共通**: DBC定義、検出ロジック、ステアリングパラメータは全車種同一
 
 ### 安全性のポイント
-- LKAS_BLOCK（steerFaultTemporary）は引き続き正常に検出・処理される
-- ERR_BIT_1はカメラモジュールの内部状態に過ぎず、LKAS_BLOCKが別経路で安全を担保
-- 変更は最小限（3ファイル・各1-2行）で、openpilotのコアには影響しない
+- LKAS_BLOCK（steerFaultTemporary）は引き続き正常に検出・処理される（デバウンス付き）
+- ERR_BIT_1/2はカメラモジュールの内部状態に過ぎず、LKAS_BLOCKが別経路で安全を担保
+- トルクランプダウンにより、LKAS_BLOCK検出時もEPSへの急激な負荷変化を防止
+- 変更は3ファイルで、openpilotのコア（controlsd等）には影響しない
 
 ---
 
