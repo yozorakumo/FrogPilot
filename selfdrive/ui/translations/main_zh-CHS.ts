@@ -135,6 +135,25 @@
     </message>
 </context>
 <context>
+    <name>CanLogRouteItem</name>
+    <message>
+        <source>✓ CAN data available</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>✕ No CAN data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>▶ Play</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>✕</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ConfirmationDialog</name>
     <message>
         <source>Ok</source>
@@ -447,6 +466,10 @@
         <source>PAST WEEK</source>
         <translation type="gpt-5-generated">过去一周</translation>
     </message>
+    <message>
+        <source>YOZORAPILOT</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DriverViewWindow</name>
@@ -531,6 +554,68 @@
     <message>
         <source>%1 seconds</source>
         <translation type="gpt-5-generated">%1 秒</translation>
+    </message>
+</context>
+<context>
+    <name>FrogPilotCanLogPanel</name>
+    <message>
+        <source>No driving logs found.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Driving logs are automatically recorded by loggerd.
+CAN data is included in each route's rlog file.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>↓ Newest First</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Delete All Logs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DELETE ALL</source>
+        <translation type="unfinished">全部删除</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Permanently delete all driving log files from the device.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Are you sure you want to delete ALL driving log files? This cannot be undone.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>↑ Oldest First</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No log directory found.
+Logs are saved to /data/media/0/realdata/ while driving.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No driving logs with CAN data found.
+Drive with openpilot to generate logs.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Driving Logs (%1 routes)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Delete this driving log?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Total: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Start CAN playback with this route?</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -996,6 +1081,14 @@
     </message>
     <message>
         <source>Time Driven (Weather):</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Automatically Backup YozoraPilot</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Automatically backup your configuration and models when you are offroad with an active internet connection.&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -3465,6 +3558,14 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <source>All toggle descriptions are currently expanded. You can tap a toggle's name to open or close its description at any time!</source>
         <translation type="gpt-5-generated">所有切换项的说明目前均已展开。你可以随时点击切换项的名称来打开或关闭其说明！</translation>
     </message>
+    <message>
+        <source>CAN LOGS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Manage CAN logs, backups, device settings, screen options, storage, and tools to keep YozoraPilot running smoothly.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>FrogPilotSoundsPanel</name>
@@ -3878,6 +3979,10 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
     <message>
         <source>GitHub and GitLab are offline...</source>
         <translation type="gpt-5-generated">GitHub 和 GitLab 已离线…</translation>
+    </message>
+    <message>
+        <source>YOZORAPILOT</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -4607,6 +4712,14 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
         <source>SimHub</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Auto i-stop Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Automatically cancel i-stop (idle stop) when the engine starts.&lt;/b&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>FrogPilotVisualsPanel</name>
@@ -5308,6 +5421,18 @@ Developer - Highly customizable settings for seasoned enthusiasts</source>
     </message>
     <message>
         <source>&lt;b&gt;Display brake pedal, parking brake, and clutch status&lt;/b&gt; on the driving screen.&lt;br&gt;&lt;br&gt;&lt;b&gt;BRK&lt;/b&gt; (Red): Brake pedal pressed&lt;br&gt;&lt;b&gt;P&lt;/b&gt; (Orange): Parking brake engaged&lt;br&gt;&lt;b&gt;CL&lt;/b&gt; (Blue): Clutch pressed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Alert Auto-Dismiss Seconds</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Automatically dismiss alert messages&lt;/b&gt; after the specified number of seconds. Set to 0 to disable auto-dismiss.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> seconds</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -6186,6 +6311,101 @@ This may take up to a minute.</source>
     <message>
         <source>finalizing update...</source>
         <translation type="gpt-5-generated">正在完成更新…</translation>
+    </message>
+    <message>
+        <source>CI Runner Build</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>N/A</source>
+        <translation type="unfinished">N/A</translation>
+    </message>
+    <message>
+        <source>CI Runner Status</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Checking...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Updater Status</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>CI Runner</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>START</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Start, stop, or restart the GitHub Actions CI runner on this device.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop CI Runner</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>STOP</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Restart CI Runner</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>RESTART</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>✕ Not Installed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No GitHub Actions runner found on this device.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>● Running - Building</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>CI Runner is currently executing a build job.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>● Running - Idle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>CI Runner is active and waiting for jobs.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>○ Stopped</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>CI Runner is installed but not currently running.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>⚠ Update Disabled</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>CI Runner is installed on this device.
+
+Software updates are disabled to prevent build artifacts from being destroyed.
+Uninstall the CI Runner to re-enable automatic updates.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>disabled - CI Runner is installed</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
