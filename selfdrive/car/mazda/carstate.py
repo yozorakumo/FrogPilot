@@ -24,6 +24,10 @@ class CarState(CarStateBase):
     self.doorLocked = False  # Door lock status from 0x436 DOOR_LOCK_FB
     self.iStopEnabled = False  # i-stop status from 0x130 ISTOP_STATUS (True = i-stop active)
     self.lkas_disabled = False
+    self.lkas_blocked = False
+    self.lkas_blocked_count = 0
+    self.lkas_blocked_debounced = False
+    self.prev_err_bit_1 = False
     self.steering_angle_prev = 0.0
 
     self.prev_distance_button = 0
@@ -188,6 +192,12 @@ class CarState(CarStateBase):
 
     # Either due to low speed or hands off
     lkas_blocked = cp.vl["STEER_RATE"]["LKAS_BLOCK"] == 1
+    if lkas_blocked:
+      self.lkas_blocked_count = min(self.lkas_blocked_count + 1, 100)
+    else:
+      self.lkas_blocked_count = max(self.lkas_blocked_count - 1, 0)
+    self.lkas_blocked = lkas_blocked
+    self.lkas_blocked_debounced = self.lkas_blocked_count >= 3
 
     if self.CP.minSteerSpeed > 0:
       # LKAS is enabled at 52kph going up and disabled at 45kph going down
@@ -218,7 +228,7 @@ class CarState(CarStateBase):
       else:
         self.low_speed_alert = False
 
-    ret.steerFaultTemporary = self.lkas_allowed_speed and lkas_blocked
+    ret.steerFaultTemporary = self.lkas_allowed_speed and self.lkas_blocked_debounced
 
     self.acc_active_last = ret.cruiseState.enabled
 
@@ -228,7 +238,13 @@ class CarState(CarStateBase):
     self.lkas_disabled = cp_cam.vl["CAM_LANEINFO"]["LANE_LINES"] == 0
     self.cam_lkas = cp_cam.vl["CAM_LKAS"]
     self.cam_laneinfo = cp_cam.vl["CAM_LANEINFO"]
-    ret.steerFaultPermanent = cp_cam.vl["CAM_LKAS"]["ERR_BIT_1"] == 1
+
+    err_bit_1 = cp_cam.vl["CAM_LKAS"]["ERR_BIT_1"] == 1
+    if err_bit_1 != self.prev_err_bit_1:
+      cloudlog.debug(f"LKAS: ERR_BIT_1 transition {self.prev_err_bit_1}->{err_bit_1}, LKAS_BLOCK={lkas_blocked}(count={self.lkas_blocked_count}), speed={speed_kph:.1f}kph")
+    self.prev_err_bit_1 = err_bit_1
+
+    ret.steerFaultPermanent = False
 
     # FrogPilot CarState functions
     self.lkas_previously_enabled = self.lkas_enabled

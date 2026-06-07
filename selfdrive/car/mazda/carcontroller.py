@@ -45,16 +45,28 @@ class CarController(CarControllerBase):
     self.doors_locked = False
     self.istop_cancel_sent = False  # Track i-stop cancel command
 
+    # LKAS fault protection: smooth ramp-down state
+    self.lkas_block_ramp_frames = 0
+
   def update(self, CC, CS, now_nanos, frogpilot_toggles):
     can_sends = []
 
     apply_steer = 0
 
-    if CC.latActive and not CS.out.steerFaultTemporary:
-      # calculate steer and also set limits due to driver torque
+    lkas_blocked_now = CS.out.steerFaultTemporary or CS.lkas_blocked
+
+    if lkas_blocked_now:
+      self.lkas_block_ramp_frames = min(self.lkas_block_ramp_frames + 1, 100)
+    else:
+      self.lkas_block_ramp_frames = 0
+
+    if CC.latActive and not lkas_blocked_now:
       new_steer = int(round(CC.actuators.steer * CarControllerParams.STEER_MAX))
       apply_steer = apply_driver_steer_torque_limits(new_steer, self.apply_steer_last,
                                                      CS.out.steeringTorque, CarControllerParams)
+    elif self.apply_steer_last != 0 and self.lkas_block_ramp_frames <= 5:
+      ramp_factor = 1.0 - (self.lkas_block_ramp_frames / 5.0)
+      apply_steer = int(self.apply_steer_last * ramp_factor)
 
     # Longitudinal control
     if self.CP.openpilotLongitudinalControl:
