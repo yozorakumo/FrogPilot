@@ -9,7 +9,7 @@
 #define MAZDA_BCM           0x420
 #define MAZDA_CRZ_INFO      0x21b
 #define MAZDA_RADAR_UDS     0x764
-#define MAZDA_CLUTCH_SWITCH 0x366
+#define MAZDA_NEW_MSG_28    0x166
 
 // CAN bus numbers
 #define MAZDA_MAIN 0
@@ -63,23 +63,23 @@ RxCheck mazda_long_rx_checks[] = {
   {.msg = {{MAZDA_PEDALS,       0, 8, .frequency = 50U}, { 0 }, { 0 }}},
 };
 
-// MT RX checks: includes CLUTCH_SWITCH for clutch pedal detection
+// MT RX checks: includes NEW_MSG_28 for clutch pedal detection
 RxCheck mazda_mt_rx_checks[] = {
   {.msg = {{MAZDA_CRZ_CTRL,      0, 8, .frequency = 50U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_CRZ_BTNS,      0, 8, .frequency = 10U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_STEER_TORQUE,  0, 8, .frequency = 83U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_ENGINE_DATA,   0, 8, .frequency = 100U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_PEDALS,        0, 8, .frequency = 50U}, { 0 }, { 0 }}},
-  {.msg = {{MAZDA_CLUTCH_SWITCH, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_NEW_MSG_28,    0, 8, .frequency = 50U}, { 0 }, { 0 }}},
 };
 
-// MT longitudinal RX checks: CRZ_CTRL removed, includes CLUTCH_SWITCH
+// MT longitudinal RX checks: CRZ_CTRL removed, includes NEW_MSG_28
 RxCheck mazda_mt_long_rx_checks[] = {
   {.msg = {{MAZDA_CRZ_BTNS,      0, 8, .frequency = 10U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_STEER_TORQUE,  0, 8, .frequency = 83U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_ENGINE_DATA,   0, 8, .frequency = 100U}, { 0 }, { 0 }}},
   {.msg = {{MAZDA_PEDALS,        0, 8, .frequency = 50U}, { 0 }, { 0 }}},
-  {.msg = {{MAZDA_CLUTCH_SWITCH, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},
+  {.msg = {{MAZDA_NEW_MSG_28,    0, 8, .frequency = 50U}, { 0 }, { 0 }}},
 };
 
 static bool mazda_longitudinal = false;
